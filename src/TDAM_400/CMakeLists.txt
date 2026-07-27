@@ -1,0 +1,52 @@
+# Project details
+# ---------------
+project(TDAM_400)
+
+enable_language (C Fortran)
+
+# Fortran compiler flags
+# ======================
+if (NOT CMAKE_Fortran_FLAGS_RELEASE)
+	set (CMAKE_Fortran_FLAGS_RELEASE "-O3")
+endif (NOT CMAKE_Fortran_FLAGS_RELEASE)
+if (NOT CMAKE_Fortran_FLAGS_DEBUG)
+	set (CMAKE_Fortran_FLAGS_DEBUG "-O0 -g")
+endif (NOT CMAKE_Fortran_FLAGS_DEBUG)
+
+# Defines auxiliary containers with program names
+# ===============================================
+#set (TDAM_400_PROGRAMS "TDAMTOPO16" "TDAMOPTIMIZER")
+set (TDAM_400_PROGRAMS "DAMTOPOGRAPHY" "DAMMESPIMIZER")
+
+set (TDAM_400_EXECUTABLES "" )
+
+
+# Creates a library with modules
+# ==============================
+add_library(TDAMGLOBAL_mods TDAMGLOBAL16.F90 TDAMCOM16.F90 
+	TDAMPOT16.F90 TDAMDEN16.F90 lbfgsb.f linpack.f blas.f timer.f HESSIAN.F90)
+
+# Create binaries
+# ===============
+#add_executable (${TDAM_400_EXECUTABLES} "${TDAM_400_PROGRAMS}.F90")
+
+foreach (p ${TDAM_400_PROGRAMS})
+    if (UNIX AND NOT CYGWIN)
+        add_executable(${p}.exe "${p}.F90")
+        list (APPEND TDAM_400_EXECUTABLES ${p}.exe )
+    else (UNIX AND NOT CYGWIN)  # To prevent double .exe extension
+        add_executable(${p} "${p}.F90")
+        list (APPEND TDAM_400_EXECUTABLES ${p} )
+    endif (UNIX AND NOT CYGWIN)
+endforeach (p)
+
+# Links binaries to modules
+# =========================
+foreach (p ${TDAM_400_EXECUTABLES})
+   target_link_libraries("${p}" TDAMGLOBAL_mods)
+   message("Adds ${p}")
+endforeach (p)
+
+# install executables and scripts
+# ===============================
+install (TARGETS ${TDAM_400_EXECUTABLES} RUNTIME DESTINATION ".")  # Default installation directory: /usr/local/bin/
