@@ -4,53 +4,111 @@ project(interfaces)
 
 # Defines auxiliary containers with program names
 # ===============================================
-set (CPP_INTERFACES "GAUSS_interface" "MOLEKEL_interface" "MOLPRO_out_interface" "TURBOMOLE_interface"
-    "NWChem_interface" "Mopac_aux_interface" "Psi4_auxiliary_interface")
+set(CPP_INTERFACES
+    "GAUSS_interface"
+    "MOLEKEL_interface"
+    "MOLPRO_out_interface"
+    "TURBOMOLE_interface"
+    "NWChem_interface"
+    "Mopac_aux_interface"
+)
 
-set (PYTHON_SCRIPTS "MOLPRO_xml_interface.py" "MOPAC_aux_interface.py")
+set(PYTHON_SCRIPTS
+    "MOLPRO_xml_interface.py"
+    "MOPAC_aux_interface.py"
+)
 
-set (CPP_INTERFACES_EXECUTABLES "" )
+set(CPP_INTERFACES_EXECUTABLES "")
 
-# Create binaries
-# ===============
-if (UNIX AND NOT CYGWIN)
-    foreach (p ${CPP_INTERFACES})
-        add_executable(${p}.exe "${p}.cpp")
-        list (APPEND CPP_INTERFACES_EXECUTABLES ${p}.exe )
-        message("Adds ${p}.exe" )
-    endforeach (p)
-else (UNIX AND NOT CYGWIN)  # To prevent double .exe extension
-    foreach (p ${CPP_INTERFACES})
-        add_executable(${p} "${p}.cpp")
-        list (APPEND CPP_INTERFACES_EXECUTABLES ${p} )
-        message("Adds ${p}" )
-    endforeach (p)
-endif (UNIX AND NOT CYGWIN)
-
-
-# install executables
+# Create C++ binaries
 # ===================
-install (TARGETS ${CPP_INTERFACES_EXECUTABLES} RUNTIME DESTINATION ".")  # Default installation directory: /usr/local/bin/
+if(UNIX AND NOT CYGWIN)
 
-# Dereferences symbolic links of python files for intallation 
-# ===========================================================
-set (PYTHON_resolvedFiles "")
-foreach (_file ${PYTHON_SCRIPTS})
-#    get_filename_component(_resolvedFile "${_file}" REALPATH)
-    get_filename_component(_resolvedFile "${_file}" NAME)
-	list (APPEND PYTHON_resolvedFiles "${_resolvedFile}")
-endforeach()
-message("PYTHON_resolvedFiles ${PYTHON_resolvedFiles}")
+    foreach(p ${CPP_INTERFACES})
+        add_executable(${p}.exe "${p}.cpp")
 
-foreach (p ${PYTHON_resolvedFiles} )
-	message("Adds ${p}")
-endforeach (p)
-add_custom_target(python_interfaces SOURCES ${PYTHON_resolvedFiles})
+        list(
+            APPEND
+            CPP_INTERFACES_EXECUTABLES
+            ${p}.exe
+        )
 
-# install python scripts
-# ======================
-#install (TARGETS ${python_interfaces} RUNTIME DESTINATION ".")
-install (PROGRAMS ${PYTHON_resolvedFiles} DESTINATION ".")
-#install (FILES ${PYTHON_resolvedFiles} RUNTIME DESTINATION ".")
-#install (PROGRAMS ${PYTHON_resolvedFiles} RUNTIME DESTINATION ".")
-#install (FILES ${PYTHON_resolvedFiles} DESTINATION ".")
+        message(STATUS "Adds ${p}.exe")
+    endforeach()
+
+else()
+
+    # Prevent double .exe extension on Windows/Cygwin
+    foreach(p ${CPP_INTERFACES})
+        add_executable(${p} "${p}.cpp")
+
+        list(
+            APPEND
+            CPP_INTERFACES_EXECUTABLES
+            ${p}
+        )
+
+        message(STATUS "Adds ${p}")
+    endforeach()
+
+endif()
+
+# Install C++ executables
+# =======================
+install(
+    TARGETS ${CPP_INTERFACES_EXECUTABLES}
+    RUNTIME DESTINATION "."
+)
+
+# Python interfaces
+# =================
+set(
+    PYTHON_OUTPUT_DIR
+    "${CMAKE_BINARY_DIR}/src/interfaces_400"
+)
+
+add_custom_target(
+    python_interfaces ALL
+
+    COMMAND
+        ${CMAKE_COMMAND} -E make_directory
+        "${PYTHON_OUTPUT_DIR}"
+
+    COMMAND
+        ${CMAKE_COMMAND} -E copy_if_different
+        ${PYTHON_SCRIPTS}
+        "${PYTHON_OUTPUT_DIR}"
+
+    WORKING_DIRECTORY
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+
+    SOURCES
+        ${PYTHON_SCRIPTS}
+
+    COMMENT
+        "Copying Python interfaces to ${PYTHON_OUTPUT_DIR}"
+)
+
+# Install Python interfaces
+# =========================
+install(
+    PROGRAMS
+        ${PYTHON_SCRIPTS}
+    DESTINATION
+        "."
+)
+
+# Export the name of this directory (interfaces_400, ...)
+# =======================================================================
+get_filename_component(
+    INTERFACES_DIR_NAME
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+    NAME
+)
+
+set_property(
+    GLOBAL
+    PROPERTY
+    DAMQT_INTERFACES_DIR_NAME
+    "${INTERFACES_DIR_NAME}"
+)

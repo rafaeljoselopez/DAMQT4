@@ -207,6 +207,25 @@ if (Qt5Widgets_FOUND)
         ${DAMGUI400_RC_SRCS}
     )
 
+# Pass the interfaces directory name to the C++ code
+get_property(
+    DAMQT_INTERFACES_DIR_NAME
+    GLOBAL
+    PROPERTY
+    DAMQT_INTERFACES_DIR_NAME
+)
+
+target_compile_definitions(
+    ${DAMGUI400_EXECUTABLE}
+    PRIVATE
+    DAMQT_INTERFACES_DIR="${DAMQT_INTERFACES_DIR_NAME}"
+)
+
+message(
+    STATUS
+    "DAMQT interfaces directory: ${DAMQT_INTERFACES_DIR_NAME}"
+)
+
 # Change the name of the binary file in case of UNIX
     if (UNIX AND NOT CYGWIN)
         set_target_properties(${DAMGUI400_EXECUTABLE} PROPERTIES OUTPUT_NAME "DAMQT400.exe")

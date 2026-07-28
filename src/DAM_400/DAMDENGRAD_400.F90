@@ -63,7 +63,7 @@
     character(256) :: filelines
     logical :: lnucleo, lexist
     namelist / options / basintol, dlt0, filename, filelines, icntlines, ioplines3D, iswindows, lextralines &
-            , lmaxrep, longoutput, lplot2d, nlines, nlinpernuc, numpnt, planeA, planeB, planeC &
+            , lmaxrep, longoutput, lplot2d, lvalence, nlines, nlinpernuc, numpnt, planeA, planeB, planeC &
             , thresh, umbrlargo, usalto, uvratio, rlines &
             , vmod, xinf, xsup, yinf, ysup, zinf, zsup, uinf, usup, vinf, vsup
 !     Namelist default values
@@ -72,6 +72,7 @@
                         ! 1: vertices (12 points);   2: C3 axes (20 points);   3: C2 axes (30 points)
                         ! 4: vertices + c3 ;   5: vertices + C2;   6: C2 + C3;   7: vertices + C2 + C3 
     longoutput = .false.! If .true. a more detailed output is given
+    lvalence = .false.  ! Kept just for vompatibility
     iswindows = .false.          ! .true. if running on a MS-windows system
     lmaxrep = 5          ! highest value of  l  in the expansion of the density for computing the density gradient
     umbrlargo = 1.d-8     ! Threshold for determining the short-range radius

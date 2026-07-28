@@ -309,6 +309,11 @@ void SigmaHolePage::execDamSGhole()
     const QString projectFile =
         QDir(projectFolder_).filePath(projectName_ + ".damproj");
 
+    if (importFile().isEmpty()){
+        QMessageBox::warning(this, tr("DAMQT"),tr("Choose a file with a density"));
+        return;
+    }
+
     bool printwarns = false;
 
     QString warns = QString(tr("Warning: failed saving the following options") + ":\n");

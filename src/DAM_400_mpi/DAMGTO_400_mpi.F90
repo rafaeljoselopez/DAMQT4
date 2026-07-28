@@ -2159,8 +2159,6 @@ real(KREAL), allocatable :: atomchargesbyl(:,:), mullikenchargesbyl(:,:)
     real(KREAL) :: roaux(-mxl:mxl,-mxl:mxl), bvec(0:mxlenpol-1), qlm1c(0:mxldst)
     character*4 :: strbux
 
-write(6,"(//'enters ajustagencontract',//)")
-
 lchargesbyl = .true.
     lrotar = max(lmaxbase,lmaxexp)
     umbralres2 = umbralres * umbralres

@@ -171,81 +171,6 @@ void AtomicDensitiesPage::connectSignals()
                     emit externalProcessStarted();
                 });
 
-//    connect(runner_, &ExternalProgramRunner::finished,
-//            this, [this](int, QProcess::ExitStatus exitStatus) {
-//                setExecEnabled(true);
-//                setStopEnabled(false);
-
-//                const bool finishedOk = (exitStatus == QProcess::NormalExit);
-
-//                if (finishedOk) {
-//                    handleNormalProcessExit();
-//                } else if (exitStatus == QProcess::CrashExit) {
-//                    emit statusMessageRequested(
-//                        tr("Process crashed, exit code = %1").arg(exitStatus)
-//                    );
-//                }
-
-//                emit execPagesEnabledChanged(finishedOk);
-//                emit externalProcessFinished(finishedOk);
-//            });
-
-//    connect(runner_, &ExternalProgramRunner::finished,
-//            this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
-
-//                const bool finishedOk =
-//                    exitStatus == QProcess::NormalExit && exitCode == 0;
-
-//                if (runningOperation_ == RunningOperation::Sgbs2Sxyz) {
-
-//                    runningOperation_ = RunningOperation::None;
-
-//                    if (!finishedOk) {
-//                        QFile::remove(sgbs2sxyzInputFile_);
-
-//                        setExecEnabled(true);
-//                        setStopEnabled(false);
-
-//                        emit statusMessageRequested(
-//                            tr("sgbs2sxyz failed, exit code = %1")
-//                                .arg(exitCode)
-//                        );
-
-//                        emit execPagesEnabledChanged(false);
-//                        emit externalProcessFinished(false);
-//                        return;
-//                    }
-
-//                    if (finishSgbs2Sxyz()) {
-//                        startDam();
-//                        return;
-//                    }
-
-//                    setExecEnabled(true);
-//                    setStopEnabled(false);
-
-//                    emit execPagesEnabledChanged(false);
-//                    emit externalProcessFinished(false);
-//                    return;
-//                }
-
-//                runningOperation_ = RunningOperation::None;
-
-//                setExecEnabled(true);
-//                setStopEnabled(false);
-
-//                if (finishedOk) {
-//                    handleNormalProcessExit();
-//                } else {
-//                    emit statusMessageRequested(
-//                        tr("Process failed, exit code = %1").arg(exitCode)
-//                    );
-//                }
-
-//                emit execPagesEnabledChanged(finishedOk);
-//                emit externalProcessFinished(finishedOk);
-//            });
-
     connect(runner_, &ExternalProgramRunner::finished,
             this, [this](int exitCode, QProcess::ExitStatus exitStatus) {
 
@@ -254,18 +179,16 @@ void AtomicDensitiesPage::connectSignals()
 
                 if (runningOperation_ == RunningOperation::Sgbs2Sxyz) {
 
-                    qDebug() << "sgbs2sxyz finished:"
-                                 << "exitCode =" << exitCode
-                                 << "exitStatus =" << exitStatus;
-
-                    qDebug() << "sxyz exists:"
-                             << QFile::exists(sgbs2sxyzTargetFile_);
-
                     runningOperation_ = RunningOperation::None;
 
                     if (!finishedOk) {
                         QFile::remove(sgbs2sxyzInputFile_);
+                        qDebug() << "sgbs2sxyz finished:"
+                                     << "exitCode =" << exitCode
+                                     << "exitStatus =" << exitStatus;
 
+                        qDebug() << "sxyz exists:"
+                                 << QFile::exists(sgbs2sxyzTargetFile_);
                         setExecEnabled(true);
                         setStopEnabled(false);
 
@@ -281,7 +204,6 @@ void AtomicDensitiesPage::connectSignals()
 
                     if (finishSgbs2Sxyz()) {
                         QTimer::singleShot(0, this, [this]() {
-                            qDebug() << "Starting DAM after sgbs2sxyz";
                             startDam();
                         });
 

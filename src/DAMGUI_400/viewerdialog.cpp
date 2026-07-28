@@ -27,7 +27,8 @@
 
 #include "viewerdialog.h"
 
-ViewerDialog::ViewerDialog()
+ViewerDialog::ViewerDialog(QWidget *parent)
+    : QDialog(parent)
 {
 }
 

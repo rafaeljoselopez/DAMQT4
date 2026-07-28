@@ -50,10 +50,6 @@ message("BUILD_FORTRAN_MPI: " ${BUILD_FORTRAN_MPI})
 # -------------------------------------
 # 🔨 Main project build
 # -------------------------------------
-message("BUILD_GUI: " ${BUILD_GUI})
-if (BUILD_GUI)
-    add_subdirectory(src/DAMGUI_400)
-endif()
 
 if (BUILD_FORTRAN_SERIAL)
     add_subdirectory(src/DAM_400)
@@ -61,6 +57,12 @@ if (BUILD_FORTRAN_SERIAL)
     add_subdirectory(src/DAMZERNIKE_400)
     add_subdirectory(src/interfaces_400)
 endif()
+
+message("BUILD_GUI: " ${BUILD_GUI})
+if (BUILD_GUI)
+    add_subdirectory(src/DAMGUI_400)
+endif()
+
 
 if (BUILD_FORTRAN_MPI)
     add_subdirectory(src/DAM_400_mpi)

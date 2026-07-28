@@ -32,7 +32,7 @@ class ViewerDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit ViewerDialog();
+    explicit ViewerDialog(QWidget *parent = nullptr);
     ~ViewerDialog();
 
 protected:

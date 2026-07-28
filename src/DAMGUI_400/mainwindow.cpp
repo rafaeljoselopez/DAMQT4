@@ -33,7 +33,6 @@
 #include <QApplication>
 #include <QPrinter>
 #include <QPrintDialog>
-//#include <QSignalMapper>
 
 #include <QtDebug>
 #include <QLineEdit>
@@ -41,6 +40,11 @@
 #include <QBoxLayout>
 #include <QtCore/qprocess.h>
 #include <QPixmap>
+
+
+#include <QProcess>
+#include <QStandardPaths>
+#include <QMessageBox>
 
 #include "filedialogutils.h"
 #include "mainwindow.h"
@@ -142,6 +146,7 @@ bool checkMpiCommand(QString& mpiCommand)
 
 /* Sets initial values */
 MainWindow::MainWindow(QWidget *parent)
+        : QMainWindow(parent)
 {
     QPixmap pixmap;
     pixmap.load(":/images/splash_4_en.png");
@@ -150,7 +155,6 @@ MainWindow::MainWindow(QWidget *parent)
     denslist = new QStringList();
     lzdo = false;
     lvalence = false;
-    processkilled = false;
     plotsknt = 1;
     topindex = -1;
     widgetsknt = 1;
@@ -213,23 +217,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     singlePassImporter_ = new SinglePassImporter(this);
 
-    connect(
-        singlePassImporter_,
-        &SinglePassImporter::processStarted,
-        this,
-        &MainWindow::processStart);
+    connect(singlePassImporter_, &SinglePassImporter::processStarted,
+        this, &MainWindow::processStart);
 
-    connect(
-        singlePassImporter_,
-        &SinglePassImporter::importFinished,
-        this,
-        &MainWindow::onSinglePassImportFinished);
+    connect(singlePassImporter_, &SinglePassImporter::importFinished,
+        this, &MainWindow::onSinglePassImportFinished);
 
-    connect(
-        singlePassImporter_,
-        &SinglePassImporter::importFailed,
-        this,
-        &MainWindow::onSinglePassImportFailed);
+    connect(singlePassImporter_, &SinglePassImporter::importFailed,
+        this, &MainWindow::onSinglePassImportFailed);
 
     connect(
         singlePassImporter_,
@@ -270,7 +265,9 @@ MainWindow::MainWindow(QWidget *parent)
     LBLlanguage->setText(tr("Choose language and push Start"));
     BTNlangstart=new QPushButton(QIcon(":/images/empezar.png"), tr("Start"));
     BTNlangstart->setMinimumWidth(120);
-    connect(BTNlangstart, SIGNAL(clicked()), this, SLOT(start()));
+//    connect(BTNlangstart, SIGNAL(clicked()), this, SLOT(start()));
+    connect(BTNlangstart, &QPushButton::clicked,
+            this, &MainWindow::start);
 
     QHBoxLayout *languageLBLLayout = new QHBoxLayout();
     languageLBLLayout->addWidget(LBLlanguage);
@@ -294,7 +291,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     FRMlanguage->exec();
 
-    QString path=QApplication::applicationDirPath();
+//    QString path=QApplication::applicationDirPath();
 
     iswindows = isWindowsPlatform();
 
@@ -320,7 +317,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     int tabIndex=TAWprincipal->addTab(textEdit,QIcon(":/images/document_text.png"),tr("Results"));
     TAWprincipal->setCurrentIndex(tabIndex);
-    connect(TAWprincipal, SIGNAL(currentChanged(int)), this, SLOT(tabChanged(int)));
+//    connect(TAWprincipal, SIGNAL(currentChanged(int)), this, SLOT(tabChanged(int)));
+    connect(TAWprincipal, &QTabWidget::currentChanged,
+            this, &MainWindow::tabChanged);
 
     setCentralWidget(TAWprincipal);    
 
@@ -335,7 +334,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     SetCurrentFile("",true,false);
 
-    executing = -1;
     mden = 0;
 }
 
@@ -366,13 +364,22 @@ void MainWindow::closeEvent(QCloseEvent *event)
         event->ignore();
         return;
     }
-    if (mustSave()) {
-        writeSettings();
-        event->accept();
-    } 
-    else {
+//    if (mustSave()) {
+//        writeSettings();
+//        event->accept();
+//    }
+//    else {
+//        event->ignore();
+//    }
+
+    if (!mustSave()) {
         event->ignore();
+        return;
     }
+
+    writeSettings();
+    event->accept();
+
     delete QDLviewer2D;
     QDLviewer2D = nullpointer;
     delete QDLwidget3D;
@@ -400,7 +407,7 @@ void MainWindow::update_textedit(QString a){
     if(!file.open(QIODevice::ReadOnly)){
         QMessageBox msgBox;
         msgBox.setText(tr("submitOutput"));
-        msgBox.setInformativeText(QString(tr("Failed opening %1 output file. Error: %1\n")
+        msgBox.setInformativeText(QString(tr("Failed opening %1 output file. Error: %2\n")
                         .arg(a).arg(file.errorString())));
         msgBox.setIcon(QMessageBox::Information);
         msgBox.exec();
@@ -422,47 +429,62 @@ void MainWindow::CreateActions()
     AccNew = new QAction(QIcon(":/images/Nuevo.png"),tr("&New project"), this);
     AccNew->setShortcut(tr("Ctrl+N"));
     AccNew->setStatusTip(tr("Opens a new project"));
-    connect(AccNew, SIGNAL(triggered()), this, SLOT(newProject()));
+//    connect(AccNew, SIGNAL(triggered()), this, SLOT(newProject()));
+    connect(AccNew, &QAction::triggered,
+            this, &MainWindow::newProject);
 //    Open
     AccOpen = new QAction(QIcon(":/images/Abrir.png"), tr("&Open project..."), this);
     AccOpen->setShortcut(tr("Ctrl+A"));
     AccOpen->setStatusTip(tr("Open project file"));
-    connect(AccOpen, SIGNAL(triggered()), this, SLOT(openProject()));
+//    connect(AccOpen, SIGNAL(triggered()), this, SLOT(openProject()));
+    connect(AccOpen, &QAction::triggered,
+            this, &MainWindow::openProject);
 //    Save
     AccSave = new QAction(QIcon(":/images/Guardar.png"),tr("&Save project"), this);
     AccSave->setShortcut(tr("Ctrl+S"));
     AccSave->setStatusTip(tr("Save project file"));
-    connect(AccSave, SIGNAL(triggered()), this, SLOT(saveProject()));
+//    connect(AccSave, SIGNAL(triggered()), this, SLOT(saveProject()));
+    connect(AccSave, &QAction::triggered,
+            this, &MainWindow::saveProject);
 //    Save as
     AccSaveAs = new QAction(tr("Save project &as..."), this);
     AccSaveAs->setStatusTip(tr("Saves project file as"));
 //    connect(AccSaveAs, SIGNAL(triggered()), this, SLOT(SaveProjectAs()));
     connect(AccSaveAs, &QAction::triggered,
-        this, &MainWindow::saveProjectAs
-    );
+        this, &MainWindow::saveProjectAs);
 //    Print
     AccPrint = new QAction(QIcon(":/images/printer.png"),tr("&Print"), this);
     AccPrint->setShortcut(tr("Ctrl+P"));
     AccPrint->setStatusTip(tr("Print output file"));
-    connect(AccPrint, SIGNAL(triggered()), this, SLOT(PrintFile()));
+//    connect(AccPrint, SIGNAL(triggered()), this, SLOT(PrintFile()));
+    connect(AccPrint, &QAction::triggered,
+        this, &MainWindow::PrintFile);
 //    Print to PDF file
     AccPdf = new QAction(QIcon(":/images/acrobat.png"), tr("&Create Pdf"), this);
     AccPdf->setShortcut(tr("Ctrl+D"));
     AccPdf->setStatusTip(tr("Print output file as Pdf"));
-    connect(AccPdf, SIGNAL(triggered()), this, SLOT(PrintFilePdf()));
+//    connect(AccPdf, SIGNAL(triggered()), this, SLOT(PrintFilePdf()));
+    connect(AccPdf, &QAction::triggered,
+        this, &MainWindow::PrintFilePdf);
 //    External packages
     AccExternal = new QAction(QIcon(":/images/External_program.png"),tr("E&xternal"), this);
     AccExternal->setShortcut(tr("Ctrl+E"));
     AccExternal->setStatusTip(tr("External packages"));
-    connect(AccExternal, SIGNAL(triggered()), this, SLOT(external_package()));
+//    connect(AccExternal, SIGNAL(triggered()), this, SLOT(external_package()));
+    connect(AccExternal, &QAction::triggered,
+        this, &MainWindow::external_package);
 //    2D Viewer2D
     Acc2Dplot = new QAction(QIcon(":/images/plot2D_tiny.png"),tr("&2D Viewer"), this);
     Acc2Dplot->setStatusTip(tr("2D Viewer"));
-    connect(Acc2Dplot, SIGNAL(triggered()), this, SLOT(addviewer2D()));
+//    connect(Acc2Dplot, SIGNAL(triggered()), this, SLOT(addviewer2D()));
+    connect(Acc2Dplot, &QAction::triggered,
+        this, &MainWindow::addviewer2D);
 //    3D Viewer
     Acc3Dview = new QAction(QIcon(":/images/cube_molecule.png"),tr("&3D Viewer"), this);
     Acc3Dview->setStatusTip(tr("3D Viewer"));
-    connect(Acc3Dview, SIGNAL(triggered()), this, SLOT(addglWidget()));
+//    connect(Acc3Dview, SIGNAL(triggered()), this, SLOT(addglWidget()));
+    connect(Acc3Dview, &QAction::triggered,
+        this, &MainWindow::addglWidget);
 
 //    Recent files
     for (int i = 0; i < MAX_ARCHIVOS_RECIENTES; ++i) {
@@ -476,24 +498,34 @@ void MainWindow::CreateActions()
     AccExit = new QAction(QIcon(":/images/Salir.png"),tr("&Exit"), this);
     AccExit->setShortcut(tr("Ctrl+Q"));
     AccExit->setStatusTip(tr("Quit"));
-    connect(AccExit, SIGNAL(triggered()), this, SLOT(close()));
+//    connect(AccExit, SIGNAL(triggered()), this, SLOT(close()));
+    connect(AccExit, &QAction::triggered,
+            this, &QWidget::close);
 //    Help
     AccHelp = new QAction(QIcon(":/images/ayuda.png"),tr("&Help"), this);
     AccHelp->setStatusTip(tr("Program help"));
-    connect(AccHelp, SIGNAL(triggered()), this, SLOT(Help()));
+//    connect(AccHelp, SIGNAL(triggered()), this, SLOT(Help()));
+    connect(AccHelp, &QAction::triggered,
+            this, &MainWindow::Help);
 //    About
     AccAbout = new QAction(QIcon(":/images/icon.png"),tr("&About DAMQT"), this);
     AccAbout->setStatusTip(tr("About DAMQT"));
-    connect(AccAbout, SIGNAL(triggered()), this, SLOT(about()));
+//    connect(AccAbout, SIGNAL(triggered()), this, SLOT(about()));
+    connect(AccAbout, &QAction::triggered,
+            this, &MainWindow::about);
 //    About
 //    AccPerformance = new QAction(createModernGearIcon(QSize(32, 32)),tr("&Performance settings"), this);
     AccPerformance = new QAction(QIcon(":/images/GearIcon32x32.png"),tr("&Performance settings"), this);
     AccPerformance->setStatusTip(tr("Performance settings"));
-    connect(AccPerformance, SIGNAL(triggered()), this, SLOT(showPerformanceSettings()));
+//    connect(AccPerformance, SIGNAL(triggered()), this, SLOT(showPerformanceSettings()));
+    connect(AccPerformance, &QAction::triggered,
+            this, &MainWindow::showPerformanceSettings);
 //    About Qt
     AccAboutQt = new QAction(QIcon(":/images/qtlogo.png"),tr("About &Qt"), this);
     AccAboutQt->setStatusTip(tr("About QT Library"));
-    connect(AccAboutQt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+//    connect(AccAboutQt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+    connect(AccAboutQt, &QAction::triggered,
+            qApp, &QApplication::aboutQt);
 }
 
 /* Action: New file */
@@ -680,14 +712,16 @@ void MainWindow::openRecentProjects()
     QAction *action=qobject_cast<QAction *>(sender());
     if (action){
         QString filezdo = ProjectFolder + "zdo";
-        if (QFileInfo(filezdo).exists()){
+//        if (QFileInfo(filezdo).exists()){
+        if (QFileInfo::exists(filezdo)){
             lzdo = true;
         }
         else{
             lzdo = false;
         }
         QString filevalence = ProjectFolder + "valence";
-        if (QFileInfo(filevalence).exists()){
+//        if (QFileInfo(filevalence).exists()){
+        if (QFileInfo::exists(filevalence)){
             lvalence = true;
         }
         else{
@@ -1009,48 +1043,79 @@ void MainWindow::Help()
 /* Action: viewer2D */
 void MainWindow::menu_viewer2D()
 {
-    for (int i = 0 ; i < connections2D.size() ; i++){
-        QObject::disconnect(connections2D.at(i));
-    }
-    connections2D.clear();
-    plots = new QList<Viewer2D*>();
-    QDLviewer2D = new ViewerDialog();
+//    for (int i = 0 ; i < connections2D.size() ; i++){
+//        QObject::disconnect(connections2D.at(i));
+//    }
+//    connections2D.clear();
+    delete QDLviewer2D;
+
+    QDLviewer2D = new ViewerDialog(this);
     QDLviewer2D->setMinimumSize(250,80);
+
+    plots.clear();
+
     BTNnewplot = new QPushButton(tr("New 2D Plotter"));
     BTNnewplot->setToolTip(tr("Creates a new window for 2D plotting"));
-    connections2D << connect(BTNnewplot, SIGNAL(clicked()), this, SLOT(addviewer2D()));
+//    connections2D << connect(BTNnewplot, SIGNAL(clicked()), this, SLOT(addviewer2D()));
+    connect(BTNnewplot, &QPushButton::clicked,
+            this, &MainWindow::addviewer2D);
 
-    QLabel *label2D = new QLabel(tr("2D plotters"));
+    auto *label2D = new QLabel(tr("2D plotters"));
     label2D->setStyleSheet("QLabel { color : blue; }");
 
-    QVBoxLayout *layout2=new QVBoxLayout(QDLviewer2D);
+    auto *layout2=new QVBoxLayout(QDLviewer2D);
     layout2->addWidget(label2D);
     layout2->addWidget(BTNnewplot);
     layout2->addStretch();
 }
 
 /* Action: viewer3D */
+//void MainWindow::menu_viewer3D()
+//{
+////    for (int i = 0 ; i < connections3D.size() ; i++){
+////        QObject::disconnect(connections3D.at(i));
+////    }
+////    connections3D.clear();
+//    widgets = new QList<glWidget*>();
+//    QDLwidget3D = new ViewerDialog();
+//    QDLwidget3D->setMinimumSize(250,80);
+//    BTNnewwidget = new QPushButton(tr("New 3D Window"));
+//    BTNnewwidget->setToolTip(tr("Creates a new window for 3D Viewer"));
+////    connections3D << connect(BTNnewwidget, SIGNAL(clicked()), this, SLOT(addglWidget()));
+//    connect(BTNnewwidget, &QPushButton::clicked,
+//                this, &MainWindow::addglWidget);
+
+//    auto *label3D = new QLabel(tr("3D viewers"));
+//    label3D->setStyleSheet("QLabel { color : red; }");
+
+//    auto *layout2 = new QVBoxLayout(QDLwidget3D);
+//    layout2->addWidget(label3D);
+//    layout2->addWidget(BTNnewwidget);
+//    layout2->addStretch();
+
+//}
+
 void MainWindow::menu_viewer3D()
 {
-    for (int i = 0 ; i < connections3D.size() ; i++){
-        QObject::disconnect(connections3D.at(i));
-    }
-    connections3D.clear();
-    widgets = new QList<glWidget*>();
-    QDLwidget3D = new ViewerDialog();
-    QDLwidget3D->setMinimumSize(250,80);
-    BTNnewwidget = new QPushButton(tr("New 3D Window"));
-    BTNnewwidget->setToolTip(tr("Creates a new window for 3D Viewer"));
-    connections3D << connect(BTNnewwidget, SIGNAL(clicked()), this, SLOT(addglWidget()));
+    widgets.clear();
 
-    QLabel *label3D = new QLabel(tr("3D viewers"));
+    delete QDLwidget3D;
+    QDLwidget3D = new ViewerDialog(this);
+    QDLwidget3D->setMinimumSize(250, 80);
+
+    BTNnewwidget = new QPushButton(tr("New 3D Window"), QDLwidget3D);
+    BTNnewwidget->setToolTip(tr("Creates a new window for 3D Viewer"));
+
+    connect(BTNnewwidget, &QPushButton::clicked,
+            this, &MainWindow::addglWidget);
+
+    auto *label3D = new QLabel(tr("3D viewers"), QDLwidget3D);
     label3D->setStyleSheet("QLabel { color : red; }");
 
-    QVBoxLayout *layout2 = new QVBoxLayout(QDLwidget3D);
-    layout2->addWidget(label3D);
-    layout2->addWidget(BTNnewwidget);
-    layout2->addStretch();
-
+    auto *layout = new QVBoxLayout(QDLwidget3D);
+    layout->addWidget(label3D);
+    layout->addWidget(BTNnewwidget);
+    layout->addStretch();
 }
 
 /***************************************************************************/
@@ -1403,8 +1468,8 @@ void MainWindow::CreateLeftMenu()
     connect(topographyPage_, &TopographyPage::execRequested,
             this, &MainWindow::execDamTopography);
 
-    connect(topographyPage_, &TopographyPage::stopRequested,
-            this, &MainWindow::processStop);
+//    connect(topographyPage_, &TopographyPage::stopRequested,
+//            this, &MainWindow::processStop);
 
     connect(topographyPage_, &TopographyPage::openOutputRequested,
             this, &MainWindow::importOUT);
@@ -1811,7 +1876,11 @@ void MainWindow::createLanguageMenu(){
     languageMenu = new QMenu(this);
     languageMenu->setWhatsThis(tr("Check a language and push Start to start DAMQT."));
     languageActionGroup = new QActionGroup(this);
-    connect(languageActionGroup,SIGNAL(triggered(QAction *)),this, SLOT(chooseLanguage(QAction *)));
+//    connect(languageActionGroup,SIGNAL(triggered(QAction *)),this, SLOT(chooseLanguage(QAction *)));
+
+    connect(languageActionGroup, &QActionGroup::triggered,
+        this, &MainWindow::chooseLanguage);
+
     QDir qmDir = QDir(":/translations");
     QStringList fileNames = qmDir.entryList(QStringList("DAMQT_*.qm"));
 //    qDebug() << "fileNames = " << fileNames;
@@ -1842,7 +1911,7 @@ void MainWindow::execImport()
         QMessageBox::warning(this, tr("DAMQT"),tr("Navigate to a directory with a suitable import file "));
         return;
     }
-    QFile file(DirNombreImport);
+//    QFile file(DirNombreImport);
     if (!QFile::exists(DirNombreImport)){
         QMessageBox::warning(this, tr("DAMQT"),
                      tr("File %1 not found.").arg(DirNombreImport));
@@ -1859,7 +1928,8 @@ void MainWindow::execImport()
     QString suffix=Extension(DirNombreImport);
     bool isgzipped = false;
     if (suffix =="gz"){
-        int ios = QProcess::execute("gunzip "+DirNombreImport);
+//        int ios = QProcess::execute("gunzip "+DirNombreImport);
+        const int ios = QProcess::execute(QStringLiteral("gunzip"),QStringList{DirNombreImport});
         if (ios != 0){
             return;
         }
@@ -1902,7 +1972,7 @@ void MainWindow::execImport()
     potentialPage_->setExactPotential(false);
 
     if (isgzipped){
-        QProcess::execute("gzip "+DirNombreImport);
+        QProcess::execute(QStringLiteral("gzip"),QStringList{DirNombreImport});
     }
 }
 
@@ -1934,7 +2004,7 @@ void MainWindow::importFile()
     // This avoids warnings produced by non-local URLs
     // when using the non-native QFileDialog.
 
-    QList<QUrl> sidebarUrls;
+//    QList<QUrl> sidebarUrls;
 
     fileDialog.setNameFilters({
         tr("Import data from") +
@@ -2197,7 +2267,7 @@ void MainWindow::execGgbsDen()
             ProjectName + QStringLiteral(".damproj")
         );
 
-    existsinp(projectFile, 0, 1, true);
+    existsinp(projectFile, 1, true);
 
     const QString sourceGgbs =
         importDir.filePath(ImportFile);
@@ -2336,7 +2406,7 @@ void MainWindow::execSxyzDen()
             ProjectName + QStringLiteral(".damproj")
         );
 
-    existsinp(projectFile, 0, 1, true);
+    existsinp(projectFile, 1, true);
 
     const QString sourceImport =
         importDir.filePath(ImportFile);
@@ -2454,7 +2524,7 @@ void MainWindow::readFchk()
     if (ImportFolder.at(ImportFolder.length()-1) != '/')
         ImportFolder.append('/');
     QString DirNombreImport = ImportFolder+ImportFile;
-    QFile file(DirNombreImport);
+//    QFile file(DirNombreImport);
     QDir path(ProjectFolder);
     QString filepath=ProjectFolder + FileWithoutPath(DirNombreImport); // + ".fchk";
     if (!path.exists(ProjectFolder)) {
@@ -2526,7 +2596,7 @@ void MainWindow::readMOLEKEL()
         }
     }
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
-    existsinp(DirNombreArchivo,0,1,true);
+    existsinp(DirNombreArchivo,1,true);
     QStringList Parameters;
     if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
 
@@ -2551,10 +2621,11 @@ void MainWindow::readMOLEKEL()
     request.executablePath = execName;
     request.arguments = arguments;
 
-    const QString suffix =
-        "-" + Who_executing(2);
-
-    request.outputFilePath = ProjectFolder + ProjectName + suffix + ".out";
+    request.outputFilePath =
+        QDir(ProjectFolder).filePath(
+            ProjectName
+            + QStringLiteral("-MOLEKEL_interface.out")
+        );
 
     singlePassImporter_->start(request);
 }
@@ -2590,7 +2661,7 @@ void MainWindow::readMolpro()
         }
         const QString projectFile = ProjectFolder + ProjectName + ".damproj";
 
-        existsinp(projectFile, 0, 1, true);
+        existsinp(projectFile, 1, true);
 
         file.copy(DirNombreImport,filepath);
         int ierror=file.error();
@@ -2616,47 +2687,7 @@ void MainWindow::readMolpro()
 
     }
     else if(suffix=="xml"){
-        if (!path.exists(ProjectFolder)) {
-            QMessageBox msgBox;
-            msgBox.setInformativeText(QString(tr("Project %1 not found")).arg(ProjectFolder)+"\n"+tr("Do you wish to create?"));
-            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox:: Cancel);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
-            msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
-            msgBox.setButtonText(QMessageBox::No, tr("No"));
-            msgBox.setButtonText(QMessageBox::Cancel, tr("Cancel"));
-            msgBox.setIcon(QMessageBox::Warning);
-            int ret = msgBox.exec();
-            if (ret == QMessageBox::Yes){
-                createDir(ProjectFolder);
-                statusBar()->showMessage(tr("Project succesfully created"), 2000);
-                setPostDamPagesEnabled(false);
-            }else{
-                return;
-            }
-        }
-        QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
-        existsinp(DirNombreArchivo,0,1,true);
-        file.copy(DirNombreImport,filepath);
-        int ierror=file.error();
-        while (ierror!=0)
-        {
-            ierror=file.error();
-        }
-        QString q=QString("%1").arg(mden);
-        QString scriptFile = QCoreApplication::applicationDirPath() + "/MOLPRO_xml_interface.py" ;
-        QStringList pythonCommandArguments = QStringList() << scriptFile << ImportFile << ImportFolder
-                    << ProjectFolder << ProjectName ;
-        QString strprocess;
-        QString execName = get_python();
-        if (execName.isEmpty())
-            return;
-        strprocess = execName;
-        executing = 4;
-        myProcess = new QProcess(this);
-        connect(myProcess, SIGNAL(started()), this, SLOT(processStart()));
-        connect(myProcess, SIGNAL(error(QProcess::ProcessError)), this, SLOT(processError(QProcess::ProcessError)));
-        connect(myProcess, SIGNAL(finished(int, QProcess::ExitStatus)), this, SLOT(processOutput(int, QProcess::ExitStatus)));
-        myProcess->start(strprocess,pythonCommandArguments);
+        readMolproXml(ImportFile, ImportFolder);
     }
 }
 
@@ -2665,8 +2696,7 @@ void MainWindow::readMopac()
 {
     if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
     QString DirNombreImport = ImportFolder+ImportFile;
-//    QString suffix=Extension(DirNombreImport);
-    QFile file(DirNombreImport);
+//    QFile file(DirNombreImport);
     QDir path(ProjectFolder);
     QString filepath=ProjectFolder + FileWithoutPath(DirNombreImport);
     QStringList Parameters;
@@ -2690,7 +2720,7 @@ void MainWindow::readMopac()
         }
     }
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
-    existsinp(DirNombreArchivo,0,1,true);
+    existsinp(DirNombreArchivo,1,true);
     if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
 
     QStringList arguments;
@@ -2711,10 +2741,11 @@ void MainWindow::readMopac()
     request.executablePath = execName;
     request.arguments = arguments;
 
-    const QString suffix = "-" + Who_executing(5);
-
     request.outputFilePath =
-        ProjectFolder + ProjectName + suffix + ".out";
+        QDir(ProjectFolder).filePath(
+            ProjectName
+            + QStringLiteral("-MOPAC_aux_interface.out")
+        );
 
     request.postProcess = [this]()
     {
@@ -2749,7 +2780,7 @@ void MainWindow::readTurbom()
         }
     }
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
-    existsinp(DirNombreArchivo,0,1,true);
+    existsinp(DirNombreArchivo,1,true);
 
     if (ImportFolder.at(ImportFolder.length() - 1) != '/')
         ImportFolder.append('/');
@@ -2774,10 +2805,11 @@ void MainWindow::readTurbom()
     request.executablePath = execName;
     request.arguments = arguments;
 
-    const QString suffix = "-" + Who_executing(1);
-
     request.outputFilePath =
-        ProjectFolder + ProjectName + suffix + ".out";
+        QDir(ProjectFolder).filePath(
+            ProjectName
+            + QStringLiteral("-TURBOMOLE_interface.out")
+        );
 
     singlePassImporter_->start(request);
 
@@ -2807,7 +2839,7 @@ void MainWindow::readNWChem()
         }
     }
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
-    existsinp(DirNombreArchivo,0,1,true);
+    existsinp(DirNombreArchivo,1,true);
 
     QStringList arguments;
 
@@ -2831,365 +2863,15 @@ void MainWindow::readNWChem()
     request.executablePath = execName;
     request.arguments = arguments;
 
-    const QString suffix = "-" + Who_executing(7);
     request.outputFilePath =
-        ProjectFolder + ProjectName + suffix + ".out";
+        QDir(ProjectFolder).filePath(
+            ProjectName
+            + QStringLiteral("-NWChem_interface.out")
+        );
 
     singlePassImporter_->start(request);
 
 }
-
-/**************************************************************************************************/
-/********************************  CONTROL OF PROCESSES *******************************************/
-/**************************************************************************************************/
-
-//    Returns the error code of the external process currently running
-void MainWindow::processError(QProcess::ProcessError error)
-{
-    QString strprocess;
-    strprocess = Who_executing(executing);
-    if (executing == 4)
-        strprocess = strprocess + ".py";  // Python interface for MOLPRO xml files
-    else
-        strprocess = strprocess + ".exe";
-
-    if(error==QProcess::FailedToStart){
-        QStringList strlistproc = strprocess.split("/");
-        QString message;
-        if (strlistproc.length() >= 2){
-            message = QString("Error %1 ").arg(error)
-                    + QString(tr("Process failed to start program %1\n").arg(strprocess))
-                    + QString(tr("Check that the program is installed in any of the following directories: \n %1 \n %2 \n")
-                                  .arg(QCoreApplication::applicationDirPath()).arg(strlistproc.at(strlistproc.length()-2)))
-                    + QString(tr("or in any other directory in your $PATH"));
-        }
-        else{
-            message = QString("Error %1 ").arg(error)
-                    + QString(tr("Process failed to start program %1\n").arg(strprocess))
-                    + QString(tr("Check that the program is installed in the directory: \n %1 \n")
-                                  .arg(QCoreApplication::applicationDirPath()))
-                    + QString(tr("or in any other directory in your $PATH"));
-        }
-        QMessageBox::critical(this,QString("Error %1").arg(error),message);
-    }
-    else{
-        if (processkilled){
-            QMessageBox::information(this,QString("Process killed"),tr("%1 interrupted by user").arg(strprocess));
-            processkilled = false;
-        }
-        else{
-            QMessageBox::critical(this,QString("Error %1").arg(error),tr("Error when running program %1").arg(strprocess));
-        }
-    }
-}
-
-//    Slot to be run when a process ends
-void MainWindow::processOutput(int exitCode, QProcess::ExitStatus exitStatus)
-{
-//    Processes numbering:  0: readFchk ; 1: readTurbom ; 2: readMOLEKEL ; 3: readMolpro (.out) ; 4: readMolpro (.xml)
-//           5: readMopac ; 6: execsgbs2sxyz ; 7: readNWChem ; 8: void ; 9: void ; 10: void ;
-//          11: execDam ; 12: execDamden ; 13: execDampot ; 14: execDamforces ; 15: execDamfield
-//          16: execDamfrad ; 17: execDammultrot ; 18: execDamorb ; 19: execDamTopography
-//          20: execDamZJ ; 21: execDamdenZJ ; 22: execDamdengrad ; 23: execDamSGhole
-    if (executing < 0 || executing > 23)
-        return;
-    if (QFileInfo(ProjectFolder+"zdo").exists()){
-        lzdo = true;
-    }
-    else{
-        lzdo = false;
-    }
-    if (QFileInfo(ProjectFolder+"valence").exists()){
-        lvalence = true;
-    }
-    else{
-        lvalence = false;
-    }
-    QString strprocess,str;
-    str=Who_executing(executing);
-    strprocess = str + ".exe";
-    str = "-" + str ;
-    if(exitStatus==QProcess::NormalExit){
-        QString fileName=ProjectFolder+ProjectName+str;    // Default name of files
-        if (executing == 12){
-            if (!densityPage_->outputPrefix().isEmpty())
-                fileName = ProjectFolder+densityPage_->outputPrefix()+str;
-            if (densityPage_->is2DGrid() && densityPage_->isPlane2D())
-                rename_density_cntfile();
-        }
-        if (executing == 13){
-            if (!potentialPage_->outputPrefix().isEmpty())
-                    fileName = ProjectFolder+potentialPage_->outputPrefix()+str;
-            if (potentialPage_->is2DGrid() && potentialPage_->isPlane2D())
-                rename_pot_cntfile();
-        }
-        else if (executing == 14 && !hfForcesPage_->outputPrefix().isEmpty())
-            fileName=ProjectFolder+hfForcesPage_->outputPrefix()+str;
-        else if (executing == 15 && !fieldLinesPage_->outputPrefix().isEmpty())
-            fileName=ProjectFolder+fieldLinesPage_->outputPrefix()+str;
-        else if (executing == 16 && !radialFactorsPage_->outputPrefix().isEmpty())
-            fileName=ProjectFolder+radialFactorsPage_->outputPrefix()+str;
-        else if (executing == 17 && !orientedMultipolesPage_->outputPrefix().isEmpty())
-            fileName=ProjectFolder+orientedMultipolesPage_->outputPrefix()+str;
-        else if (executing == 18 && !orbitalsPage_->outputPrefix().isEmpty())
-            fileName=ProjectFolder+orbitalsPage_->outputPrefix()+str;
-        else if (executing == 19 && !topographyPage_->outputPrefix().isEmpty()){
-            fileName=ProjectFolder+topographyPage_->outputPrefix()+str;
-        }
-        else if (executing == 21 && !zjDensityPage_->outputPrefix().isEmpty())
-            fileName=ProjectFolder+zjDensityPage_->outputPrefix()+str;
-        else if (executing == 22 && !densityGradientPage_->outputPrefix().isEmpty())
-            fileName=ProjectFolder+densityGradientPage_->outputPrefix()+str;
-        else if (executing == 23 && !sigmaHolePage_->outputPrefix().isEmpty()){
-            fileName=ProjectFolder+sigmaHolePage_->outputPrefix()+str;
-        }
-        if (executing == 12){
-            if(densityPage_->isExactDensity()){
-                fileName.insert(fileName.indexOf("-DAMDEN"),"_exact");
-            }
-        }
-        else if (executing == 13){
-            if(potentialPage_->isExactPotential()){
-                fileName.insert(fileName.indexOf("-DAMPOT"),"_exact");
-            }
-        }
-        else if (executing == 19){
-            if (topographyPage_->isMED())
-                fileName.append("-d");
-            else {
-                fileName.append("-v");
-            }
-        }
-        else if (executing == 23){
-            if(sigmaHolePage_->isExactPotential()){
-                fileName.insert(fileName.indexOf("-DAMSGHOLE"),"_exact");
-            }
-        }
-        fileName.append(".out");
-        QFile file(fileName);
-        if (!file.open(QFile::ReadOnly | QFile::Text)) {
-            QMessageBox::warning(this, tr("ProcessOutput"),tr("File %1 cannot be read")
-                    .arg(fileName)+QString(":\n%1.").arg(file.errorString()));
-        }else{
-            if (executing == 0 || executing == 1 || executing == 2 || executing == 3 || executing == 4
-                     || executing == 5 || executing == 6 || executing == 7){
-                atomicDensitiesPage_->setEnabled(true);
-            }else if (executing == 11){
-                setPostDamPagesEnabled(true);
-            }
-            orbitalsPage_->setEnabled(true);
-            QTextStream in(&file);
-            textEdit->setFont(QFont("Courier",10));
-            textEdit->setPlainText(in.readAll());
-        }
-        if (executing == 5){
-            lzdo = true;
-            lvalence = true;
-            QFile filezdo(ProjectFolder+"zdo");
-            filezdo.open(QFile::WriteOnly | QFile::Text);
-            filezdo.close();
-            QFile filevalence(ProjectFolder+"valence");
-            filevalence.open(QFile::WriteOnly | QFile::Text);
-            filevalence.close();
-        }
-        statusBar()->showMessage(tr("End of calculation"));
-    }else if (exitStatus==QProcess::CrashExit){
-        statusBar()->showMessage(tr(QString("Process crashed, exit code = %1").arg(exitCode).toLatin1()));
-    }
-//    Special cases in which interface must be run twice because there is more than one density matrix available
-    if (executing == 0){    // Executing GAUSS_interface: two-pass procedure
-
-        qDebug() << "en processOutput, Executing GAUSS_interface: NO DEBERIA PASAR POR AQUI";
-    }
-//    End of special cases
-    QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
-    SetCurrentFile(DirNombreArchivo,true,false);
-    QApplication::restoreOverrideCursor();
-    projectPage_->setExecEnabled(true);
-    atomicDensitiesPage_->setExecEnabled(true);
-    densityPage_->setExecEnabled(true);
-    potentialPage_->setExecEnabled(true);
-    hfForcesPage_->setExecEnabled(true);
-    fieldLinesPage_->setExecEnabled(true);
-    densityGradientPage_->setExecEnabled(true);
-    radialFactorsPage_->setExecEnabled(true);
-    orientedMultipolesPage_->setExecEnabled(true);
-    orbitalsPage_->setExecEnabled(true);
-    topographyPage_->setExecEnabled(true);
-    zjExpansionPage_->setExecEnabled(true);
-    zjDensityPage_->setExecEnabled(true);
-    sigmaHolePage_->setExecEnabled(true);
-    if (executing == 11)
-        atomicDensitiesPage_->setStopEnabled(false);
-    else if (executing == 12)
-        densityPage_->setStopEnabled(false);
-    else if (executing == 13)
-        potentialPage_->setStopEnabled(false);
-    else if (executing == 14)
-        hfForcesPage_->setStopEnabled(false);
-    else if (executing == 15)
-        fieldLinesPage_->setStopEnabled(false);
-    else if (executing == 16)
-        radialFactorsPage_->setStopEnabled(false);
-    else if (executing == 17)
-        orientedMultipolesPage_->setStopEnabled(false);
-    else if (executing == 18)
-        orbitalsPage_->setStopEnabled(false);
-    else if (executing == 19)
-        topographyPage_->setStopEnabled(false);
-    else if (executing == 20)
-        zjExpansionPage_->setStopEnabled(false);
-    else if (executing == 21)
-        zjDensityPage_->setStopEnabled(false);
-    else if (executing == 22)
-        densityGradientPage_->setStopEnabled(false);
-    else if (executing == 23)
-        sigmaHolePage_->setStopEnabled(false);
-    executing = -1;
-}
-
-
-//    Stops the external process currently running
-void MainWindow::processStop()
-{
-    #if defined(Q_WS_WIN) || defined(Q_OS_WIN) || QT_VERSION < 0x050000
-        myProcess->kill();
-        processkilled = true;
-    #else
-        if (myProcess->arguments().count() > 2){
-            QString processname = myProcess->arguments().at(2);
-            if (processname.contains("_mpi")){      // In case of mpi runs, kill all associated processes
-                QProcess getprocesses;
-                QString pgrep;
-                pgrep = QString("pgrep -f %1").arg(processname);
-                getprocesses.start(pgrep);
-                getprocesses.waitForFinished();
-                QByteArray procnumbers = getprocesses.readAllStandardOutput();
-                QString procstring(procnumbers);
-                QStringList procslist = procstring.split("\n");
-                QMessageBox msgBox;
-                msgBox.setInformativeText(QString(tr("Do you want to kill all processes named %1?").arg(processname)+"\n"
-                       + tr("The following processes will be killed: "))+procstring.replace("\n"," "));
-                msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox:: Cancel);
-                msgBox.setDefaultButton(QMessageBox::Cancel);
-                msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
-                msgBox.setButtonText(QMessageBox::No, tr("No"));
-                msgBox.setButtonText(QMessageBox::Cancel, tr("Cancel"));
-                msgBox.setIcon(QMessageBox::Warning);
-                int ret = msgBox.exec();
-                if (ret == QMessageBox::Yes){
-                    for (int i = 1; i < procslist.length()-1 ; i++){  // Kill the processes one by one (the last element in procslist is empty)
-                        QProcess killprocess;
-                        QString strprocess;
-                        strprocess = QString("kill -9 %1").arg(procslist.at(i));
-                        killprocess.start(strprocess);
-                        killprocess.waitForFinished();
-                    }
-                    myProcess->kill();
-                    processkilled = true;
-                }
-            }
-        }
-        else{
-            myProcess->kill();
-            processkilled = true;
-        }
-    #endif
-}
-
-// Determines which external program is being executed
-// Processes corresponding to Fortran runs start on index 11
-QString MainWindow::Who_executing(int caso)
-{
-    QString str;
-
-    if (caso==0){
-        str="GAUSS_interface";
-    }else if (caso == 1){
-        str="TURBOMOLE_interface";
-    }else if (caso == 2){
-        str="MOLEKEL_interface";
-    }else if (caso == 3){
-        str="MOLPRO_out_interface"; // From out file
-    }else if (caso == 4){
-        str="MOLPRO_xml_interface"; // From xml file
-    }else if (caso == 5){
-        str="MOPAC_aux_interface";
-    }else if (caso == 6){
-        str="sgbs2sxyz";
-    }else if (caso == 7){
-        str="NWChem_interface";
-    }else if (caso == 11){
-        if (lslater) 
-            str="DAMSTO_400";
-        else
-            str="DAMGTO_400";
-        if (atomicDensitiesPage_->isMpiChecked()){
-            str += "_mpi";
-        }
-    }else if (caso == 12){
-        str="DAMDEN_400";
-        if (densityPage_->isMpiChecked() && densityPage_->isGrid() && !densityPage_->is2DGrid()){
-            str += "_mpi";
-        }
-    }else if (caso == 13){
-        str="DAMPOT_400";
-        if (potentialPage_->isMpiChecked() && potentialPage_->isGrid() && !potentialPage_->is2DGrid()){
-            str += "_mpi";
-        }
-    }else if (caso == 14){
-        str="DAMFORCES_400";
-    }else if (caso == 15){
-        str="DAMFIELD_400";
-        if (fieldLinesPage_->isMpiChecked() && fieldLinesPage_->is3DPlot()){
-            str += "_mpi";
-        }
-    }else if (caso == 16){
-        str="DAMFRAD_400";
-    }else if (caso == 17){
-        str="DAMMULTROT_400";
-    }else if (caso == 18){
-        str="DAMORB_400";
-        if (orbitalsPage_->isMpiChecked() && !orbitalsPage_->is2DGrid()){
-            str += "_mpi";
-        }
-    }else if (caso == 19){
-        str="DAMTOPO_400";
-        if (topographyPage_->isMpiChecked()){
-            str += "_mpi";
-        }
-    }else if (caso == 20){
-        if (zjExpansionPage_->isJacobi()){
-            str += "Jacobi-DAMZJ_400";
-        }
-        else{
-            str += "Zernike-DAMZJ_400";
-        }
-        if (zjExpansionPage_->isMpiChecked()) str += "_mpi";
-
-    }else if (caso == 21){
-        if (zjDensityPage_->isJacobi()){
-            str += "jacobi-DAMDENZJ_400";
-        }
-        else{
-            str += "zernike-DAMDENZJ_400";
-        }
-        if (zjDensityPage_->isMpiChecked()) str += "_mpi";
-    }else if (caso == 22){
-        str="DAMDENGRAD_400";
-        if (densityGradientPage_->isMpiChecked() && densityGradientPage_->is3DPlot()){
-            str += "_mpi";
-        }
-    }else if (caso == 23){
-        str="DAMSGHOLE_400";
-        if (sigmaHolePage_->isMpiChecked()){
-            str += "_mpi";
-        }
-    }
-
-    return str;
-}
-
 
 /**************************************************************************************************/
 /**********************  FUNCTIONS FOR READING AND WRITING OPTIONS IN PROJECT FILE  ***************/
@@ -3248,6 +2930,8 @@ void MainWindow::loadDefault(int all)
 
 //      End of defaults loading
 
+    updateMpiControls();
+
     SetCurrentFile("",true,false);
 }
 
@@ -3301,6 +2985,8 @@ void MainWindow::readOptions(const QString &fullFileName)
     zjDensityPage_->readFromFile(file);          //    zjDensityPage_: Zernike-Jacobi density
             
 //      End of options read
+
+    updateMpiControls();
 
     atomicDensitiesPage_->setEnabled(true);
     orbitalsPage_->setEnabled(true);
@@ -3380,14 +3066,16 @@ QByteArray MainWindow::ReadSectionOptions(const char *SectionName, QFile *FileNa
 void MainWindow::saveOptions(const QString &fullFileName)
 {
     QString filezdo = ProjectFolder + "zdo";
-    if (QFileInfo(filezdo).exists()){
+//    if (QFileInfo(filezdo).exists()){
+    if (QFileInfo::exists(filezdo)){
         lzdo = true;
     }
     else{
         lzdo = false;
     }
     QString filevalence = ProjectFolder + "valence";
-    if (QFileInfo(filevalence).exists()){
+//    if (QFileInfo(filevalence).exists()){
+    if (QFileInfo::exists(filevalence)){
         lvalence = true;
     }
     else{
@@ -3601,105 +3289,9 @@ void MainWindow::execDam(){
     atomicDensitiesPage_->setlzdo(lzdo);
     atomicDensitiesPage_->setlvalence(lvalence);
     atomicDensitiesPage_->setlslater(lslater);
-//    if (lslater){
-//        QString sxyzfilename = ProjectFolder + FileWithoutExt(ProjectName)+".sxyz";
-//        if (!(QFile::exists(sxyzfilename))){
-//            execsgbs2sxyz(sxyzfilename);
-//        }
-//    }
+
     atomicDensitiesPage_->execDam();
     defineRanges();
-}
-
-bool MainWindow::executeprogram_new(bool runmpi,
-                                const QString &outputprefix,
-                                const QString &rootname,
-                                const QString &stdinput,
-                                QString stdoutput,
-                                const QString &subdir,
-                                int nprocs,
-                                int executeindex)
-{
-    QString program;
-    QStringList args;
-
-    const QString suffix = runmpi ? "_mpi" : "";
-    const QString processname = rootname + suffix + ".exe";
-    const QString execName = get_execName(processname, subdir + suffix);
-
-    if (execName.isEmpty()) {
-        return false;
-    }
-
-    if (runmpi) {
-        if (isWindowsPlatform()) {
-            const QString wrapperScript =
-                QDir(QCoreApplication::applicationDirPath()).filePath("run_mpi.sh");
-
-            program = "bash";
-
-            args << wrapperScript
-                 << QString::number(nprocs)
-                 << execName
-                 << stdinput;
-        } else {
-            QStringList mpiCommandParts =
-                QProcess::splitCommand(projectPage_->mpiCommand());
-
-            if (mpiCommandParts.isEmpty()) {
-                return false;
-            }
-
-            program = mpiCommandParts.takeFirst();
-            args << mpiCommandParts;
-
-            args << "-np"
-                 << QString::number(nprocs);
-
-            if (!projectPage_->mpiFlags().trimmed().isEmpty()) {
-                args << QProcess::splitCommand(projectPage_->mpiFlags());
-            }
-
-            args << execName;
-        }
-
-        if (stdoutput.isEmpty()) {
-            stdoutput = QDir(ProjectFolder).filePath(
-                outputprefix + "-" + rootname + "_mpi.out"
-            );
-        }
-    } else {
-        program = execName;
-
-        if (stdoutput.isEmpty()) {
-            stdoutput = QDir(ProjectFolder).filePath(
-                outputprefix + "-" + rootname + ".out"
-            );
-        }
-    }
-
-    myProcess = new QProcess(this);
-
-    myProcess->setStandardInputFile(stdinput);
-    myProcess->setStandardOutputFile(stdoutput, QIODevice::Truncate);
-    myProcess->setStandardErrorFile(stdoutput, QIODevice::Append);
-
-    connect(myProcess, &QProcess::started,
-            this, &MainWindow::processStart);
-
-    connect(myProcess, &QProcess::errorOccurred,
-            this, &MainWindow::processError);
-
-    connect(myProcess,
-            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this,
-            &MainWindow::processOutput);
-
-    executing = executeindex;
-
-    myProcess->start(program, args);
-
-    return true;
 }
 
 void MainWindow::atdenslmaxexp_changed()
@@ -3768,8 +3360,8 @@ void MainWindow::rename_density_cntfile(){
     filtro << ProjectName + aux + "*" + planesuffix(densplanecase) + "-d.cnt";
     QStringList archivos = directorio.entryList(filtro, QDir::Files);
     QFile filecnt(ProjectFolder + ProjectName + aux + "-d.cnt");
-    qDebug() << "filecnt = " << ProjectFolder + ProjectName + aux + "-d.cnt";
-    qDebug() << "filecnt.exists: " << filecnt.exists();
+//qDebug() << "filecnt = " << ProjectFolder + ProjectName + aux + "-d.cnt";
+//qDebug() << "filecnt.exists: " << filecnt.exists();
     if (filecnt.exists() && planesuffix(densplanecase) != ""){
         QFile fileold(ProjectFolder + ProjectName + aux + planesuffix(densplanecase) + "-d.cnt");
         if (fileold.exists())
@@ -3974,47 +3566,133 @@ void MainWindow::execDamdenZJ()
 
 
 //    Executes external program sgbs2sxyz  (extracts the number of centers and geometry from .sgbs file to file .sxyz)
-void MainWindow::execsgbs2sxyz(QString sxyzfilename)
+
+void MainWindow::execsgbs2sxyz(const QString& sxyzFileName)
 {
-    QString fileoutstr = sxyzfilename;
-    fileoutstr.replace(".sxyz",".tmpinp");
-    QFile fileout(fileoutstr);
-    if (!fileout.isOpen()){
-        fileout.open(QFile::Text | QFile::WriteOnly);
-    }
-    QTextStream outfile(&fileout); // Buffer for writing to fileout
-    string vproj = "\"" + (QFileInfo(sxyzfilename).path() +"/"+ QFileInfo(sxyzfilename).completeBaseName()).toStdString() + "\"" ;
-    outfile << vproj.c_str();
-#if QT_VERSION < 0x050E00
-    outfile << endl;
-#else
-    outfile << Qt::endl;
-#endif
-    fileout.close();
-    QString processname = "sgbs2sxyz.exe";
-    QString strprocess;
-    QString execName = get_execName(processname, QString("DAM_400"));
-    if (execName.isEmpty())
+    QString inputFile =
+        QString(sxyzFileName).replace(
+            QStringLiteral(".sxyz"),
+            QStringLiteral(".tmpinp")
+        );
+
+    QFile file(inputFile);
+
+    if (!file.open(QFile::WriteOnly |
+                   QFile::Text |
+                   QFile::Truncate)) {
+        QMessageBox::warning(
+            this,
+            tr("sgbs2sxyz"),
+            tr("Cannot create input file %1:\n%2")
+                .arg(inputFile, file.errorString())
+        );
+
         return;
-    strprocess = QString(execName);
-    QString stdinput = fileoutstr;
-    QString stderror = fileoutstr.replace(".tmpinp",".err");
-    myProcess = new QProcess(this);
-    myProcess->setStandardInputFile(stdinput);
-    myProcess->setStandardOutputFile(stderror,QIODevice::Truncate);
-    myProcess->setStandardErrorFile(stderror,QIODevice::Append);
-    connect(myProcess, SIGNAL(error(QProcess::ProcessError)), this, SLOT(processError(QProcess::ProcessError)));
-    executing = 6;
-    myProcess->start(strprocess);
-    myProcess->waitForFinished(20000);
-    fileout.remove() ;
-    QString importfilename = ProjectFolder + QFileInfo(ImportFile).completeBaseName();
-    if ((importfilename+".sxyz") != sxyzfilename){
-        QFile(importfilename+".sxyz").rename(sxyzfilename);
-        QFile(importfilename+".sgbs2sxyz").rename(ProjectFolder+ProjectName+".sgbs2sxyz");
+    }
+
+    QTextStream stream(&file);
+
+    stream << '"'
+           << QFileInfo(sxyzFileName).path()
+              + QDir::separator()
+              + QFileInfo(sxyzFileName).completeBaseName()
+           << '"'
+           << Qt::endl;
+
+    file.close();
+
+    const QString executable =
+        get_execName(
+            QStringLiteral("sgbs2sxyz.exe"),
+            QStringLiteral("DAM_400")
+        );
+
+    if (executable.isEmpty())
+        return;
+
+    QString errorFile = inputFile;
+    errorFile.replace(
+        QStringLiteral(".tmpinp"),
+        QStringLiteral(".err")
+    );
+
+    QProcess process;
+
+    process.setStandardInputFile(inputFile);
+    process.setStandardOutputFile(
+        errorFile,
+        QIODevice::Truncate
+    );
+    process.setStandardErrorFile(
+        errorFile,
+        QIODevice::Append
+    );
+
+    process.start(executable, QStringList());
+
+    if (!process.waitForStarted(3000)) {
+        QMessageBox::warning(
+            this,
+            tr("sgbs2sxyz"),
+            tr("The process could not be started:\n%1")
+                .arg(process.errorString())
+        );
+
+        QFile::remove(inputFile);
+        return;
+    }
+
+    if (!process.waitForFinished(20000)) {
+        process.kill();
+        process.waitForFinished();
+
+        QMessageBox::warning(
+            this,
+            tr("sgbs2sxyz"),
+            tr("The process did not finish within the expected time.")
+        );
+
+        QFile::remove(inputFile);
+        return;
+    }
+
+    if (process.exitStatus() != QProcess::NormalExit
+        || process.exitCode() != 0) {
+        QMessageBox::warning(
+            this,
+            tr("sgbs2sxyz"),
+            tr("The process failed. See:\n%1")
+                .arg(errorFile)
+        );
+
+        QFile::remove(inputFile);
+        return;
+    }
+
+    QFile::remove(inputFile);
+
+    const QString importedRoot =
+        QDir(ProjectFolder).filePath(
+            QFileInfo(ImportFile).completeBaseName()
+        );
+
+    if (importedRoot + QStringLiteral(".sxyz")
+        != sxyzFileName) {
+
+        QFile::rename(
+            importedRoot + QStringLiteral(".sxyz"),
+            sxyzFileName
+        );
+
+        QFile::rename(
+            importedRoot + QStringLiteral(".sgbs2sxyz"),
+            QDir(ProjectFolder).filePath(
+                ProjectName
+                + QStringLiteral(".sgbs2sxyz")
+            )
+        );
     }
 }
-
 
 
 
@@ -4163,7 +3841,7 @@ void MainWindow::dminmax(QVector<double> &v,double &min,double &max)
 }
 
 //    Checks whether a project file (.damproj) exist or not
-bool MainWindow::existsinp(QString fullinputName, int tab, int def, bool pregunta)
+bool MainWindow::existsinp(QString fullinputName, int def, bool pregunta)
 {
     if (fullinputName.size()==0){
         QMessageBox::warning(this, tr("DAMQT"),tr("Introduce options file name")+" (*.damproj)");
@@ -4172,7 +3850,6 @@ bool MainWindow::existsinp(QString fullinputName, int tab, int def, bool pregunt
     if (pregunta==true){
         if (!QFile::exists(fullinputName))  {
             loadDefault(def);
-//            saveOptions(fullinputName,tab);
             saveOptions(fullinputName);
         }else{
             QMessageBox msgBox;
@@ -4186,7 +3863,6 @@ bool MainWindow::existsinp(QString fullinputName, int tab, int def, bool pregunt
             msgBox.setIcon(QMessageBox::Warning);
             int ret = msgBox.exec();
             if (ret == QMessageBox::Yes){
-//                saveOptions(fullinputName,tab);
                 saveOptions(fullinputName);
             }else if (ret == QMessageBox::No){
                 readOptions(fullinputName);
@@ -4195,7 +3871,6 @@ bool MainWindow::existsinp(QString fullinputName, int tab, int def, bool pregunt
             }
         }
     }else{
-//        saveOptions(fullinputName,tab);
         saveOptions(fullinputName);
     }
     return true;
@@ -4206,71 +3881,6 @@ int MainWindow::get_natom()
 {
     return MainWindow::natom;
 }
-
-int MainWindow::get_plane_case(double a, double b, double c){
-    // Return plane case and vectors wu and wv
-    //      Case 1: A == 0, B == 0, C != 0
-    //      Case 2: A == 0, B != 0, C == 0
-    //      Case 3: A != 0, B == 0, C == 0
-    //      Case 4: A != 0, B != 0, C == 0
-    //      Case 5: A != 0, B == 0, C != 0
-    //      Case 6: A == 0, B != 0, C != 0
-    //      Case 7: A != 0, b != 0, C != 0
-    //      Case -1: Error
-    if (std::abs(a) < 1.e-7){
-        if (std::abs(b) < 1.e-7){
-            if (std::abs(c) < 1.e-7){
-                QMessageBox::warning(this, tr("DAMQT"),tr("Parameters A=%1, B=%2, C=%3 do not define a plane")
-                    .arg(a).arg(b).arg(c));
-                return -1;
-            }
-            else{       // A == 0, B == 0, C != 0
-                wu = QVector3D(1.0, 0.0, 0.0);
-                wv = QVector3D(0.0, 1.0, 0.0);
-                return 1;
-            }
-        }
-        else{
-            if (std::abs(c) < 1.e-7){   // A == 0, B != 0, C == 0
-                wu = QVector3D(1.0, 0.0, 0.0);
-                wv = QVector3D(0.0, 0.0, 1.0);
-                return 2;
-            }
-            else{   // A == 0, B != 0, C != 0
-                wu = QVector3D(-1.0, 0.0, 0.0);
-                wv = QVector3D(0.0, -c, b) / QVector3D(0.0,b,c).length();
-                return 6;
-            }
-        }
-    }
-    else{
-        if (std::abs(b) < 1.e-7){
-            if (std::abs(c) < 1.e-7){   // A != 0, B == 0, C == 0
-                wu = QVector3D(0.0, 1.0, 0.0);
-                wv = QVector3D(0.0, 0.0, 1.0);
-                return 3;
-            }
-            else{   // A != 0, B == 0, C != 0
-                wu = QVector3D(0.0, 1.0, 0.0);
-                wv = QVector3D(-c, 0.0, a) / QVector3D(a,0.0,c).length();
-                return 5;
-            }
-        }
-        else{
-            if (std::abs(c) < 1.e-7){   // A != 0, B != 0, C == 0
-                wu = QVector3D(-b, a, 0.0) / QVector3D(a,b,0.0).length();
-                wv = QVector3D(0.0, 0.0, 1.0);
-                return 4;
-            }
-            else{   // A != 0, b != 0, C != 0
-                wu = QVector3D(-b, a, 0.0) / QVector3D(a,b,0.0).length();
-                wv = QVector3D(-a*c, -b*c, a*a+b*b) / (QVector3D(a,b,0.0).length() * QVector3D(a,b,c).length());
-                return 7;
-            }
-        }
-    }
-}
-
 
 QString MainWindow::planesuffix(int planecase){
     switch (planecase){
@@ -4669,8 +4279,8 @@ void MainWindow::onExternalDamStarted()
     setPostDamPagesEnabled(false);
     statusBar()->showMessage(tr("Computing..."));
 }
-
-void MainWindow::onExternalProcessFinished(bool enabled)
+emit
+void MainWindow::onExternalProcessFinished()
 {
     statusBar()->showMessage(tr("Ready"));
 }
@@ -4700,7 +4310,7 @@ void MainWindow::setAllDamPagesEnabled(bool enabled)
 /*******************************************************************************************************/
 
 bool MainWindow::end_Viewer2DDialog(){
-    if (plots && !plots->isEmpty()){
+    if (!plots.isEmpty()){
         QMessageBox msgBox;
         msgBox.setText(tr("2D Viewer: Delete Confirmation"));
         msgBox.setInformativeText(tr("Ending application will delete open 2D viewers. Do you want to exit?"));
@@ -4712,17 +4322,17 @@ bool MainWindow::end_Viewer2DDialog(){
         int ret = msgBox.exec();
         if (ret == QMessageBox::No)
             return false;
-        for (int i = 0 ; i < plots->length(); i++){
-            delete plots->at(i);
+        for (int i = 0 ; i < plots.length(); i++){
+            delete plots.at(i);
         }
-        plots->clear();  
+        plots.clear();
     }
     update_dockright();
     return true;
 }
 
 bool MainWindow::end_Viewer3DDialog(){
-    if (widgets && !widgets->isEmpty()){
+    if (!widgets.isEmpty()){
         QMessageBox msgBox;
         msgBox.setText(tr("3D Viewer: Delete Confirmation"));
         msgBox.setInformativeText(tr("Ending application will delete open 3D viewers. Do you want to exit?"));
@@ -4735,8 +4345,8 @@ bool MainWindow::end_Viewer3DDialog(){
         if (ret == QMessageBox::No)
             return false;
 
-        qDeleteAll(widgets->begin(), widgets->end());
-        widgets->clear();
+        qDeleteAll(widgets.begin(), widgets.end());
+        widgets.clear();
     }
     update_dockright();
     return true;
@@ -4748,10 +4358,10 @@ void MainWindow::addviewer2D(){
     viewer->set_ProjectFolder(ProjectFolder);
     viewer->set_ProjectName(ProjectName);
     connect(viewer, SIGNAL(moveToTop(int)), this,SLOT(moveviewertotop(int)), Qt::UniqueConnection);
-    plots->append(viewer);
-    plots->last()->set_position(QPoint(75,75)*(widgets->length()+plots->length()-1));
+    plots.append(viewer);
+    plots.last()->set_position(QPoint(75,75)*(widgets.length()+plots.length()-1));
     this->moveviewertotop(plotsknt-1);
-    topindex = plots->length()-1;
+    topindex = plots.length()-1;
     update_dockright();
 }
 
@@ -4759,12 +4369,12 @@ void MainWindow::addglWidget(){
     QString *name = new QString(tr("%1").arg(widgetsknt++));
     glWidget *widget = new glWidget(name,this);
     connect(widget, SIGNAL(moveToTop(int)), this,SLOT(movewidgettotop(int)), Qt::UniqueConnection);
-    widgets->append(widget);
-    widgets->last()->set_position(QPoint(75,75)*(widgets->length()+plots->length()-1));
-    widgets->last()->set_ProjectFolder(ProjectFolder);
-    widgets->last()->set_ProjectName(ProjectName);
+    widgets.append(widget);
+    widgets.last()->set_position(QPoint(75,75)*(widgets.length()+plots.length()-1));
+    widgets.last()->set_ProjectFolder(ProjectFolder);
+    widgets.last()->set_ProjectName(ProjectName);
     this->movewidgettotop(widgetsknt-1);
-    topindex = widgets->length()+plots->length()-1;
+    topindex = widgets.length()+plots.length()-1;
     update_dockright();
 }
 
@@ -4774,7 +4384,7 @@ void MainWindow::exit(){
 }
 
 void MainWindow::deleteplot(int i){
-    int number = plots->at(i)->getviewernumber();
+    int number = plots.at(i)->getviewernumber();
     QMessageBox msgBox;
     msgBox.setInformativeText(QString(tr("Do you want to remove Plot %1")).arg(number)+"?");
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
@@ -4784,18 +4394,18 @@ void MainWindow::deleteplot(int i){
     msgBox.setIcon(QMessageBox::Question);
     int ret = msgBox.exec();
     if (ret == QMessageBox::No){
-        plots->at(i)->raise_mainwindow();
+        plots.at(i)->raise_mainwindow();
         return;
     }
-    delete plots->at(i);
-    plots->removeAt(i);
+    delete plots.at(i);
+    plots.removeAt(i);
     if (i == topindex)
         topindex = -1;
     update_dockright();
 }
 
 void MainWindow::deletewidget(int i){
-    int number = widgets->at(i)->getwindownumber();
+    int number = widgets.at(i)->getwindownumber();
     QMessageBox msgBox;
     msgBox.setInformativeText(QString(tr("Do you want to remove 3D viewer %1")).arg(number)+"?");
     msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
@@ -4805,92 +4415,92 @@ void MainWindow::deletewidget(int i){
     msgBox.setIcon(QMessageBox::Question);
     int ret = msgBox.exec();
     if (ret == QMessageBox::No){
-        widgets->at(i)->raise_mainwindow();
+        widgets.at(i)->raise_mainwindow();
         return;
     }
-    delete widgets->at(i);
-    widgets->removeAt(i);
-    if (i == topindex-plots->length())
+    delete widgets.at(i);
+    widgets.removeAt(i);
+    if (i == topindex-plots.length())
         topindex = -1;
     update_dockright();
 }
 
 void MainWindow::moveviewertotop(int num){
-    for (int i = 0 ; i < plots->length() ; i++){
-        if (num == plots->at(i)->getviewernumber()){
+    for (int i = 0 ; i < plots.length() ; i++){
+        if (num == plots.at(i)->getviewernumber()){
             topindex = i;
-            plots->at(topindex)->raise_mainwindow();
+            plots.at(topindex)->raise_mainwindow();
             return;
         }
     }
 }
 
 void MainWindow::movewidgettotop(int num){
-    for (int i = 0 ; i < widgets->length() ; i++){
-        if (num == widgets->at(i)->getwindownumber()){
-            topindex = i + plots->length();
-            widgets->at(i)->raise_mainwindow();
+    for (int i = 0 ; i < widgets.length() ; i++){
+        if (num == widgets.at(i)->getwindownumber()){
+            topindex = i + plots.length();
+            widgets.at(i)->raise_mainwindow();
             return;
         }
     }
 }
 
 void MainWindow::raiseplot(int i){
-    plots->at(i)->raise_mainwindow();
+    plots.at(i)->raise_mainwindow();
     topindex = i;
 }
 
 void MainWindow::raisewidget(int i){
-    widgets->at(i)->raise_mainwindow();
-    topindex = i + plots->length();
+    widgets.at(i)->raise_mainwindow();
+    topindex = i + plots.length();
 }
 
 void MainWindow::showplot(int i){
-    if (plots->at(i)->isvisible()){
-        plots->at(i)->set_visible(false);
+    if (plots.at(i)->isvisible()){
+        plots.at(i)->set_visible(false);
         BTNshowplotsslist.at(i)->setText(tr("Show"));
-        QPoint position = plots->at(i)->get_position();
-        QSize size = plots->at(i)->get_size();
-        plots->at(i)->set_size(size);
-        plots->at(i)->set_position(position);
+        QPoint position = plots.at(i)->get_position();
+        QSize size = plots.at(i)->get_size();
+        plots.at(i)->set_size(size);
+        plots.at(i)->set_position(position);
         if (topindex < 0 )
             return;
         if (i != topindex){
-            if (topindex < plots->length())
-                plots->at(topindex)->raise_mainwindow();
-            else if (topindex < plots->length() + widgets->length()) {
-                widgets->at(topindex-plots->length())->raise_mainwindow();
+            if (topindex < plots.length())
+                plots.at(topindex)->raise_mainwindow();
+            else if (topindex < plots.length() + widgets.length()) {
+                widgets.at(topindex-plots.length())->raise_mainwindow();
             }
         }
     }
     else{
-        plots->at(i)->set_visible(true);
-        moveviewertotop(plots->at(i)->getviewernumber());
+        plots.at(i)->set_visible(true);
+        moveviewertotop(plots.at(i)->getviewernumber());
         BTNshowplotsslist.at(i)->setText(tr("Hide"));
     }
 }
 
 void MainWindow::showwidget(int i){
-    if (widgets->at(i)->isvisible()){
-        widgets->at(i)->set_visible(false);
+    if (widgets.at(i)->isvisible()){
+        widgets.at(i)->set_visible(false);
         BTNshowwidgetslist.at(i)->setText(tr("Show"));
-        QPoint position = widgets->at(i)->get_position();
-        QSize size = widgets->at(i)->get_size();
-        widgets->at(i)->set_size(size);
-        widgets->at(i)->set_position(position);
+        QPoint position = widgets.at(i)->get_position();
+        QSize size = widgets.at(i)->get_size();
+        widgets.at(i)->set_size(size);
+        widgets.at(i)->set_position(position);
         if (topindex < 0 )
             return;
-        if (i != topindex-plots->length()){
-            if (topindex < plots->length())
-                plots->at(topindex)->raise_mainwindow();
-            else if (topindex < plots->length() + widgets->length()) {
-                widgets->at(topindex-plots->length())->raise_mainwindow();
+        if (i != topindex-plots.length()){
+            if (topindex < plots.length())
+                plots.at(topindex)->raise_mainwindow();
+            else if (topindex < plots.length() + widgets.length()) {
+                widgets.at(topindex-plots.length())->raise_mainwindow();
             }
         }
     }
     else{
-        widgets->at(i)->set_visible(true);
-        movewidgettotop(widgets->at(i)->getwindownumber());
+        widgets.at(i)->set_visible(true);
+        movewidgettotop(widgets.at(i)->getwindownumber());
         BTNshowwidgetslist.at(i)->setText(tr("Hide"));
     }
 }
@@ -4987,15 +4597,15 @@ void MainWindow::update_menu_viewer2D()
 
     FRMplots = new QGroupBox();
     FRMplots->setTitle(tr("Available plots"));
-    FRMplots->setVisible(plots->count() > 0);
+    FRMplots->setVisible(plots.count() > 0);
 
     QGridLayout *layout1 = new QGridLayout(FRMplots);
 
     BTNshowplotsslist.clear();
     BTNraiseplotslist.clear();
 
-    for (int i = 0; i < plots->count(); i++) {
-        QLabel *LBLplot = new QLabel(plots->at(i)->get_viewername());
+    for (int i = 0; i < plots.count(); i++) {
+        QLabel *LBLplot = new QLabel(plots.at(i)->get_viewername());
 
         QPushButton *BTNdeleteplot = new QPushButton(tr("Delete"));
 
@@ -5011,14 +4621,14 @@ void MainWindow::update_menu_viewer2D()
 
         QPushButton *BTNshow = new QPushButton();
 
-        if (plots->at(i)->isvisible())
+        if (plots.at(i)->isvisible())
             BTNshow->setText(tr("Hide"));
         else
             BTNshow->setText(tr("Show"));
 
         BTNshowplotsslist.append(BTNshow);
 
-        connections2D << connect(plots->at(i),&Viewer2D::hideplotter,
+        connections2D << connect(plots.at(i),&Viewer2D::hideplotter,
             BTNshow,&QPushButton::click);
 
         connections2D << connect(BTNshow,&QPushButton::clicked,
@@ -5068,15 +4678,15 @@ void MainWindow::update_menu_viewer3D()
 
     FRMviewers = new QGroupBox();
     FRMviewers->setTitle(tr("Available 3D viewers"));
-    FRMviewers->setVisible(widgets->count() > 0);
+    FRMviewers->setVisible(widgets.count() > 0);
 
     QGridLayout *layout1 = new QGridLayout(FRMviewers);
 
     BTNshowwidgetslist.clear();
     BTNraisewidgetslist.clear();
 
-    for (int i = 0; i < widgets->count(); i++) {
-        QLabel *LBLwidget = new QLabel(widgets->at(i)->getWindowName());
+    for (int i = 0; i < widgets.count(); i++) {
+        QLabel *LBLwidget = new QLabel(widgets.at(i)->getWindowName());
 
         QPushButton *BTNdeletewidget = new QPushButton(tr("Delete"));
 
@@ -5092,14 +4702,14 @@ void MainWindow::update_menu_viewer3D()
 
         QPushButton *BTNshow = new QPushButton();
 
-        if (widgets->at(i)->isvisible())
+        if (widgets.at(i)->isvisible())
             BTNshow->setText(tr("Hide"));
         else
             BTNshow->setText(tr("Show"));
 
         BTNshowwidgetslist.append(BTNshow);
 
-        connections3D << connect(widgets->at(i),&glWidget::hideviewer,
+        connections3D << connect(widgets.at(i),&glWidget::hideviewer,
             BTNshow,&QPushButton::click);
 
         connections3D << connect(BTNshow,&QPushButton::clicked,
@@ -5133,18 +4743,18 @@ void MainWindow::update_menu_viewer3D()
 }
 
 void MainWindow::updatewindowsoverlay(){
-    for (int i = 0 ; i < plots->length() ; i++){
-        plots->at(i)->raise_mainwindow();
+    for (int i = 0 ; i < plots.length() ; i++){
+        plots.at(i)->raise_mainwindow();
     }
-    for (int i = 0 ; i < widgets->length() ; i++){
-        widgets->at(i)->raise_mainwindow();
+    for (int i = 0 ; i < widgets.length() ; i++){
+        widgets.at(i)->raise_mainwindow();
     }
     if (topindex >= 0){
-        if (topindex < plots->length()){
-            plots->at(topindex)->raise_mainwindow();
+        if (topindex < plots.length()){
+            plots.at(topindex)->raise_mainwindow();
         }
-        else if (topindex < widgets->length()+plots->length()){
-                widgets->at(topindex-plots->length())->raise_mainwindow();
+        else if (topindex < widgets.length()+plots.length()){
+                widgets.at(topindex-plots.length())->raise_mainwindow();
         }
     }
 }
@@ -5185,24 +4795,56 @@ QString MainWindow::get_execName(QString processname, QString subdir){
     return execName;
 }
 
-QString MainWindow::get_python(){
-    QString execName = "python";
-    QProcess *process = new QProcess(this);
-    process->start(execName+" -h");
-    if (process->error() == QProcess::FailedToStart){
-        execName = "python2";
-        process->start(execName+" -h");
-        if (process->error() == QProcess::FailedToStart){
-            execName = "python3";
-            process->start(execName+" -h");
-            if (process->error() == QProcess::FailedToStart){
-                execName = "";
+
+QString MainWindow::get_python()
+{
+    const QStringList candidates = {
+        QStringLiteral("python3"),
+        QStringLiteral("python")
+    };
+
+    for (const QString& candidate : candidates) {
+        const QString executable =
+            QStandardPaths::findExecutable(candidate);
+
+        if (executable.isEmpty()) {
+            continue;
+        }
+
+        QProcess process;
+
+        process.start(
+            executable,
+            {
+                QStringLiteral("-c"),
+                QStringLiteral(
+                    "from lxml import etree; import numpy"
+                )
             }
+        );
+
+        if (!process.waitForStarted(3000)) {
+            continue;
+        }
+
+        process.waitForFinished(5000);
+
+        if (process.exitStatus() == QProcess::NormalExit
+            && process.exitCode() == 0) {
+            return executable;
         }
     }
-    if (execName.isEmpty())
-        QMessageBox::warning(this, tr("get_python"),tr("Python not found"));
-    return execName;
+
+    QMessageBox::warning(
+        this,
+        tr("Python"),
+        tr(
+            "A suitable Python interpreter was not found.\n\n"
+            "Python 3 with the lxml and numpy modules is required."
+        )
+    );
+
+    return {};
 }
 
 /*******************************************************************************************************/
@@ -5290,4 +4932,307 @@ void MainWindow::updateOrbitalsPageState()
         ).isEmpty();
 
     orbitalsPage_->setEnabled(orbitalsAvailable);
+}
+
+void MainWindow::readMolproXml(const QString& importFile,
+                               const QString& importFolder)
+{
+    QDir path;
+
+    if (!path.exists(ProjectFolder)) {
+        QMessageBox msgBox;
+
+        msgBox.setInformativeText(
+            tr("Project %1 not found").arg(ProjectFolder)
+            + "\n"
+            + tr("Do you wish to create?")
+        );
+
+        msgBox.setStandardButtons(
+            QMessageBox::Yes |
+            QMessageBox::No |
+            QMessageBox::Cancel
+        );
+
+        msgBox.setDefaultButton(QMessageBox::Cancel);
+        msgBox.setIcon(QMessageBox::Warning);
+
+        if (msgBox.exec() != QMessageBox::Yes) {
+            return;
+        }
+
+        createDir(ProjectFolder);
+        statusBar()->showMessage(
+            tr("Project successfully created"),
+            2000
+        );
+
+        setPostDamPagesEnabled(false);
+    }
+
+    const QString sourceXmlFile = QDir::cleanPath(
+        QDir(importFolder).filePath(importFile)
+    );
+
+    if (!QFileInfo::exists(sourceXmlFile)) {
+        QMessageBox::warning(
+            this,
+            tr("DAMQT"),
+            tr("The MOLPRO XML file does not exist:\n%1")
+                .arg(sourceXmlFile)
+        );
+        return;
+    }
+
+    const QString destinationXmlFile = QDir::cleanPath(
+        QDir(ProjectFolder).filePath(
+            QFileInfo(sourceXmlFile).fileName()
+        )
+    );
+
+    /*
+     * Keep a copy of the XML file in the project directory,
+     * except when source and destination are the same file.
+     */
+    if (QFileInfo(sourceXmlFile).absoluteFilePath()
+        != QFileInfo(destinationXmlFile).absoluteFilePath()) {
+
+        if (QFile::exists(destinationXmlFile)
+            && !QFile::remove(destinationXmlFile)) {
+
+            QMessageBox::warning(
+                this,
+                tr("DAMQT"),
+                tr("Cannot replace the existing XML file:\n%1")
+                    .arg(destinationXmlFile)
+            );
+            return;
+        }
+
+        if (!QFile::copy(sourceXmlFile, destinationXmlFile)) {
+            QMessageBox::warning(
+                this,
+                tr("DAMQT"),
+                tr("Cannot copy the XML file:\n%1\n\nto:\n%2")
+                    .arg(sourceXmlFile, destinationXmlFile)
+            );
+            return;
+        }
+    }
+
+    const QString projectFile =
+        QDir(ProjectFolder).filePath(ProjectName + ".damproj");
+
+    existsinp(projectFile, 1, true);
+
+    const QString scriptFile = QDir::cleanPath(
+        QDir(QCoreApplication::applicationDirPath()).filePath(
+            QStringLiteral("../%1/MOLPRO_xml_interface.py")
+                .arg(QStringLiteral(DAMQT_INTERFACES_DIR))
+        )
+    );
+
+    if (!QFileInfo::exists(scriptFile)) {
+        QMessageBox::warning(
+            this,
+            tr("DAMQT"),
+            tr("Python script not found:\n%1").arg(scriptFile)
+        );
+        return;
+    }
+
+    const QString pythonExecutable = get_python();
+
+    if (pythonExecutable.isEmpty()) {
+        return;
+    }
+
+    /*
+     * The script reads the original XML from its original directory
+     * and writes all generated files into ProjectFolder.
+     */
+    const QStringList arguments {
+        scriptFile,
+        QFileInfo(sourceXmlFile).fileName(),
+        QFileInfo(sourceXmlFile).absolutePath(),
+        ProjectFolder,
+        ProjectName
+    };
+
+    QProcess* process = new QProcess(this);
+
+    connect(
+        process,
+        &QProcess::started,
+        this,
+        &MainWindow::processStart
+    );
+
+    connect(
+        process,
+        QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+        this,
+        [this, process](
+            int exitCode,
+            QProcess::ExitStatus exitStatus)
+        {
+            onMolproXmlFinished(exitCode, exitStatus);
+            process->deleteLater();
+        }
+    );
+
+    connect(
+        process,
+        &QProcess::errorOccurred,
+        this,
+        [this, process](QProcess::ProcessError error)
+        {
+            const QString processName =
+                QStringLiteral("MOLPRO_xml_interface.py");
+
+            if (error == QProcess::FailedToStart) {
+                QMessageBox::critical(
+                    this,
+                    tr("Process error"),
+                    tr("The process %1 could not be started.\n\n"
+                       "Check that it is installed and accessible.\n\n%2")
+                        .arg(processName, process->errorString())
+                );
+
+                return;
+            }
+
+            QMessageBox::critical(
+                this,
+                tr("Process error"),
+                tr("Error when running %1:\n%2")
+                    .arg(processName, process->errorString())
+            );
+        }
+    );
+
+    process->start(pythonExecutable, arguments);
+}
+
+void MainWindow::onMolproXmlFinished(
+    int exitCode,
+    QProcess::ExitStatus exitStatus)
+{
+    projectPage_->setExecEnabled(true);
+    QApplication::restoreOverrideCursor();
+
+    if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+        statusBar()->showMessage(
+            tr("MOLPRO XML interface failed, exit code = %1")
+                .arg(exitCode)
+        );
+        return;
+    }
+
+    const QString root =
+        QDir(ProjectFolder).filePath(ProjectName);
+
+    const bool filesGenerated =
+        QFileInfo::exists(root + QStringLiteral(".ggbs"))
+        && QFileInfo::exists(root + QStringLiteral(".den"));
+
+    if (!filesGenerated) {
+        QMessageBox::warning(
+            this,
+            tr("MOLPRO XML interface"),
+            tr("The interface finished, but the basis-set or density "
+               "files were not generated.")
+        );
+
+        return;
+    }
+
+    projectPage_->setExecEnabled(true);
+    QApplication::restoreOverrideCursor();
+
+    if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+        statusBar()->showMessage(
+            tr("MOLPRO XML interface failed, exit code = %1")
+                .arg(exitCode)
+        );
+
+        return;
+    }
+
+    const QString outputFile =
+        QDir(ProjectFolder).filePath(
+            ProjectName
+            + QStringLiteral("-MOLPRO_xml_interface.out")
+        );
+
+    QFile file(outputFile);
+
+    if (!file.open(QFile::ReadOnly | QFile::Text)) {
+        QMessageBox::warning(
+            this,
+            tr("MOLPRO XML interface"),
+            tr("File %1 cannot be read:\n%2")
+                .arg(outputFile, file.errorString())
+        );
+
+        return;
+    }
+
+    QTextStream input(&file);
+
+    textEdit->setFont(QFont(QStringLiteral("Courier"), 10));
+    textEdit->setPlainText(input.readAll());
+
+    atomicDensitiesPage_->setEnabled(true);
+    orbitalsPage_->setEnabled(true);
+
+    const QString projectFile =
+        QDir(ProjectFolder).filePath(
+            ProjectName + QStringLiteral(".damproj")
+        );
+
+    SetCurrentFile(projectFile, true, false);
+
+    statusBar()->showMessage(
+        tr("MOLPRO XML import completed")
+    );
+}
+
+void MainWindow::updateMpiControls()
+{
+    const bool densityMpi =
+        mpi && densityPage_->is3DGrid();
+
+    densityPage_->setMpiVisible(densityMpi);
+    densityPage_->setMpiControlsEnabled(densityMpi);
+
+    const bool potentialMpi =
+        mpi && potentialPage_->is3DGrid();
+
+    potentialPage_->setMpiVisible(potentialMpi);
+    potentialPage_->setMpiControlsEnabled(potentialMpi);
+
+    const bool orbitalsMpi =
+        mpi && orbitalsPage_->is3DGrid();
+
+    orbitalsPage_->setMpiVisible(orbitalsMpi);
+    orbitalsPage_->setMpiControlsEnabled(orbitalsMpi);
+
+    const bool fieldLinesMpi =
+        mpi && fieldLinesPage_->is3DPlot();
+
+    fieldLinesPage_->setMpiVisible(fieldLinesMpi);
+    fieldLinesPage_->setMpiControlsEnabled(fieldLinesMpi);
+
+    const bool densityGradientMpi =
+        mpi && densityGradientPage_->is3DPlot();
+
+    densityGradientPage_->setMpiVisible(densityGradientMpi);
+    densityGradientPage_->setMpiControlsEnabled(densityGradientMpi);
+
+    const bool zjDensityMpi =
+        mpi && zjDensityPage_->is3DGrid();
+
+    zjDensityPage_->setMpiVisible(zjDensityMpi);
+    zjDensityPage_->setMpiControlsEnabled(zjDensityMpi);
 }

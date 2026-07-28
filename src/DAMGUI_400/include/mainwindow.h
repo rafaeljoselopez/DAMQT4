@@ -192,16 +192,16 @@ private slots:      // Alphabetically sorted (including type in sort)
     void execDampot();
     void execDamTopography();
     void execImport();
-    void execsgbs2sxyz(QString qstring);
+    void execsgbs2sxyz(const QString &qstring);
     void execSxyzDen();
-    bool executeprogram_new(bool runmpi,
-                            const QString &outputprefix,
-                            const QString &rootname,
-                            const QString &stdinput,
-                            QString stdoutput,
-                            const QString &subdir,
-                            int nprocs,
-                            int executeindex);
+//    bool executeprogram_new(bool runmpi,
+//                            const QString &outputprefix,
+//                            const QString &rootname,
+//                            const QString &stdinput,
+//                            QString stdoutput,
+//                            const QString &subdir,
+//                            int nprocs,
+//                            int executeindex);
     void Help();
 
     void importFile();
@@ -227,10 +227,9 @@ private slots:      // Alphabetically sorted (including type in sort)
     void PrintFile();
     void PrintFilePdf();
 
-    void processError(QProcess::ProcessError error);
-    void processOutput(int exitCode, QProcess::ExitStatus exitStatus);
+//    void processError(QProcess::ProcessError error);
     void processStart();
-    void processStop();
+//    void processStop();
 
     void readFchk();
     void readMolpro();
@@ -287,6 +286,14 @@ private slots:      // Alphabetically sorted (including type in sort)
 private:
     bool saveProjectToFile(const QString& fullFileName);
     void initializeNames();
+    void readMolproXml(const QString& importFile,
+                       const QString& importFolder);
+    void onMolproXmlFinished(
+        int exitCode,
+        QProcess::ExitStatus exitStatus
+    );
+
+    void updateMpiControls();
 
     ProjectPage* projectPage_ = nullptr;
     AtomicDensitiesPage* atomicDensitiesPage_ = nullptr;
@@ -324,8 +331,6 @@ private:
     double ymin;
     double zmax;
     double zmin;
-
-    bool processkilled;
     
     QSplashScreen *splash = nullptr;
     
@@ -369,8 +374,8 @@ private:
     QList<QPushButton*> BTNshowwidgetslist;             // Stores buttons for hide/show 3D viewers
     QList<QMetaObject::Connection> connections2D;
     QList<QMetaObject::Connection> connections3D;
-    QList<glWidget*> *widgets = nullptr;
-    QList<Viewer2D*> *plots = nullptr;
+    QList<glWidget*> widgets;
+    QList<Viewer2D*> plots;
 
     QList<IExecutablePage *> postDamPages_;
 
@@ -411,15 +416,11 @@ private:
     bool lvalence;
 
     Dialog *dialog = nullptr;
-
-    int executing;      // Number of process currently running
         
     QDialog *FRMlanguage = nullptr;
     
     QString LanguagePath;
     bool lslater;        // true if slater calculation, false if gaussian calculation
-
-    QProcess *myProcess = nullptr;
     
     int natom;
 
@@ -460,7 +461,7 @@ private:
     bool compareIntegers(const QString& s1, const QString& s2);
     bool createDir(QString &fullPathName);
     bool mustSave();
-    bool existsinp(QString fullinputName,int tab,int def, bool pregunta);
+    bool existsinp(QString fullinputName,int def, bool pregunta);
     bool Save(const QString &fileName);
 
     void UpdateRecentFiles();
@@ -480,7 +481,7 @@ private:
         const QString &projectDir, const QString &projectName);
     void onExternalDamFinished(bool enabled);
     void onExternalDamStarted();
-    void onExternalProcessFinished(bool enabled);
+    void onExternalProcessFinished();
     void onExternalProcessStarted();
     void saveOptions(const QString &fullFileName);
 //    void saveOptions(const QString &fullFileName,int clase);
@@ -500,7 +501,6 @@ private:
     void writeSettings();
 
     int get_natom();
-    int get_plane_case(double, double, double);
     int read_natom(QString fileName);
 
     double set_delta(const char * c, double ini, double fin);
@@ -516,7 +516,6 @@ private:
     QString Extension(const QString &fullFileName);
     QString Path(const QString &fullFileName);
     QString planesuffix(int);
-    QString Who_executing(int caso);
     QString toQString(string v);
 
     QVector3D wu;
