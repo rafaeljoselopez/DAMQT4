@@ -438,7 +438,7 @@ void geomProcessor::loadbuffers(QList<molecule*> *m){
             }
 //            Loads grid isosurfaces
             for (int j = 0 ; j < m->at(i)->grids->count() ; j++){
-                QList<isosurface*> sortedIsoSurfaces = *m->at(i)->grids->at(j)->surfaces;
+                QList<isosurface*> sortedIsoSurfaces = m->at(i)->grids->at(j)->surfaces;
                 std::sort(sortedIsoSurfaces.begin(), sortedIsoSurfaces.end(), compareIsoSurfaceByAbsContourValue);
                 for (int k = 0 ; k < sortedIsoSurfaces.count() ; k++){
                     if (sortedIsoSurfaces.at(k)->isvisible()){
