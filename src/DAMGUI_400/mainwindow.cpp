@@ -163,8 +163,6 @@ MainWindow::MainWindow(QWidget *parent)
     BTNshowplotsslist.clear();
     BTNraisewidgetslist.clear();
     BTNshowwidgetslist.clear();
-    connections2D.clear();
-    connections3D.clear();
 
     fchkImporter_ = new FchkImporter(this);
 
@@ -291,8 +289,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     FRMlanguage->exec();
 
-//    QString path=QApplication::applicationDirPath();
-
     iswindows = isWindowsPlatform();
 
     mpi = checkMpiCommand(mpicommand);
@@ -317,7 +313,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     int tabIndex=TAWprincipal->addTab(textEdit,QIcon(":/images/document_text.png"),tr("Results"));
     TAWprincipal->setCurrentIndex(tabIndex);
-//    connect(TAWprincipal, SIGNAL(currentChanged(int)), this, SLOT(tabChanged(int)));
+
     connect(TAWprincipal, &QTabWidget::currentChanged,
             this, &MainWindow::tabChanged);
 
@@ -364,13 +360,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
         event->ignore();
         return;
     }
-//    if (mustSave()) {
-//        writeSettings();
-//        event->accept();
-//    }
-//    else {
-//        event->ignore();
-//    }
 
     if (!mustSave()) {
         event->ignore();
@@ -429,60 +418,60 @@ void MainWindow::CreateActions()
     AccNew = new QAction(QIcon(":/images/Nuevo.png"),tr("&New project"), this);
     AccNew->setShortcut(tr("Ctrl+N"));
     AccNew->setStatusTip(tr("Opens a new project"));
-//    connect(AccNew, SIGNAL(triggered()), this, SLOT(newProject()));
+
     connect(AccNew, &QAction::triggered,
             this, &MainWindow::newProject);
 //    Open
     AccOpen = new QAction(QIcon(":/images/Abrir.png"), tr("&Open project..."), this);
     AccOpen->setShortcut(tr("Ctrl+A"));
     AccOpen->setStatusTip(tr("Open project file"));
-//    connect(AccOpen, SIGNAL(triggered()), this, SLOT(openProject()));
+
     connect(AccOpen, &QAction::triggered,
             this, &MainWindow::openProject);
 //    Save
     AccSave = new QAction(QIcon(":/images/Guardar.png"),tr("&Save project"), this);
     AccSave->setShortcut(tr("Ctrl+S"));
     AccSave->setStatusTip(tr("Save project file"));
-//    connect(AccSave, SIGNAL(triggered()), this, SLOT(saveProject()));
+
     connect(AccSave, &QAction::triggered,
             this, &MainWindow::saveProject);
 //    Save as
     AccSaveAs = new QAction(tr("Save project &as..."), this);
     AccSaveAs->setStatusTip(tr("Saves project file as"));
-//    connect(AccSaveAs, SIGNAL(triggered()), this, SLOT(SaveProjectAs()));
+
     connect(AccSaveAs, &QAction::triggered,
         this, &MainWindow::saveProjectAs);
 //    Print
     AccPrint = new QAction(QIcon(":/images/printer.png"),tr("&Print"), this);
     AccPrint->setShortcut(tr("Ctrl+P"));
     AccPrint->setStatusTip(tr("Print output file"));
-//    connect(AccPrint, SIGNAL(triggered()), this, SLOT(PrintFile()));
+
     connect(AccPrint, &QAction::triggered,
         this, &MainWindow::PrintFile);
 //    Print to PDF file
     AccPdf = new QAction(QIcon(":/images/acrobat.png"), tr("&Create Pdf"), this);
     AccPdf->setShortcut(tr("Ctrl+D"));
     AccPdf->setStatusTip(tr("Print output file as Pdf"));
-//    connect(AccPdf, SIGNAL(triggered()), this, SLOT(PrintFilePdf()));
+
     connect(AccPdf, &QAction::triggered,
         this, &MainWindow::PrintFilePdf);
 //    External packages
     AccExternal = new QAction(QIcon(":/images/External_program.png"),tr("E&xternal"), this);
     AccExternal->setShortcut(tr("Ctrl+E"));
     AccExternal->setStatusTip(tr("External packages"));
-//    connect(AccExternal, SIGNAL(triggered()), this, SLOT(external_package()));
+
     connect(AccExternal, &QAction::triggered,
         this, &MainWindow::external_package);
 //    2D Viewer2D
     Acc2Dplot = new QAction(QIcon(":/images/plot2D_tiny.png"),tr("&2D Viewer"), this);
     Acc2Dplot->setStatusTip(tr("2D Viewer"));
-//    connect(Acc2Dplot, SIGNAL(triggered()), this, SLOT(addviewer2D()));
+
     connect(Acc2Dplot, &QAction::triggered,
         this, &MainWindow::addviewer2D);
 //    3D Viewer
     Acc3Dview = new QAction(QIcon(":/images/cube_molecule.png"),tr("&3D Viewer"), this);
     Acc3Dview->setStatusTip(tr("3D Viewer"));
-//    connect(Acc3Dview, SIGNAL(triggered()), this, SLOT(addglWidget()));
+
     connect(Acc3Dview, &QAction::triggered,
         this, &MainWindow::addglWidget);
 
@@ -492,38 +481,38 @@ void MainWindow::CreateActions()
             AccRecentFiles[i] = new QAction(this);
         }
         AccRecentFiles[i]->setVisible(false);
+
         connect(AccRecentFiles[i], SIGNAL(triggered()), this, SLOT(openRecentProjects()));
     }
 //    Exit
     AccExit = new QAction(QIcon(":/images/Salir.png"),tr("&Exit"), this);
     AccExit->setShortcut(tr("Ctrl+Q"));
     AccExit->setStatusTip(tr("Quit"));
-//    connect(AccExit, SIGNAL(triggered()), this, SLOT(close()));
+
     connect(AccExit, &QAction::triggered,
             this, &QWidget::close);
 //    Help
     AccHelp = new QAction(QIcon(":/images/ayuda.png"),tr("&Help"), this);
     AccHelp->setStatusTip(tr("Program help"));
-//    connect(AccHelp, SIGNAL(triggered()), this, SLOT(Help()));
+
     connect(AccHelp, &QAction::triggered,
             this, &MainWindow::Help);
 //    About
     AccAbout = new QAction(QIcon(":/images/icon.png"),tr("&About DAMQT"), this);
     AccAbout->setStatusTip(tr("About DAMQT"));
-//    connect(AccAbout, SIGNAL(triggered()), this, SLOT(about()));
+
     connect(AccAbout, &QAction::triggered,
             this, &MainWindow::about);
 //    About
-//    AccPerformance = new QAction(createModernGearIcon(QSize(32, 32)),tr("&Performance settings"), this);
     AccPerformance = new QAction(QIcon(":/images/GearIcon32x32.png"),tr("&Performance settings"), this);
     AccPerformance->setStatusTip(tr("Performance settings"));
-//    connect(AccPerformance, SIGNAL(triggered()), this, SLOT(showPerformanceSettings()));
+
     connect(AccPerformance, &QAction::triggered,
             this, &MainWindow::showPerformanceSettings);
 //    About Qt
     AccAboutQt = new QAction(QIcon(":/images/qtlogo.png"),tr("About &Qt"), this);
     AccAboutQt->setStatusTip(tr("About QT Library"));
-//    connect(AccAboutQt, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+
     connect(AccAboutQt, &QAction::triggered,
             qApp, &QApplication::aboutQt);
 }
@@ -673,8 +662,6 @@ bool MainWindow::Open(const QString &fileName)
         else 
             orbitalsPage_->setEnabled(false);
 
-//        SetCurrentFile(fileName,true,false);
-
         const QFileInfo fileInfo(fileName);
 
         const bool isProjectFile =
@@ -712,7 +699,7 @@ void MainWindow::openRecentProjects()
     QAction *action=qobject_cast<QAction *>(sender());
     if (action){
         QString filezdo = ProjectFolder + "zdo";
-//        if (QFileInfo(filezdo).exists()){
+
         if (QFileInfo::exists(filezdo)){
             lzdo = true;
         }
@@ -720,7 +707,7 @@ void MainWindow::openRecentProjects()
             lzdo = false;
         }
         QString filevalence = ProjectFolder + "valence";
-//        if (QFileInfo(filevalence).exists()){
+
         if (QFileInfo::exists(filevalence)){
             lvalence = true;
         }
@@ -1043,10 +1030,6 @@ void MainWindow::Help()
 /* Action: viewer2D */
 void MainWindow::menu_viewer2D()
 {
-//    for (int i = 0 ; i < connections2D.size() ; i++){
-//        QObject::disconnect(connections2D.at(i));
-//    }
-//    connections2D.clear();
     delete QDLviewer2D;
 
     QDLviewer2D = new ViewerDialog(this);
@@ -1056,7 +1039,7 @@ void MainWindow::menu_viewer2D()
 
     BTNnewplot = new QPushButton(tr("New 2D Plotter"));
     BTNnewplot->setToolTip(tr("Creates a new window for 2D plotting"));
-//    connections2D << connect(BTNnewplot, SIGNAL(clicked()), this, SLOT(addviewer2D()));
+
     connect(BTNnewplot, &QPushButton::clicked,
             this, &MainWindow::addviewer2D);
 
@@ -1070,30 +1053,6 @@ void MainWindow::menu_viewer2D()
 }
 
 /* Action: viewer3D */
-//void MainWindow::menu_viewer3D()
-//{
-////    for (int i = 0 ; i < connections3D.size() ; i++){
-////        QObject::disconnect(connections3D.at(i));
-////    }
-////    connections3D.clear();
-//    widgets = new QList<glWidget*>();
-//    QDLwidget3D = new ViewerDialog();
-//    QDLwidget3D->setMinimumSize(250,80);
-//    BTNnewwidget = new QPushButton(tr("New 3D Window"));
-//    BTNnewwidget->setToolTip(tr("Creates a new window for 3D Viewer"));
-////    connections3D << connect(BTNnewwidget, SIGNAL(clicked()), this, SLOT(addglWidget()));
-//    connect(BTNnewwidget, &QPushButton::clicked,
-//                this, &MainWindow::addglWidget);
-
-//    auto *label3D = new QLabel(tr("3D viewers"));
-//    label3D->setStyleSheet("QLabel { color : red; }");
-
-//    auto *layout2 = new QVBoxLayout(QDLwidget3D);
-//    layout2->addWidget(label3D);
-//    layout2->addWidget(BTNnewwidget);
-//    layout2->addStretch();
-
-//}
 
 void MainWindow::menu_viewer3D()
 {
@@ -1467,9 +1426,6 @@ void MainWindow::CreateLeftMenu()
 
     connect(topographyPage_, &TopographyPage::execRequested,
             this, &MainWindow::execDamTopography);
-
-//    connect(topographyPage_, &TopographyPage::stopRequested,
-//            this, &MainWindow::processStop);
 
     connect(topographyPage_, &TopographyPage::openOutputRequested,
             this, &MainWindow::importOUT);
@@ -1876,23 +1832,20 @@ void MainWindow::createLanguageMenu(){
     languageMenu = new QMenu(this);
     languageMenu->setWhatsThis(tr("Check a language and push Start to start DAMQT."));
     languageActionGroup = new QActionGroup(this);
-//    connect(languageActionGroup,SIGNAL(triggered(QAction *)),this, SLOT(chooseLanguage(QAction *)));
 
     connect(languageActionGroup, &QActionGroup::triggered,
         this, &MainWindow::chooseLanguage);
 
     QDir qmDir = QDir(":/translations");
     QStringList fileNames = qmDir.entryList(QStringList("DAMQT_*.qm"));
-//    qDebug() << "fileNames = " << fileNames;
+
     for (int i = 0 ; i < fileNames.size(); ++i){
         QString locale = fileNames[i];
-//        qDebug() << "locale = " << locale;
         locale.remove(0,locale.indexOf('_')+1);
         locale.chop(3);
         QTranslator translator;
         translator.load(fileNames[i], qmDir.absolutePath());
         QString language = translator.translate("MainWindow", "English");
-//        qDebug() << "language = " << language;
         QAction *action = new QAction(tr("&%1 %2").arg(i+1).arg(language),this);
         action->setCheckable(true);
         action->setData(locale);
@@ -1928,7 +1881,6 @@ void MainWindow::execImport()
     QString suffix=Extension(DirNombreImport);
     bool isgzipped = false;
     if (suffix =="gz"){
-//        int ios = QProcess::execute("gunzip "+DirNombreImport);
         const int ios = QProcess::execute(QStringLiteral("gunzip"),QStringList{DirNombreImport});
         if (ios != 0){
             return;
@@ -2003,8 +1955,6 @@ void MainWindow::importFile()
     // Set only local locations in the sidebar.
     // This avoids warnings produced by non-local URLs
     // when using the non-native QFileDialog.
-
-//    QList<QUrl> sidebarUrls;
 
     fileDialog.setNameFilters({
         tr("Import data from") +
@@ -2600,9 +2550,6 @@ void MainWindow::readMOLEKEL()
     QStringList Parameters;
     if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
 
-//    Parameters << QFileInfo(ImportFile).completeBaseName() << ImportFolder  << ProjectFolder << ProjectName  ;
-//    QString strprocess;
-
     QStringList arguments;
 
     arguments
@@ -3115,7 +3062,6 @@ void MainWindow::saveOptions(const QString &fullFileName)
     }
 
     files.close();
-//    SetCurrentFile(fullFileName,true,false);
 }
 
 //    Saves options only clase 0: Project
@@ -3360,8 +3306,7 @@ void MainWindow::rename_density_cntfile(){
     filtro << ProjectName + aux + "*" + planesuffix(densplanecase) + "-d.cnt";
     QStringList archivos = directorio.entryList(filtro, QDir::Files);
     QFile filecnt(ProjectFolder + ProjectName + aux + "-d.cnt");
-//qDebug() << "filecnt = " << ProjectFolder + ProjectName + aux + "-d.cnt";
-//qDebug() << "filecnt.exists: " << filecnt.exists();
+
     if (filecnt.exists() && planesuffix(densplanecase) != ""){
         QFile fileold(ProjectFolder + ProjectName + aux + planesuffix(densplanecase) + "-d.cnt");
         if (fileold.exists())
@@ -4052,181 +3997,6 @@ int MainWindow::read_natom(QString fileName)
     }
 }
 
-
-// Computes dlt for a given potential grid resolution
-double MainWindow::set_delta(const char * c, double ini, double fin)
-{
-    double dlt = 1.0;
-    if (potentialPage_->isLowResolution()){
-        if (potentialPage_->is3DGrid()){
-            dlt=(fin-ini)/64; //2**6+1 (low 3D)
-        }
-        else{
-            dlt=(fin-ini)/128; //2**7+1 (low 2D)
-        }
-    }
-    else if (potentialPage_->isMediumResolution()){
-        if (potentialPage_->is3DGrid()){
-            dlt=(fin-ini)/128; //2**7+1 (medium 3D)
-        }
-        else{
-            dlt=(fin-ini)/256; //2**8+1 (medium 2D)
-        }
-    }
-    else if (potentialPage_->isHighResolution()){
-        if (potentialPage_->is3DGrid()){
-            dlt=(fin-ini)/256; //2**8+1 (high 3D)
-        }
-        else{
-            dlt=(fin-ini)/512; //2**9+1 (high 2D)
-        }
-    }
-    else if(potentialPage_->isCustomResolution()){
-        if (QString(c).compare(QString("dltx")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsX();
-        else if (QString(c).compare(QString("dlty")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsY();
-        else if (QString(c).compare(QString("dltz")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsZ();
-        else if (QString(c).compare(QString("dltu")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsUV();
-        else if (QString(c).compare(QString("dltv")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsUV();
-    }
-    return dlt;
-}
-
-// Computes dlt for a given potential grid resolution
-double MainWindow::set_deltaorb(const char * c, double ini, double fin)
-{
-    double dlt = 1.0;
-    if (orbitalsPage_->isLowResolution()){
-        if (orbitalsPage_->is3DGrid()){
-            dlt=(fin-ini)/64; //2**6+1 (low 3D)
-        }
-        else{
-            dlt=(fin-ini)/128; //2**7+1 (low 2D)
-        }
-    }
-    else if (orbitalsPage_->isMediumResolution()){
-        if (orbitalsPage_->is3DGrid()){
-            dlt=(fin-ini)/128; //2**7+1 (medium 3D)
-        }
-        else{
-            dlt=(fin-ini)/256; //2**8+1 (medium 2D)
-        }
-    }
-    else if (orbitalsPage_->isHighResolution()){
-        if (orbitalsPage_->is3DGrid()){
-            dlt=(fin-ini)/256; //2**8+1 (high 3D)
-        }
-        else{
-            dlt=(fin-ini)/512; //2**9+1 (high 2D)
-        }
-    }
-    else if(orbitalsPage_->isCustomResolution()){
-        if (QString(c).compare(QString("dltx")) == 0)
-            dlt=(fin-ini) / orbitalsPage_->pointsX();
-        else if (QString(c).compare(QString("dlty")) == 0)
-            dlt=(fin-ini) / orbitalsPage_->pointsY();
-        else if (QString(c).compare(QString("dltz")) == 0)
-            dlt=(fin-ini) / orbitalsPage_->pointsZ();
-        else if (QString(c).compare(QString("dltu")) == 0)
-            dlt=(fin-ini) / orbitalsPage_->pointsUV();
-        else if (QString(c).compare(QString("dltv")) == 0)
-            dlt=(fin-ini) / orbitalsPage_->pointsUV();
-    }
-    return dlt;
-}
-
-// Computes dlt for a given potential grid resolution
-double MainWindow::set_deltapot(const char * c, double ini, double fin)
-{
-    double dlt = 1.0;
-    if (potentialPage_->isLowResolution()){
-        if (potentialPage_->is3DGrid()){
-            dlt=(fin-ini)/64; //2**6+1 (low 3D)
-        }
-        else{
-            dlt=(fin-ini)/128; //2**7+1 (low 2D)
-        }
-    }
-    else if (potentialPage_->isMediumResolution()){
-        if (potentialPage_->is3DGrid()){
-            dlt=(fin-ini)/128; //2**7+1 (medium 3D)
-        }
-        else{
-            dlt=(fin-ini)/256; //2**8+1 (medium 2D)
-        }
-    }
-    else if (potentialPage_->isHighResolution()){
-        if (potentialPage_->is3DGrid()){
-            dlt=(fin-ini)/256; //2**8+1 (high 3D)
-        }
-        else{
-            dlt=(fin-ini)/512; //2**9+1 (high 2D)
-        }
-    }
-    else if(potentialPage_->isCustomResolution()){
-        if (QString(c).compare(QString("dltx")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsX();
-        else if (QString(c).compare(QString("dlty")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsY();
-        else if (QString(c).compare(QString("dltz")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsZ();
-        else if (QString(c).compare(QString("dltu")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsUV();
-        else if (QString(c).compare(QString("dltv")) == 0)
-            dlt=(fin-ini) / potentialPage_->pointsUV();
-    }
-    return dlt;
-}
-
-// Computes dlt for a given Jacobi-Zernike density grid resolution
-
-// Computes dlt for a given potential grid resolution
-double MainWindow::set_deltaZJden(const char * c, double ini, double fin)
-{
-    double dlt = 1.0;
-    if (zjDensityPage_->isLowResolution()){
-        if (zjDensityPage_->is3DGrid()){
-            dlt=(fin-ini)/64; //2**6+1 (low 3D)
-        }
-        else{
-            dlt=(fin-ini)/128; //2**7+1 (low 2D)
-        }
-    }
-    else if (zjDensityPage_->isMediumResolution()){
-        if (zjDensityPage_->is3DGrid()){
-            dlt=(fin-ini)/128; //2**7+1 (medium 3D)
-        }
-        else{
-            dlt=(fin-ini)/256; //2**8+1 (medium 2D)
-        }
-    }
-    else if (zjDensityPage_->isHighResolution()){
-        if (zjDensityPage_->is3DGrid()){
-            dlt=(fin-ini)/256; //2**8+1 (high 3D)
-        }
-        else{
-            dlt=(fin-ini)/512; //2**9+1 (high 2D)
-        }
-    }
-    else if(zjDensityPage_->isCustomResolution()){
-        if (QString(c).compare(QString("dltx")) == 0)
-            dlt=(fin-ini) / zjDensityPage_->pointsX();
-        else if (QString(c).compare(QString("dlty")) == 0)
-            dlt=(fin-ini) / zjDensityPage_->pointsY();
-        else if (QString(c).compare(QString("dltz")) == 0)
-            dlt=(fin-ini) / zjDensityPage_->pointsZ();
-        else if (QString(c).compare(QString("dltu")) == 0)
-            dlt=(fin-ini) / zjDensityPage_->pointsUV();
-        else if (QString(c).compare(QString("dltv")) == 0)
-            dlt=(fin-ini) / zjDensityPage_->pointsUV();
-    }
-    return dlt;
-}
-
 //    sets variable natom
 void MainWindow::set_natom(int i)
 {
@@ -4581,25 +4351,21 @@ void MainWindow::update_dockright(){
 
 void MainWindow::update_menu_viewer2D()
 {
-    for (int i = 0; i < connections2D.size(); i++) {
-        QObject::disconnect(connections2D.at(i));
-    }
-    connections2D.clear();
-
-    if (BTNnewplot) {
-        delete BTNnewplot;
-        BTNnewplot = nullptr;
-    }
-
-    QDLviewer2D = new ViewerDialog();
+    delete QDLviewer2D;
+    QDLviewer2D = new ViewerDialog(this);
     QDLviewer2D->setWindowTitle(tr("2D Viewer: choose an option"));
+    QDLviewer2D->setMinimumSize(250, 80);
     QDLviewer2D->resize(300, 80);
 
-    FRMplots = new QGroupBox();
+    BTNnewplot = nullptr;
+    FRMplots = nullptr;
+
+    FRMplots = new QGroupBox(QDLviewer2D);
     FRMplots->setTitle(tr("Available plots"));
     FRMplots->setVisible(plots.count() > 0);
 
-    QGridLayout *layout1 = new QGridLayout(FRMplots);
+    auto *layout1 = new QGridLayout;
+    FRMplots->setLayout(layout1);
 
     BTNshowplotsslist.clear();
     BTNraiseplotslist.clear();
@@ -4609,14 +4375,14 @@ void MainWindow::update_menu_viewer2D()
 
         QPushButton *BTNdeleteplot = new QPushButton(tr("Delete"));
 
-        connections2D << connect(BTNdeleteplot,&QPushButton::clicked,
+        connect(BTNdeleteplot,&QPushButton::clicked,
             this,[this, i]() { deleteplot(i); });
 
         QPushButton *BTNraise = new QPushButton(tr("Raise"));
 
         BTNraiseplotslist.append(BTNraise);
 
-        connections2D << connect(BTNraise,&QPushButton::clicked,
+        connect(BTNraise,&QPushButton::clicked,
             this,[this, i]() { raiseplot(i); });
 
         QPushButton *BTNshow = new QPushButton();
@@ -4628,10 +4394,10 @@ void MainWindow::update_menu_viewer2D()
 
         BTNshowplotsslist.append(BTNshow);
 
-        connections2D << connect(plots.at(i),&Viewer2D::hideplotter,
+        connect(plots.at(i),&Viewer2D::hideplotter,
             BTNshow,&QPushButton::click);
 
-        connections2D << connect(BTNshow,&QPushButton::clicked,
+        connect(BTNshow,&QPushButton::clicked,
             this,[this, i]() { showplot(i); });
 
         layout1->addWidget(LBLplot,       i, 0);
@@ -4640,12 +4406,12 @@ void MainWindow::update_menu_viewer2D()
         layout1->addWidget(BTNdeleteplot, i, 3);
     }
 
-    BTNnewplot = new QPushButton(tr("New 2D Plotter"));
+    BTNnewplot = new QPushButton(tr("New 2D Plotter"),QDLviewer2D);
     BTNnewplot->setToolTip(
         tr("Creates a new window for 2D plotting")
     );
 
-    connections2D << connect(BTNnewplot,&QPushButton::clicked,
+    connect(BTNnewplot,&QPushButton::clicked,
         this,&MainWindow::addviewer2D);
 
     QLabel *label2D = new QLabel(tr("2D plotters"));
@@ -4663,41 +4429,37 @@ void MainWindow::update_menu_viewer2D()
 
 void MainWindow::update_menu_viewer3D()
 {
-    for (int i = 0; i < connections3D.size(); i++) {
-        QObject::disconnect(connections3D.at(i));
-    }
-    connections3D.clear();
 
-    if (BTNnewwidget) {
-        delete BTNnewwidget;
-        BTNnewwidget = nullptr;
-    }
-
-    QDLwidget3D = new ViewerDialog();
+    delete QDLwidget3D;
+    QDLwidget3D = new ViewerDialog(this);
     QDLwidget3D->setMinimumSize(250, 80);
 
-    FRMviewers = new QGroupBox();
-    FRMviewers->setTitle(tr("Available 3D viewers"));
-    FRMviewers->setVisible(widgets.count() > 0);
-
-    QGridLayout *layout1 = new QGridLayout(FRMviewers);
+    BTNnewwidget = nullptr;
+    FRMviewers = nullptr;
 
     BTNshowwidgetslist.clear();
     BTNraisewidgetslist.clear();
+
+    FRMviewers = new QGroupBox(QDLwidget3D);
+    FRMviewers->setTitle(tr("Available 3D viewers"));
+    FRMviewers->setVisible(widgets.count() > 0);
+
+    auto *layout1 = new QGridLayout;
+    FRMviewers->setLayout(layout1);
 
     for (int i = 0; i < widgets.count(); i++) {
         QLabel *LBLwidget = new QLabel(widgets.at(i)->getWindowName());
 
         QPushButton *BTNdeletewidget = new QPushButton(tr("Delete"));
 
-        connections3D << connect(BTNdeletewidget,&QPushButton::clicked,
+        connect(BTNdeletewidget,&QPushButton::clicked,
             this,[this, i]() { deletewidget(i); });
 
         QPushButton *BTNraise = new QPushButton(tr("Raise"));
 
         BTNraisewidgetslist.append(BTNraise);
 
-        connections3D << connect(BTNraise,&QPushButton::clicked,
+        connect(BTNraise,&QPushButton::clicked,
             this,[this, i]() { raisewidget(i); });
 
         QPushButton *BTNshow = new QPushButton();
@@ -4709,10 +4471,10 @@ void MainWindow::update_menu_viewer3D()
 
         BTNshowwidgetslist.append(BTNshow);
 
-        connections3D << connect(widgets.at(i),&glWidget::hideviewer,
+        connect(widgets.at(i),&glWidget::hideviewer,
             BTNshow,&QPushButton::click);
 
-        connections3D << connect(BTNshow,&QPushButton::clicked,
+        connect(BTNshow,&QPushButton::clicked,
             this,[this, i]() { showwidget(i); });
 
         layout1->addWidget(LBLwidget,       i, 0);
@@ -4721,12 +4483,10 @@ void MainWindow::update_menu_viewer3D()
         layout1->addWidget(BTNdeletewidget, i, 3);
     }
 
-    BTNnewwidget = new QPushButton(tr("New 3D Viewer"));
-    BTNnewwidget->setToolTip(
-        tr("Creates a new window for 3D display")
-    );
+    BTNnewwidget = new QPushButton(tr("New 3D Viewer"), QDLwidget3D);
+    BTNnewwidget->setToolTip(tr("Creates a new window for 3D display"));
 
-    connections3D << connect(BTNnewwidget,&QPushButton::clicked,
+    connect(BTNnewwidget,&QPushButton::clicked,
         this,&MainWindow::addglWidget);
 
     QLabel *label3D = new QLabel(tr("3D viewers"));

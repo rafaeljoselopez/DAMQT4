@@ -4,6 +4,8 @@
 #define SIZE4   400
 #define SIZE20 2000
 
+#define MAX_LEXP 25
+
 #include <QWidget>
 #include <QButtonGroup>
 #include <QDoubleValidator>

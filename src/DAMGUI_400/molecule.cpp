@@ -2321,8 +2321,8 @@ void molecule::addgrid(){
 void molecule::addsurface(){
     closeisosurfeditors();
     surfaces->append(new surface());
-    qDebug() << "ProjectFolder = " << ProjectFolder;
-    qDebug() << "ProjectName = " << ProjectName;
+//    qDebug() << "ProjectFolder = " << ProjectFolder;
+//    qDebug() << "ProjectName = " << ProjectName;
     if (!loadsurf()){
         delete surfaces->last();
         surfaces->removeLast();
@@ -3378,33 +3378,6 @@ void molecule::resizeQDLeditMolecule(){
     }
 }
 
-//  Function retrievegrid: retrieves a surface for 3D plotting
-//
-//bool molecule::retrievegrid(QString filename){
-//    grids->append(new grid());
-//    grids->last()->set_ProjectFolder(ProjectFolder);
-//    grids->last()->set_ProjectName(ProjectName);
-//    if (QDLeditMolecule && QDLeditMolecule->isVisible()){
-//        grids->last()->setinitialposition(QPoint(QDLeditMolecule->x()+QDLeditMolecule->width(), QDLeditMolecule->y()));
-//    }
-//    else{
-//        grids->last()->setinitialposition(QPoint(400,10));
-//    }
-//    if (grids->last()->readpltnew(filename)){
-//        grids->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-//        grids->last()->setname(QFileInfo(filename).fileName());
-//        if (QDLeditMolecule)
-//            updateeditMoleculeDialog();
-//        connect (grids->last(), SIGNAL(surfaceadded()), this, SLOT(updateeditMoleculeDialog())) ;
-//        connect (grids->last(), SIGNAL(surfacedeleted()), this, SLOT(updateeditMoleculeDialog())) ;
-//        return true;
-//    }
-//    else{
-//        grids->removeLast();
-//        return false;
-//    }
-//}
-
 bool molecule::retrievegrid(const QString &filename)
 {
     grid *newGrid = new grid();
@@ -3443,49 +3416,6 @@ bool molecule::retrievegrid(const QString &filename)
     return true;
 }
 
-//  Function retrievesurf: retrieves a surface for 3D plotting
-//
-//bool molecule::retrievesurf(QString filename){
-//    surfaces->append(new surface());
-//    QString suf=QFileInfo(filename).suffix().toLower();
-//    if (suf=="srf"){
-//        if (surfaces->last()->readsrfnew(filename)){
-//            surfaces->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-//            surfaces->last()->setname(QFileInfo(filename).fileName());
-//            return true;
-//        }
-//        else{
-//            surfaces->removeLast();
-//            return false;
-//        }
-//    }
-//    else if (suf=="sgh"){
-//        if (surfaces->last()->readsgh(filename)){
-//            surfaces->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-//            surfaces->last()->setname(QFileInfo(filename).fileName());
-//            return true;
-//        }
-//        else{
-//            surfaces->removeLast();
-//            return false;
-//        }
-//    }
-//    else if (suf=="basins"){
-//        if (surfaces->last()->readbasinsnew(filename)){
-//            surfaces->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-//            surfaces->last()->setname(QFileInfo(filename).fileName());
-//            return true;
-//        }
-//        else{
-//            surfaces->removeLast();
-//            return false;
-//        }
-//    }
-//    else{
-//        surfaces->removeLast();
-//        return false;
-//    }
-//}
 
 bool molecule::retrievesurf(const QString &filename)
 {

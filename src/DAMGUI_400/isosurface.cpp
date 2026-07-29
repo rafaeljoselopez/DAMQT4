@@ -532,10 +532,10 @@ void isosurface::BTNexec_clicked(){
     }
     QString stdinput;
     if (isdensity){
-        stdinput = path+"/"+basename+"-DAMISODEN400.inp";
+        stdinput = path+"/"+basename+"-DAMISODEN_400.inp";
     }
     else{
-        stdinput = path+"/"+basename+"-DAMISOPOT400.inp";
+        stdinput = path+"/"+basename+"-DAMISOPOT_400.inp";
     }
 
     QFile inputfile(stdinput);
@@ -568,14 +568,10 @@ void isosurface::BTNexec_clicked(){
     QString strprocess;
     if (isdensity){
         if (mpi && CHKmpi->isChecked()){
-            processname = "DAMISODEN400_mpi.exe";
-            QString execName = get_execName(processname, QString("DAM400_mpi"));
+            processname = "DAMISODEN_400_mpi.exe";
+            QString execName = get_execName(processname, QString("DAM_400_mpi"));
             if (execName.isEmpty())
                 return;
-            // strprocess = QString("%1 %2 %3 %4 %5").arg(mpicommand).arg("-np")
-            //             .arg(SPBmpi->value()).arg(mpiflags).arg(execName);
-            // stdoutput = path+"/"+basename+"-DAMISODEN400_mpi.out";
-//            qDebug() << "strprocess = " << strprocess;
             if (iswindows) {
                 // Windows + Cygwin – wrapper script in the same directory as the GUI executable
                 QString wrapperScript = QDir(QCoreApplication::applicationDirPath()).filePath("run_mpi.sh");
@@ -592,23 +588,23 @@ void isosurface::BTNexec_clicked(){
                 .arg(mpiflags)
                 .arg(execName);
             }
-            stdoutput = path+"/"+basename+"-DAMISODEN400_mpi.out";
+            stdoutput = path+"/"+basename+"-DAMISODEN_400_mpi.out";
         }
         else{
-            processname = "DAMISODEN400.exe";
-            QString execName = get_execName(processname, QString("DAM400"));
+            processname = "DAMISODEN_400.exe";
+            QString execName = get_execName(processname, QString("DAM_400"));
             strprocess = execName;
-            stdoutput = path+"/"+basename+"-DAMISODEN400.out";
+            stdoutput = path+"/"+basename+"-DAMISODEN_400.out";
 //            qDebug() << "strprocess = " << strprocess;
         }
     }
     else{
         if (mpi && CHKmpi->isChecked()){
-            processname = "DAMISOPOT400_mpi.exe";
-            QString execName = get_execName(processname, QString("DAM400_mpi"));
+            processname = "DAMISOPOT_400_mpi.exe";
+            QString execName = get_execName(processname, QString("DAM_400_mpi"));
             // strprocess = QString("%1 %2 %3 %4 %5").arg(mpicommand).arg("-np")
             //             .arg(SPBmpi->value()).arg(mpiflags).arg(execName);
-            // stdoutput = path+"/"+basename+"-DAMISOPOT400_mpi.out";
+            // stdoutput = path+"/"+basename+"-DAMISOPOT_400_mpi.out";
             if (iswindows) {
                 // Windows + Cygwin – wrapper script in the same directory as the GUI executable
                 QString wrapperScript = QDir(QCoreApplication::applicationDirPath()).filePath("run_mpi.sh");
@@ -625,12 +621,12 @@ void isosurface::BTNexec_clicked(){
                 .arg(mpiflags)
                 .arg(execName);
             }
-            stdoutput = path+"/"+basename+"-DAMISOPOT400_mpi.out";
+            stdoutput = path+"/"+basename+"-DAMISOPOT_400_mpi.out";
         }
         else{
-            stdoutput = path+"/"+basename+"-DAMISOPOT400.out";
-            processname = "DAMISOPOT400.exe";
-            QString execName = get_execName(processname, QString("DAM400"));
+            stdoutput = path+"/"+basename+"-DAMISOPOT_400.out";
+            processname = "DAMISOPOT_400.exe";
+            QString execName = get_execName(processname, QString("DAM_400"));
             strprocess = execName;
         }
     }

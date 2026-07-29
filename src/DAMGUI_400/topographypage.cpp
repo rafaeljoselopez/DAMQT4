@@ -59,6 +59,7 @@ void TopographyPage::buildUi()
     
     lMaxLabel_ = new QLabel(tr("Highest l in expansion"), topoTypeGroup_);
     lMaxSpin_ = new QSpinBox(topoTypeGroup_);
+    lMaxSpin_->setValue(10);
     lMaxSpin_->setFixedWidth(80);
     
     auto* lMaxLayout = new QHBoxLayout();
@@ -424,6 +425,7 @@ void TopographyPage::setExtraConnectionsCheck(bool checked) { extraConnectionsCh
 void TopographyPage::setGuessPoints(bool checked) { guessPointsCheck_->setChecked(checked); }
 void TopographyPage::setInitialStep(const QString& value) { initialStepEdit_->setText(value); }
 void TopographyPage::setLmax(int lmax) { lMaxSpin_->setValue(lmax); }
+void TopographyPage::setLmaxTop(int ltop) { lMaxSpin_->setRange(0,ltop); }
 void TopographyPage::setMapCriticalCheck(bool checked) { mapCriticalCheck_->setChecked(checked); }
 void TopographyPage::setPotentialRadioChecked(bool checked) { topoButtonsGroup_->button(1)->setChecked(checked); }
 void TopographyPage::setMpiChecked(bool checked) { mpiCheck_->setChecked(checked); }
@@ -582,6 +584,8 @@ void TopographyPage::inputOnlyStateChanged(int state)
 }
 
 void TopographyPage::loadDefault(){
+    setLmaxTop(MAX_LEXP);
+    setLmax(10);
     setBuildBasinCheck(false);
     setBuildGraphCheck(false);
     setDensityRadioChecked(true);

@@ -299,9 +299,10 @@ END MODULE
     CALL MPI_BCAST(iendv,nprocs,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 
     if (ncen .lt. nprocs) then
-! 		if (myrank .eq. 0) 
+        if (myrank .eq. 0) then
             write(6,"('Number of centers lower than number of processors.',/,'Rerun with a lower&
                     &number of processors (lower than or equal to the number of centers).')")
+        endif
         abort = 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)

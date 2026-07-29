@@ -146,6 +146,7 @@ void MolproImporter::runInterface(int entryIndex)
             << currentRequest_.projectFolder
             << currentRequest_.projectName;
 
+qDebug() << "currentRequest_.executablePath = " << currentRequest_.executablePath;
 qDebug() << "parameters = " << parameters;
 
         QString outputFile =

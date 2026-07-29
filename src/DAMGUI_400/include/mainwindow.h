@@ -372,8 +372,7 @@ private:
     QList<QPushButton*> BTNshowplotsslist;              // Stores buttons for hide/show 2D plots
     QList<QPushButton*> BTNraisewidgetslist;            // Stores buttons for rising 3D plots
     QList<QPushButton*> BTNshowwidgetslist;             // Stores buttons for hide/show 3D viewers
-    QList<QMetaObject::Connection> connections2D;
-    QList<QMetaObject::Connection> connections3D;
+
     QList<glWidget*> widgets;
     QList<Viewer2D*> plots;
 
@@ -502,12 +501,6 @@ private:
 
     int get_natom();
     int read_natom(QString fileName);
-
-    double set_delta(const char * c, double ini, double fin);
-    double set_deltadens(const char * c, double ini, double fin);
-    double set_deltaorb(const char * c, double ini, double fin);
-    double set_deltapot(const char * c, double ini, double fin);
-    double set_deltaZJden(const char * c, double ini, double fin);
 
     QByteArray ReadSectionOptions(const char *SectionName, QFile *FileName);
 
