@@ -55,24 +55,18 @@
 #define LOGBASE 1.08                      // base for logaritmics scale
 #endif
 
-#if __cplusplus <= 199711L
-    #define nullpointer NULL
-#else
-//  C++11 compliant compiler
-    #define nullpointer nullptr
-#endif
 
 class editIsoSurfaceDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit editIsoSurfaceDialog(QWidget *parent = 0);
-    ~editIsoSurfaceDialog();
+    explicit editIsoSurfaceDialog(QWidget *parent = nullptr);
+    ~editIsoSurfaceDialog() override = default;
 signals:
     void closed();
 protected:
-    void closeEvent(QCloseEvent *event);
-    virtual void reject();
+    void closeEvent(QCloseEvent *event) override;
+    virtual void reject() override;
 };
 
 // Class surface
@@ -82,8 +76,21 @@ class isosurface : public QWidget
     friend class geomProcessor;
     Q_OBJECT
 public:
-    explicit isosurface(QWidget *parent = 0);
-    ~isosurface();
+    explicit isosurface(QWidget *parent = nullptr);
+    ~isosurface() override = default;
+
+    void clearGeometry();
+
+   void reserveVertices(int count);
+   void reserveIndices(int count);
+
+   void shiftVertexColors(const QVector4D &shift);
+
+   void addVertex(const VertexNormalData &vertex);
+   void addIndex(GLuint index);
+
+   const QVector<VertexNormalData> &vertices() const;
+   const QVector<GLuint> &indices() const;
 
     bool isvisible();
     bool getnormalgrad();
@@ -113,13 +120,11 @@ public:
 
     QVector <GLuint> getallindices();
     QVector <VertexNormalData> getallvertices();
-    QVector <GLuint> allindices;             // Indices of vertices in surface
-    QVector <VertexNormalData> allvertices;  // Vertices of triangles in surface (position, normal, color)
     QVector <GLuint> gridindices;             // indices of vertices in grid boundaries
     QVector <GLuint> gridindicesoffset;       // Offsets of indices in grid boundaries
     QVector <VertexNormalData> gridvertices;  // vertices of triangles in grid boundaries (position, normal, color)
 
-    void generategridbounds(float *);
+    void generategridbounds(const float *);
     void setcompatderiv(bool);
     void setcontourvalue(float);
     void setinitialposition(QPoint);
@@ -182,80 +187,77 @@ private:
     bool translucence;                  // If true, translucence correction is applied
     bool visible;                       // If true the surface is displayed
 
-    int nindices;
-    int nprocessors;
-    int nvertices;
+    int logdlt = 3;
+    int nprocessors = 1;
+
+    QVector <GLuint> allindices;             // Indices of vertices in surface
+    QVector <VertexNormalData> allvertices;  // Vertices of triangles in surface (position, normal, color)
 
     QVector<float> griddimensions;      // Original grid dimensions: xmin, xmax, ymin, ymax, zmin, zmax
     QVector<int> gridnxyz;              // Original grid number of points (nx, ny, nz)
 
-    ColorButton *BTNsurfcolor;            // Opens dialog for surface color
 
-    float contourvalue;                   // Function value for isosurface
-    float maxcontourvalue;                // Highest contourvalue available
-    float mincontourvalue;                // Lowest contourvalue available
-    float opacity;                        // Opacity: 1 (opaque) 0 (transparent)
-    float scalemin;                       // Lowest value for isocontour scale
-    float scalemax;                       // Highest value for isocontour scale
-
-    int logdlt;
-
-    LineEdit *TXTcontourvalue;
-
-    QCheckBox *CHKmpi;
-    QCheckBox *CHKnormalgrad;
-    QCheckBox *CHKshowgrid;
-    QCheckBox *CHKtranslucence;
+    float contourvalue = 0.0f;                   // Function value for isosurface
+    float maxcontourvalue = 1.0f;                // Highest contourvalue available
+    float mincontourvalue = -1.0f;               // Lowest contourvalue available
+    float opacity = 1.0f;                        // Opacity: 1 (opaque) 0 (transparent)
 
     QColor surfcolor;
 
-    QDoubleSpinBox *SPBopacity;           // Surface opacity/transparency
-
-    QDoubleValidator *myDoubleValidator;
-
-    QGroupBox *FRMhighquality;
-    QGroupBox *FRMsurfcolor;
-    QGroupBox *FRMsurftype;
-
-    togglingGroupBox *FRMisosurface;
-
-    QLabel *LBLalpha;
-    QLabel *LBLcontourvalue;
-    QLabel *LBLfilename;
-    QLabel *LBLmpi;
-    QLabel *LBLopacity;
-    QLabel *LBLscale;
-    QLabel *LBLsensitive;
-    QLabel *LBLstatus;
-
-    QLineEdit *TXTisosurffilename;
-
-    QList<QMetaObject::Connection> connections;
-
     QPoint initialposition;
 
-    QProcess *myProcess;
+    ColorButton *BTNsurfcolor = nullptr;            // Opens dialog for surface color
 
-    QPushButton *BTNexec;
-    QPushButton *BTNstop;
+    LineEdit *TXTcontourvalue = nullptr;
 
-    QRadioButton *RBTscalelin;
-    QRadioButton *RBTscalelog;
-    QRadioButton *RBTsolidsurf;           // Solid surface
-    QRadioButton *RBTwiresurf;
+    QCheckBox *CHKmpi = nullptr;
+    QCheckBox *CHKnormalgrad = nullptr;
+    QCheckBox *CHKshowgrid = nullptr;
+    QCheckBox *CHKtranslucence = nullptr;
 
-    QSlider *SLDcontourvalue;
-    QSlider *SLDopacity;
+    QDoubleSpinBox *SPBopacity = nullptr;           // Surface opacity/transparency
 
-    QSpinBox *SPBmpi;
-    QSpinBox *SPBsensitive;
+    QDoubleValidator *myDoubleValidator = nullptr;
 
-    QString basename;
-    QString fullname;                     // Full name for surface including path
-    QString name;                         // Name for surface
-    QString processname;
-    QString ProjectFolder;
-    QString ProjectName;
+    QGroupBox *FRMhighquality = nullptr;
+    QGroupBox *FRMsurfcolor = nullptr;
+    QGroupBox *FRMsurftype = nullptr;
+
+    togglingGroupBox *FRMisosurface = nullptr;
+
+    QLabel *LBLalpha = nullptr;
+    QLabel *LBLcontourvalue = nullptr;
+    QLabel *LBLfilename = nullptr;
+    QLabel *LBLmpi = nullptr;
+    QLabel *LBLopacity = nullptr;
+    QLabel *LBLscale = nullptr;
+    QLabel *LBLsensitive = nullptr;
+    QLabel *LBLstatus = nullptr;
+
+    QLineEdit *TXTisosurffilename = nullptr;
+
+    QProcess *myProcess = nullptr;
+
+    QPushButton *BTNexec = nullptr;
+    QPushButton *BTNstop = nullptr;
+
+    QRadioButton *RBTscalelin = nullptr;
+    QRadioButton *RBTscalelog = nullptr;
+    QRadioButton *RBTsolidsurf = nullptr;           // Solid surface
+    QRadioButton *RBTwiresurf = nullptr;
+
+    QSlider *SLDcontourvalue = nullptr;
+    QSlider *SLDopacity = nullptr;
+
+    QSpinBox *SPBmpi = nullptr;
+    QSpinBox *SPBsensitive = nullptr;
+
+    QString basename = nullptr;
+    QString fullname = nullptr;                     // Full name for surface including path
+    QString name = nullptr;                        // Name for surface
+    QString processname = nullptr;
+    QString ProjectFolder = nullptr;
+    QString ProjectName = nullptr;
 };
 
 #endif // ISOSURFACE_H

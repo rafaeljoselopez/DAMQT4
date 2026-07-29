@@ -181,8 +181,9 @@ void MoleculeSettingsWriter::writeGrid(
     if (!saveIsosurfaces)
         return;
 
-    const int numberOfIsosurfaces =
-        grd->surfaces ? grd->surfaces->count() : 0;
+//    const int numberOfIsosurfaces =
+//        grd->surfaces ? grd->surfaces->count() : 0;
+    const int numberOfIsosurfaces = grd->surfaces.count();
 
     writer_.writeInt(
         QString("nisosurf_%1").arg(index),
@@ -201,7 +202,7 @@ void MoleculeSettingsWriter::writeGrid(
 
     for (int i = 0; i < numberOfIsosurfaces; ++i) {
         writeIsosurface(
-            grd->surfaces->at(i),
+            grd->surfaces.at(i),
             index,
             i
         );

@@ -1950,130 +1950,8 @@ int molecule::getscalevalueInt(float fx,int i0,int i1,float f0,float f1)
     return (int)(((fx-f0)*(i1-i0)/(f1-f0))+i0);
 }
 
-//void molecule::create_grids_widgets_and_layouts(){
-////        Add grid for isosurface
-//    int knt = 0 ; ;
-//    BTNaddgrid = new QPushButton(tr("Add grid for isosurfaces"));
-//    connections << connect(BTNaddgrid, SIGNAL(clicked()), this, SLOT(addgrid()));
-//    LBLloadinggrid = new QLabel(tr("Loading grid"));
-//    LBLloadinggrid->setStyleSheet("QLabel { color : red; }");
-//    LBLloadinggrid->setVisible(false);
-//    QSizePolicy sp_retain = LBLloadinggrid->sizePolicy();
-//    sp_retain.setRetainSizeWhenHidden(true);
-//    LBLloadinggrid->setSizePolicy(sp_retain);
-//    layoutgrids = new QGridLayout();
-//    if (grids->count() > 0){
-//        QLabel *LBLavailablegrids = new QLabel();
-//        LBLavailablegrids->setText(tr("<font color=\"black\">Loaded grids</font>"));
-//        QSignalMapper* deletegridsignalMapper = new QSignalMapper (this) ;
-//        layoutgrids->addWidget(LBLavailablegrids,0,0,1,5,Qt::AlignCenter);
-//        for (int i = 0 ; i < grids->count() ; i++){
-//            QLabel *LBLgrid = new QLabel();
-//            LBLgrid->setText(grids->at(i)->getname());
-//            LBLgrid->setStyleSheet("QLabel { color : black; }");
-//            QPushButton *BTNaddisosurf = new QPushButton();
-//            BTNaddisosurf->setText(tr("Add surface"));
-//            connections << connect(BTNaddisosurf, SIGNAL(clicked()), this, SLOT(closeisosurfeditors()), Qt::UniqueConnection);
-//            connections << connect(BTNaddisosurf, SIGNAL(clicked()), grids->at(i), SLOT(addisosurf()), Qt::UniqueConnection);
-//            QPushButton *BTNdeletegrid = new QPushButton();
-//            BTNdeletegrid->setText(tr("Delete"));
-//            connections << connect(BTNdeletegrid, SIGNAL(clicked()), deletegridsignalMapper, SLOT(map()), Qt::UniqueConnection);
-//            deletegridsignalMapper -> setMapping(BTNdeletegrid,i);
-//            layoutgrids->addWidget(LBLgrid,knt+1,0,1,2);
-//            layoutgrids->addWidget(BTNaddisosurf,knt+1,2);
-//            layoutgrids->addWidget(BTNdeletegrid,knt+1,3);
-//            knt++;
-//            QSignalMapper* delisosurfsignalMapper = new QSignalMapper (this) ;
-//            QSignalMapper* genisosurfsignalMapper = new QSignalMapper (this) ;
-//            QSignalMapper* showisosurfsignalMapper = new QSignalMapper (this) ;
-//            QSignalMapper* updateisosurfsignalMapper = new QSignalMapper (this) ;
-//            for (int j = 0 ; j < grids->at(i)->surfaces->count() ; j++){
-//                LBLavailablegrids->setText(tr("<font color=\"black\">Loaded grids</font> <font color=\"blue\">(Surfaces)</font>"));
-//                QLabel *LBLisosurf = new QLabel();
-//                LBLisosurf->setText(grids->at(i)->surfaces->at(j)->getname());
-//                LBLisosurf->setStyleSheet("color : blue");
-//                QString lblstring;
-//                int r = grids->at(i)->surfaces->at(j)->getsurfcolor().red();
-//                int g = grids->at(i)->surfaces->at(j)->getsurfcolor().green();
-//                int b = grids->at(i)->surfaces->at(j)->getsurfcolor().blue();
-//                if ((r > 210 || b > 0)&& g > 210 ){
-//                    lblstring = QString("QPushButton { color : rgb(0, 0, 0); background-color : rgb(%1,%2,%3); }").arg(r).arg(g).arg(b);
-//                }
-//                else{
-//                    lblstring = QString("QPushButton { color : rgb(255, 255, 255); background-color : rgb(%1,%2,%3); }").arg(r).arg(g).arg(b);
-//                }
 
-//                togglingGroupBox *FRMisosurface = new togglingGroupBox();
-//                FRMisosurface = grids->at(i)->surfaces->at(j)->editisosurface();
-//                FRMisosurface->setVisible(false);
-//                FRMisosurface->setAttribute(Qt::WA_DeleteOnClose);
-
-//                editclosePushButton *BTNeditisosurf = new editclosePushButton();
-//                BTNeditisosurf->setText(tr("Edit"));
-//                BTNeditisosurf->setStyleSheet(QString(lblstring));
-
-//                connections << connect(BTNeditisosurf, SIGNAL(clicked()), BTNeditisosurf,
-//                                SLOT(toggletext()), Qt::UniqueConnection);
-//                connections << connect(BTNeditisosurf, SIGNAL(isClose(bool)), FRMisosurface,
-//                                SLOT(setVisible(bool)), Qt::UniqueConnection);
-//                connections << connect(BTNeditisosurf, SIGNAL(isClose(bool)), this,
-//                                SLOT(updateQDLeditMolecule(bool)), Qt::UniqueConnection);
-
-//                QPushButton *BTNdeleteisosurf = new QPushButton();
-//                BTNdeleteisosurf->setText(tr("Delete"));
-//                BTNdeleteisosurf->setStyleSheet(QString(lblstring));
-//                connections << connect(BTNdeleteisosurf, SIGNAL(clicked()), delisosurfsignalMapper, SLOT(map()), Qt::UniqueConnection);
-//                delisosurfsignalMapper -> setMapping(BTNdeleteisosurf,j);
-
-//                showhidePushButton *BTNshowisosurf = new showhidePushButton();
-//                if (grids->at(i)->surfaces->at(j)->isvisible())
-//                    BTNshowisosurf->inittext(1);
-//                else
-//                    BTNshowisosurf->inittext(0);
-//                BTNshowisosurf->setStyleSheet(QString(lblstring));
-//                connections << connect(BTNshowisosurf, SIGNAL(clicked()), showisosurfsignalMapper, SLOT(map()), Qt::UniqueConnection);
-//                showisosurfsignalMapper -> setMapping(BTNshowisosurf,j);
-//                connections << connect(BTNshowisosurf, SIGNAL(clicked()), BTNshowisosurf,
-//                                SLOT(toggletext()), Qt::UniqueConnection);
-
-//                connections << connect(grids->at(i)->surfaces->at(j), SIGNAL(generatesurface()), genisosurfsignalMapper,
-//                                SLOT(map()), Qt::UniqueConnection);
-//                genisosurfsignalMapper->setMapping(grids->at(i)->surfaces->at(j),j);
-
-//                connections << connect(grids->at(i)->surfaces->at(j), SIGNAL(updatedisplay()), updateisosurfsignalMapper,
-//                                SLOT(map()), Qt::UniqueConnection);
-//                updateisosurfsignalMapper->setMapping(grids->at(i)->surfaces->at(j),j);
-
-//                connections << connect(grids->at(i)->surfaces->at(j), SIGNAL(updatelabelcolor(QString)), BTNeditisosurf,
-//                                SLOT(setStyleSheet(QString)), Qt::UniqueConnection);
-//                connections << connect(grids->at(i)->surfaces->at(j), SIGNAL(updatelabelcolor(QString)), BTNdeleteisosurf,
-//                                SLOT(setStyleSheet(QString)), Qt::UniqueConnection);
-//                connections << connect(grids->at(i)->surfaces->at(j), SIGNAL(updatelabelcolor(QString)), BTNshowisosurf,
-//                                SLOT(setStyleSheet(QString)), Qt::UniqueConnection);
-
-//                layoutgrids->addWidget(LBLisosurf,knt+1,0,1,2);
-//                layoutgrids->addWidget(BTNeditisosurf,knt+1,2);
-//                layoutgrids->addWidget(BTNshowisosurf,knt+1,3);
-//                layoutgrids->addWidget(BTNdeleteisosurf,knt+1,4);
-//                layoutgrids->addWidget(FRMisosurface,++knt+1,0,1,5);
-//                knt++;
-//            }
-//            connections << connect (delisosurfsignalMapper, SIGNAL(mapped(int)), this,
-//                            SLOT(closeisosurfeditors()), Qt::UniqueConnection) ;
-//            connections << connect (delisosurfsignalMapper, SIGNAL(mapped(int)), grids->at(i),
-//                            SLOT(deletesurf(int)), Qt::UniqueConnection) ;
-//            connections << connect (delisosurfsignalMapper, SIGNAL(mapped(int)), this, SLOT(emitupdatedisplay()), Qt::UniqueConnection) ;
-//            connections << connect (genisosurfsignalMapper, SIGNAL(mapped(int)), grids->at(i),
-//                            SLOT(generatesurf(int)), Qt::UniqueConnection) ;
-//            connections << connect (showisosurfsignalMapper, SIGNAL(mapped(int)), grids->at(i),
-//                            SLOT(toggleshowsurf(int)), Qt::UniqueConnection) ;
-//            connections << connect (updateisosurfsignalMapper, SIGNAL(mapped(int)), this,
-//                            SLOT(emitupdatedisplay()), Qt::UniqueConnection) ;
-//        }
-//        connections << connect (deletegridsignalMapper, SIGNAL(mapped(int)), this, SLOT(deletegrid(int)), Qt::UniqueConnection) ;
-//    }
-//    layoutgrids->addWidget(LBLloadinggrid,knt+1,0,1,5);
-//}
+//      create_grids_widgets_and_layouts()  Add grid for isosurface
 void molecule::create_grids_widgets_and_layouts()
 {
     int knt = 0;
@@ -2128,8 +2006,8 @@ void molecule::create_grids_widgets_and_layouts()
 
             ++knt;
 
-            for (int j = 0; j < grid->surfaces->count(); ++j) {
-                auto *isosurface = grid->surfaces->at(j);
+            for (int j = 0; j < grid->surfaces.count(); ++j) {
+                auto *isosurface = grid->surfaces.at(j);
 
                 LBLavailablegrids->setText(
                     tr("<font color=\"black\">Loaded grids</font> "
@@ -3068,8 +2946,8 @@ void molecule::CHKshowsymbols_changed(int a){
 void molecule::closeisosurfeditors(){
     if (grids){
         for (int i = 0 ; i < grids->count() ; i++){
-            for (int j = 0 ; j < grids->at(i)->surfaces->count() ; j++){
-                grids->at(i)->surfaces->at(j)->closeeditor();
+            for (int j = 0 ; j < grids->at(i)->surfaces.count() ; j++){
+                grids->at(i)->surfaces.at(j)->closeeditor();
             }
         }
     }
@@ -3212,8 +3090,8 @@ bool molecule::loadsurf(){
 void molecule::QDLeditMolecule_close(){
     if (QDLeditMolecule){
         for (int i = 0 ; i < grids->count() ; i++){
-            for (int j = 0 ; j < grids->at(i)->surfaces->count() ; j++){
-                grids->at(i)->surfaces->at(j)->closeeditor();
+            for (int j = 0 ; j < grids->at(i)->surfaces.count() ; j++){
+                grids->at(i)->surfaces.at(j)->closeeditor();
             }
         }
         if (scrollArea){
@@ -3553,8 +3431,8 @@ void molecule::updateQDLeditMolecule(bool a){
     if (QDLeditMolecule){
         if (!a){
             for (int i = 0 ; i < grids->count() ; i++){
-                for (int j = 0 ; j < grids->at(i)->surfaces->count() ; j++){
-                    grids->at(i)->surfaces->at(j)->closeeditor();
+                for (int j = 0 ; j < grids->at(i)->surfaces.count() ; j++){
+                    grids->at(i)->surfaces.at(j)->closeeditor();
                 }
             }
             updateeditMoleculeDialog();
@@ -4113,19 +3991,20 @@ void molecule::darken(){
             }
         }
     }
-    if (grids && !grids->isEmpty()){
-        for (int i = 0 ; i < grids->count() ; i++){
-            if (grids->at(i)->surfaces && !grids->at(i)->surfaces->isEmpty()){
-                for (int j = 0 ; j < grids->at(i)->surfaces->count() ; j++){
-                    for (int k = 0 ; k < grids->at(i)->surfaces->at(j)->allvertices.length() ; k++){
-                        Vertices = grids->at(i)->surfaces->at(j)->allvertices.at(k);
-                        Vertices.color -=  darkenshift;
-                        grids->at(i)->surfaces->at(j)->allvertices.replace(k,Vertices);
-                    }
-                }
+
+    if (grids) {
+        for (grid *currentGrid : *grids) {
+            if (!currentGrid)
+                continue;
+
+            for (isosurface *surface : currentGrid->surfaces) {
+                if (surface)
+                    surface->shiftVertexColors(-darkenshift);
             }
         }
     }
+
+
     emit updatedisplay();
 }
 
@@ -4169,16 +4048,15 @@ void molecule::lighten(){
             }
         }
     }
-    if (grids && !grids->isEmpty()){
-        for (int i = 0 ; i < grids->count() ; i++){
-            if (grids->at(i)->surfaces && !grids->at(i)->surfaces->isEmpty()){
-                for (int j = 0 ; j < grids->at(i)->surfaces->count() ; j++){
-                    for (int k = 0 ; k < grids->at(i)->surfaces->at(j)->allvertices.length() ; k++){
-                        Vertices = grids->at(i)->surfaces->at(j)->allvertices.at(k);
-                        Vertices.color +=  darkenshift;
-                        grids->at(i)->surfaces->at(j)->allvertices.replace(k,Vertices);
-                    }
-                }
+
+    if (grids) {
+        for (grid *currentGrid : *grids) {
+            if (!currentGrid)
+                continue;
+
+            for (isosurface *surface : currentGrid->surfaces) {
+                if (surface)
+                    surface->shiftVertexColors(darkenshift);
             }
         }
     }

@@ -28,6 +28,7 @@
 #ifndef GRID_H
 #define GRID_H
 
+#include <QList>
 #include <QObject>
 #include <QProgressBar>
 #include <QVector>
@@ -38,12 +39,12 @@
 #include "CIsoSurface.h"
 #include "VVBuffer.h"
 
-#if __cplusplus <= 199711L
-    #define nullpointer NULL
-#else
-//  C++11 compliant compiler
-    #define nullpointer nullptr
-#endif
+//#if __cplusplus <= 199711L
+//    #define nullpointer NULL
+//#else
+////  C++11 compliant compiler
+//    #define nullpointer nullptr
+//#endif
 
 class grid : public QWidget
 {
@@ -53,16 +54,14 @@ public:
 
     ~grid();
 
-    bool loadderiv(FILE *, VVBuffer *, int *, float *, int, QProgressBar *);
     bool loadderivnew(QFile *f, VVBuffer*v, int *iref, float *vref, int kntbar, QProgressBar *bar);
     bool loadnormals(FILE *f1, FILE *f2, FILE *f3, VVBuffer *v1, VVBuffer *v2, VVBuffer *v3, int *, float *, int, QProgressBar *);
-    bool readplt(QString);
     bool readpltnew(QString);
 
     float getmaxcontourvalue();
     float getmincontourvalue();
 
-    QList<isosurface*> *surfaces;
+    QList<isosurface*> surfaces;
 
     QPoint getinitialposition();
 
@@ -89,9 +88,10 @@ public slots:
     void toggleshowsurf(int);
 
 private: 
-    bool compatderiv;
+    void copyMeshToSurface(const CIsoSurface<float>& iso,
+                           isosurface* surface);
 
-    CIsoSurface<float> *cisosurface;
+    bool compatderiv;
 
     float maxcontourvalue;                // Highest contourvalue available
     float mincontourvalue;                // Lowest contourvalue available

@@ -40,7 +40,7 @@ MODULE DAMISODEN_400_D
     integer(KINT), allocatable ::  indices(:), interpolmat(:,:), nind(:), nvert(:), tritable(:,:)
     real(KREAL), parameter :: angstromtobohr = 1.889725989d0
     real(KREAL) :: a, aux, b, bux, c, contourval, cux, d, den, denrep, dendrvx, disthresq, drvxtot
-    real(KREAL) :: dendrvy, drvytot, dendrvz, drvztot, errabs, s, surftot, surftrian
+    real(KREAL) :: dendrvy, drvytot, dendrvz, drvztot, errabs, geomthr, s, surftot, surftrian
     real(KREAL) :: thresmax, thresmin, volume, voltetrahed, volvoxel
     real(KREAL) :: x, xini, xinterp, xfin, y, yini, yinterp, yfin, z, zini, zinterp, zfin
     real(KREAL), allocatable :: gradient(:), grid(:), fvoxel(:), vertices(:,:), vertices2(:)
@@ -68,7 +68,8 @@ END MODULE
     USE DAM_400_CONST_D
     USE DAM_400_DATA_D
     USE DAMQT_UTILS
-    USE DAMPOT_400_D
+!    USE DAMDEN_400_D
+    USE DAMDEN_400_D
     USE DAMISODEN_400_D
     USE PARALELO
     implicit none
@@ -634,17 +635,6 @@ END MODULE
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
-
-    allocate (ra2l1((lmaxrep+1)**2), ra2l1inv((lmaxrep+1)**2), stat = ierr)
-    if (ierr .ne. 0) then
-        write(6,"('Error ' i5, ' allocating ra2l1 and ra2l1inv in processor ', i3)") ierr, myrank
-        abort= 1
-    endif
-    CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
-    if (abortroot .gt. 0) then
-        call error(1,'Stop')
-    endif
     
     allocate (gradient(3*kntvert), stat = ierr)
     if (ierr .ne. 0) then
@@ -1023,7 +1013,7 @@ write(6,"(/,'remove_files base = ', a)") base
     USE DAM_400_D
     USE DAM_400_CONST_D
     USE DAM_400_DATA_D
-    USE DAMPOT_400_D
+    USE DAMDEN_400_D
     implicit none
     integer(KINT) :: i
     real(KREAL) :: aux, ss, sd
@@ -1066,7 +1056,7 @@ write(6,"(/,'remove_files base = ', a)") base
   subroutine readdamqtisoden
     USE MPI
     USE DAM_400_D
-    USE DAMPOT_400_D
+    USE DAMDEN_400_D
     USE DAM_400_CONST_D
     USE DAM_400_DATA_D
     USE GAUSS
@@ -1432,7 +1422,7 @@ write(6,"(/,'remove_files base = ', a)") base
 
   subroutine densrepr(ia, x, y, z, denrep, dendrvx, dendrvy, dendrvz)
     USE DAM_400_D
-    USE DAMPOT_400_D
+    USE DAMDEN_400_D
     USE DAM_400_CONST_D
     USE DAM_400_DATA_D
     implicit none

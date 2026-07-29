@@ -45,83 +45,18 @@
 #include <math.h>
 #include "GlobalInfo.h"
 
-isosurface::isosurface(QWidget *parent) : QWidget(parent)
+isosurface::isosurface(QWidget *parent)
+    : QWidget(parent),
+      surfcolor(245, 0, 0),
+      initialposition(200, 300)
+
 {
-//#if defined(Q_WS_WIN) || defined(Q_OS_WIN)
-//    iswindows = true;    // To be used by fortran programs
-//    mpi = false;
-//#else //Q_WS_X11, Q_WS_MAC
-//    iswindows = false;
-//#endif
-//    qDebug() << "iswindows = " << iswindows;
-//    qDebug() << "mpi = " << mpi;
-//    qDebug() << "maxnumprocessors = " << maxnumprocessors;
-    allindices.clear();
-    allvertices.clear();
-    connections.clear();
-    griddimensions.clear();
-    gridindices.clear();
-    gridindicesoffset.clear();
-    gridvertices.clear();
-    BTNexec = nullpointer;
-    BTNstop = nullpointer;
-    BTNsurfcolor = nullpointer;
-    CHKmpi = nullpointer;
-    CHKnormalgrad = nullpointer;
-    CHKshowgrid = nullpointer;
-    CHKtranslucence = nullpointer;
-    FRMhighquality = nullpointer;
-    FRMisosurface = nullpointer;
-    FRMsurfcolor = nullpointer;
-    FRMsurftype = nullpointer;
-    initialposition = QPoint(200,300);
-    LBLalpha = nullpointer;
-    LBLcontourvalue = nullpointer;
-    LBLfilename = nullpointer;
-    LBLmpi = nullpointer;
-    LBLopacity = nullpointer;
-    LBLscale = nullpointer;
-    LBLsensitive = nullpointer;
-    LBLstatus = nullpointer;
-    myDoubleValidator = nullpointer;
-    myProcess = nullpointer;
-    RBTscalelin = nullpointer;
-    RBTscalelog = nullpointer;
-    RBTsolidsurf = nullpointer;
-    RBTwiresurf = nullpointer;
-    SLDcontourvalue = nullpointer;
-    SLDopacity = nullpointer;
-    SPBmpi = nullpointer;
-    SPBopacity = nullpointer;
-    SPBsensitive = nullpointer;
-    TXTcontourvalue = nullpointer;
-    TXTisosurffilename = nullpointer;
 
-    contourvalue = 0.;
-    logdlt = 3;
-    mincontourvalue = -1.0;
-    maxcontourvalue = 1.0;
-    nprocessors = 1;
-    opacity = 1.0;
-
-    surfcolor = QColor(245,0,0);
-    editoropen = false;
-    isdensity = true;
-    solidsurf = true;
     settranslucence(false);
     setvisible(true);
-    showgridbound = false;
-    normalgrad = false;
-    compatderiv = false;
-
-    basename = "";
 }
 
-isosurface::~isosurface(){
-    for (int i = 0 ; i < connections.size() ; i++){
-        QObject::disconnect(connections.at(i));
-    }
-}
+//isosurface::~isosurface() = default;
 
 //  ------------------------------------------------------------------------------------------------------------------
 //
@@ -146,7 +81,7 @@ togglingGroupBox * isosurface::editisosurface(){
     TXTcontourvalue->setValidator(myDoubleValidator);
     TXTcontourvalue->setAlignment(Qt::AlignRight);
     TXTcontourvalue->setText(QString("%1").arg(contourvalue));
-    connections << connect(TXTcontourvalue, SIGNAL(textchanged()), this, SLOT(TXTcontourvalue_changed()));
+    connect(TXTcontourvalue, SIGNAL(textchanged()), this, SLOT(TXTcontourvalue_changed()));
 
     if (!LBLscale)
         LBLscale = new QLabel(tr("Scale")+":");
@@ -157,15 +92,15 @@ togglingGroupBox * isosurface::editisosurface(){
 
     if (!RBTscalelin)
         RBTscalelin = new QRadioButton(tr("Linear"));
-    connections << connect(RBTscalelog, SIGNAL(toggled(bool)), this, SLOT(RBTscale_changed()));
+    connect(RBTscalelog, SIGNAL(toggled(bool)), this, SLOT(RBTscale_changed()));
 
     if (!SLDcontourvalue)
         SLDcontourvalue = new QSlider(Qt::Horizontal);
     SLDcontourvalue->setRange(0,1000);
     SLDcontourvalue->setSliderPosition(getscalevalueInt(contourvalue,SLDcontourvalue->minimum(),SLDcontourvalue->maximum(),
                                     mincontourvalue,maxcontourvalue, RBTscalelog->isChecked()));
-    connections << connect(SLDcontourvalue, SIGNAL(valueChanged(int)), this, SLOT(SLDcontourvalue_changed(int)));
-    connections << connect(SLDcontourvalue, SIGNAL(sliderReleased()), this, SLOT(SLDcontourvalue_released()));
+    connect(SLDcontourvalue, SIGNAL(valueChanged(int)), this, SLOT(SLDcontourvalue_changed(int)));
+    connect(SLDcontourvalue, SIGNAL(sliderReleased()), this, SLOT(SLDcontourvalue_released()));
 
     if (!LBLsensitive)
         LBLsensitive = new QLabel(tr("Sensitiveness")+":");
@@ -179,7 +114,7 @@ togglingGroupBox * isosurface::editisosurface(){
     SPBsensitive->setValue(3);
     SPBsensitive->setVisible(true);
     logdlt = SPBsensitive->value();
-    connections << connect(SPBsensitive,SIGNAL(valueChanged(int)),this,SLOT(SPBsensitive_changed(int)));
+    connect(SPBsensitive,SIGNAL(valueChanged(int)),this,SLOT(SPBsensitive_changed(int)));
 
 //        Surface color and type
     if (!FRMsurfcolor)
@@ -188,7 +123,7 @@ togglingGroupBox * isosurface::editisosurface(){
     if (!BTNsurfcolor)
         BTNsurfcolor = new ColorButton(QIcon(":/images/colores48.png"),tr("Color"));
     BTNsurfcolor->setColor(&surfcolor);
-    connections << connect(BTNsurfcolor, SIGNAL(clicked()), this, SLOT(BTNsurfcolor_clicked()));
+    connect(BTNsurfcolor, SIGNAL(clicked()), this, SLOT(BTNsurfcolor_clicked()));
 
     if (!FRMsurftype)
         FRMsurftype = new QGroupBox(tr("Surface type"));
@@ -200,7 +135,7 @@ togglingGroupBox * isosurface::editisosurface(){
     if (!RBTwiresurf)
         RBTwiresurf = new QRadioButton(tr("Wire frame"));
     RBTwiresurf->setChecked(!solidsurf);
-    connections << connect(RBTsolidsurf, SIGNAL(toggled (bool)), this, SLOT(RBTsurftype_changed()));
+    connect(RBTsolidsurf, SIGNAL(toggled (bool)), this, SLOT(RBTsurftype_changed()));
 
 //        Opacity
     if (!LBLopacity)
@@ -218,29 +153,29 @@ togglingGroupBox * isosurface::editisosurface(){
     SLDopacity->setPageStep(10);
     SLDopacity->setTickPosition(QSlider::TicksBelow);
     SLDopacity->setValue(100.f * opacity);
-    connections << connect(SLDopacity, SIGNAL(valueChanged(int)), this, SLOT(SLDopacity_changed(int)));
-    connections << connect(SLDopacity, SIGNAL(valueChanged(int)), LBLalpha, SLOT(setNum(int)));
-    connections << connect(SLDopacity, SIGNAL(sliderReleased()), this, SLOT(SLDopacity_released()));
+    connect(SLDopacity, SIGNAL(valueChanged(int)), this, SLOT(SLDopacity_changed(int)));
+    connect(SLDopacity, SIGNAL(valueChanged(int)), LBLalpha, SLOT(setNum(int)));
+    connect(SLDopacity, SIGNAL(sliderReleased()), this, SLOT(SLDopacity_released()));
 
 //        Translucency correction
     if (!CHKtranslucence)
         CHKtranslucence = new QCheckBox(tr("Translucence correction"));
     CHKtranslucence->setChecked(false);
-    connections << connect(CHKtranslucence, SIGNAL(stateChanged(int)), this, SLOT(CHKtranslucence_changed()));
+    connect(CHKtranslucence, SIGNAL(stateChanged(int)), this, SLOT(CHKtranslucence_changed()));
 
 //        Normals computed from interpolated gradient
     if (!CHKnormalgrad)
         CHKnormalgrad = new QCheckBox(tr("Compute normals from interpolated gradient"));
     CHKnormalgrad->setChecked(normalgrad);
     CHKnormalgrad->setVisible(compatderiv);
-    connections << connect(CHKnormalgrad, SIGNAL(stateChanged(int)), this, SLOT(CHKnormalgrad_changed()));
+    connect(CHKnormalgrad, SIGNAL(stateChanged(int)), this, SLOT(CHKnormalgrad_changed()));
 
     //        Show grid
     if (!CHKshowgrid)
         CHKshowgrid = new QCheckBox(tr("Show grid boundaries"));
     CHKshowgrid->setChecked(false);
     showgridbound = false;
-    connections << connect(CHKshowgrid, SIGNAL(stateChanged(int)), this, SLOT(CHKshowgrid_changed()));
+    connect(CHKshowgrid, SIGNAL(stateChanged(int)), this, SLOT(CHKshowgrid_changed()));
 
 
     if (!FRMhighquality)
@@ -277,16 +212,16 @@ togglingGroupBox * isosurface::editisosurface(){
         SPBmpi->setHidden(true);
         SPBmpi->setEnabled(false);
     }
-    connections << connect(CHKmpi, SIGNAL(stateChanged(int)), this, SLOT(CHKmpi_changed(int)));
-    connections << connect(SPBmpi, SIGNAL(valueChanged(int)), this, SLOT(SPBmpi_changed(int)));
+    connect(CHKmpi, SIGNAL(stateChanged(int)), this, SLOT(CHKmpi_changed(int)));
+    connect(SPBmpi, SIGNAL(valueChanged(int)), this, SLOT(SPBmpi_changed(int)));
 
     if (!BTNexec)
         BTNexec = new QPushButton(QIcon(":/images/exec.png"), tr("Exec"),FRMhighquality);
-    connections << connect(BTNexec, SIGNAL(clicked()), this, SLOT(BTNexec_clicked()));
+    connect(BTNexec, SIGNAL(clicked()), this, SLOT(BTNexec_clicked()));
 
     if (!BTNstop)
         BTNstop = new QPushButton(QIcon(":/images/stop.png"), tr("Stop"),FRMhighquality);
-    connections << connect(BTNstop, SIGNAL(clicked()), this, SLOT(processStop()));
+    connect(BTNstop, SIGNAL(clicked()), this, SLOT(processStop()));
 
     if (!LBLstatus)
         LBLstatus = new QLabel(tr(""),FRMhighquality);
@@ -393,65 +328,65 @@ void isosurface::closeeditor(){
         return;
     }
     delete LBLstatus;
-    LBLstatus = nullpointer;
+    LBLstatus = nullptr;
     delete LBLfilename;
-    LBLfilename = nullpointer;
+    LBLfilename = nullptr;
     delete TXTisosurffilename;
-    TXTisosurffilename = nullpointer;
+    TXTisosurffilename = nullptr;
     delete SPBmpi;
-    SPBmpi = nullpointer;
+    SPBmpi = nullptr;
     delete LBLmpi;
-    LBLmpi = nullpointer;
+    LBLmpi = nullptr;
     delete CHKmpi;
-    CHKmpi = nullpointer;
+    CHKmpi = nullptr;
     delete BTNexec;
-    BTNexec = nullpointer;
+    BTNexec = nullptr;
     delete BTNstop;
-    BTNstop = nullpointer;
+    BTNstop = nullptr;
     delete BTNsurfcolor;
-    BTNsurfcolor = nullpointer;
+    BTNsurfcolor = nullptr;
     delete CHKnormalgrad;
-    CHKnormalgrad = nullpointer;
+    CHKnormalgrad = nullptr;
     delete CHKshowgrid;
-    CHKshowgrid = nullpointer;
+    CHKshowgrid = nullptr;
     delete CHKtranslucence;
-    CHKtranslucence = nullpointer;
+    CHKtranslucence = nullptr;
     delete LBLalpha;
-    LBLalpha = nullpointer;
+    LBLalpha = nullptr;
     delete LBLcontourvalue;
-    LBLcontourvalue = nullpointer;
+    LBLcontourvalue = nullptr;
     delete LBLopacity;
-    LBLopacity = nullpointer;
+    LBLopacity = nullptr;
     delete LBLscale;
-    LBLscale = nullpointer;
+    LBLscale = nullptr;
     delete LBLsensitive;
-    LBLsensitive = nullpointer;
+    LBLsensitive = nullptr;
     delete myDoubleValidator;
-    myDoubleValidator = nullpointer;
+    myDoubleValidator = nullptr;
     delete RBTscalelin;
-    RBTscalelin = nullpointer;
+    RBTscalelin = nullptr;
     delete RBTscalelog;
-    RBTscalelog = nullpointer;
+    RBTscalelog = nullptr;
     delete RBTsolidsurf;
-    RBTsolidsurf = nullpointer;
+    RBTsolidsurf = nullptr;
     delete RBTwiresurf;
-    RBTwiresurf = nullpointer;
+    RBTwiresurf = nullptr;
     delete SLDcontourvalue;
-    SLDcontourvalue = nullpointer;
+    SLDcontourvalue = nullptr;
     delete SLDopacity;
-    SLDopacity = nullpointer;
+    SLDopacity = nullptr;
     delete SPBsensitive;
-    SPBsensitive = nullpointer;
+    SPBsensitive = nullptr;
     delete TXTcontourvalue;
-    TXTcontourvalue = nullpointer;
+    TXTcontourvalue = nullptr;
     delete FRMhighquality;
-    FRMhighquality = nullpointer;
+    FRMhighquality = nullptr;
     delete FRMsurftype;
-    FRMsurftype = nullpointer;
+    FRMsurftype = nullptr;
     delete FRMsurfcolor;
-    FRMsurfcolor = nullpointer;
+    FRMsurfcolor = nullptr;
     delete FRMisosurface;
-    FRMisosurface = nullpointer;
+    FRMisosurface = nullptr;
 
     editoropen = false;
 }
@@ -632,7 +567,7 @@ void isosurface::BTNexec_clicked(){
     }
     if (myProcess){
         delete myProcess;
-        myProcess = nullpointer;
+        myProcess = nullptr;
     }
     myProcess = new QProcess(this);
     myProcess->setStandardInputFile(stdinput);
@@ -898,14 +833,14 @@ void isosurface::TXTcontourvalue_changed(){
 //
 //  ------------------------------------------------------------------------------------------------------------------
 
-void isosurface::generategridbounds(float *a){
-    float xmin, xmax, ymin, ymax, zmin, zmax;
-    xmin = a[0];
-    xmax = a[1];
-    ymin = a[2];
-    ymax = a[3];
-    zmin = a[4];
-    zmax = a[5];
+void isosurface::generategridbounds(const float *a){
+//    float xmin, xmax, ymin, ymax, zmin, zmax;
+    const float xmin = a[0];
+    const float xmax = a[1];
+    const float ymin = a[2];
+    const float ymax = a[3];
+    const float zmin = a[4];
+    const float zmax = a[5];
     gridvertices.clear();
     QVector4D color = QVector4D(1.,0.5,0.,1.);
     VertexNormalData v;
@@ -1094,16 +1029,54 @@ void isosurface::setvisible(bool a){
 }
 
 
+void isosurface::clearGeometry()
+{
+    allvertices.clear();
+    allindices.clear();
+}
+
+void isosurface::reserveVertices(int count)
+{
+    allvertices.reserve(count);
+}
+
+void isosurface::reserveIndices(int count)
+{
+    allindices.reserve(count);
+}
+
+void isosurface::addVertex(const VertexNormalData &vertex)
+{
+    allvertices.append(vertex);
+}
+
+void isosurface::addIndex(GLuint index)
+{
+    allindices.append(index);
+}
+
+const QVector<VertexNormalData> &isosurface::vertices() const
+{
+    return allvertices;
+}
+
+const QVector<GLuint> &isosurface::indices() const
+{
+    return allindices;
+}
+
+void isosurface::shiftVertexColors(const QVector4D &shift)
+{
+    for (VertexNormalData &vertex : allvertices)
+        vertex.color += shift;
+}
+
 /*******************************************************************************************************/
 /********************************  Class editIsoSurfaceDialog  implementation  *******************************/
 /*******************************************************************************************************/
 
 editIsoSurfaceDialog::editIsoSurfaceDialog(QWidget *parent) : QDialog(parent)
 {
-
-}
-
-editIsoSurfaceDialog::~editIsoSurfaceDialog(){
 
 }
 

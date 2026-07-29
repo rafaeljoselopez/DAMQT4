@@ -217,11 +217,11 @@ void MoleculeSettingsLoader::loadGrids(
         for (int j = 0; j < isosurfaceCount; j++) {
             currentGrid->addisosurf();
 
-            if (currentGrid->surfaces->isEmpty())
+            if (currentGrid->surfaces.isEmpty())
                 continue;
 
             isosurface *currentIsosurface =
-                currentGrid->surfaces->last();
+                currentGrid->surfaces.last();
 
             applyIsosurfaceSettings(
                 currentIsosurface,
@@ -235,7 +235,7 @@ void MoleculeSettingsLoader::loadGrids(
              * position of the newly created isosurface.
              */
             const int generatedIndex =
-                currentGrid->surfaces->size() - 1;
+                currentGrid->surfaces.size() - 1;
 
             currentGrid->generatesurf(generatedIndex);
         }

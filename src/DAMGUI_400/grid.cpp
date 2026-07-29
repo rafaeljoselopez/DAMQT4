@@ -28,7 +28,7 @@
 #include <QDialog>
 #include <QLabel>
 #include <QMessageBox>
-#include <QHBoxLayout>
+#include <QHBoxLayout>#include <QList>
 #include <QVBoxLayout>
 
 #include <QFile>
@@ -44,13 +44,12 @@
 grid::grid(QWidget *parent) : QWidget(parent)
 {
     initialposition = QPoint(100,500);
-    surfaces = new QList<isosurface*>();
     compatderiv = false;
-    fun   = nullpointer;
-    dxfun = nullpointer;
-    dyfun = nullpointer;
-    dzfun = nullpointer;
-    cisosurface = nullpointer;
+    fun   = nullptr;
+    dxfun = nullptr;
+    dyfun = nullptr;
+    dzfun = nullptr;
+//    cisosurface = nullptr;
     sup_corner_max = QVector3D(0,0,0);
     sup_corner_min = QVector3D(0,0,0);
     nameindex = 0;
@@ -65,35 +64,12 @@ grid::grid(QWidget *parent) : QWidget(parent)
 }
 
 grid::~grid(){
-    if (fun){
-        delete fun;
-        fun = nullpointer;
-    }
-    if (dxfun){
-        delete dxfun;
-        dxfun = nullpointer;
-    }
-    if (dyfun){
-        delete dyfun;
-        dyfun = nullpointer;
-    }
-    if (dzfun){
-        delete dzfun;
-        dzfun = nullpointer;
-    }
-    if (surfaces){
-        for (int i = surfaces->count()-1 ; i >= 0  ; i--){
-            delete surfaces->at(i);
-//            surfaces->replace(i,nullpointer);
-        }
-        surfaces->clear();
-        delete surfaces;
-        surfaces = nullpointer;
-    }
-    if (cisosurface){
-        delete cisosurface;
-        cisosurface = nullpointer;
-    }
+    delete fun;
+    delete dxfun;
+    delete dyfun;
+    delete dzfun;
+
+    qDeleteAll(surfaces);
 }
 
 QString grid::getfullname(){
@@ -105,88 +81,161 @@ QString grid::getname(){
 }
 
 void grid::addisosurf(){
-    surfaces->append(new isosurface());
-    surfaces->last()->set_ProjectFolder(ProjectFolder);
-    surfaces->last()->set_ProjectName(ProjectName);
-    surfaces->last()->setname(name.remove(".plt")+QString(tr("_surf_%1")).arg(nameindex));
-    surfaces->last()->setfullname(fullname+QString(tr("_surf_%1")).arg(nameindex++));
-    surfaces->last()->setmaxcontourvalue(maxcontourvalue);
-    surfaces->last()->setmincontourvalue(mincontourvalue);
-    surfaces->last()->setinitialposition(QPoint(getinitialposition())+QPoint(20,100)*(surfaces->count()-1)+QPoint(0,10));
-    surfaces->last()->setsurfcolor(this->surfcolors.at((nameindex-1)%surfcolors.count()));
-    surfaces->last()->setcompatderiv(compatderiv);
+    surfaces.append(new isosurface());
+    surfaces.last()->set_ProjectFolder(ProjectFolder);
+    surfaces.last()->set_ProjectName(ProjectName);
+    surfaces.last()->setname(name.remove(".plt")+QString(tr("_surf_%1")).arg(nameindex));
+    surfaces.last()->setfullname(fullname+QString(tr("_surf_%1")).arg(nameindex++));
+    surfaces.last()->setmaxcontourvalue(maxcontourvalue);
+    surfaces.last()->setmincontourvalue(mincontourvalue);
+    surfaces.last()->setinitialposition(QPoint(getinitialposition())+QPoint(20,100)*(surfaces.count()-1)+QPoint(0,10));
+    surfaces.last()->setsurfcolor(this->surfcolors.at((nameindex-1)%surfcolors.count()));
+    surfaces.last()->setcompatderiv(compatderiv);
     emit surfaceadded();
 }
 
 void grid::deletesurf(int i){
     // All surfaces editors must be closed to prevent crash
-    for (int j = 0 ; j < surfaces->length() ; j++){
-        surfaces->at(j)->closeeditor();
+    for (int j = 0 ; j < surfaces.length() ; j++){
+        surfaces.at(j)->closeeditor();
     }
-    delete surfaces->at(i);
-    surfaces->removeAt(i);   
+    delete surfaces.at(i);
+    surfaces.removeAt(i);
     emit surfacedeleted();
 }
 
+void grid::copyMeshToSurface(const CIsoSurface<float>& iso,
+                             isosurface* surface)
+{
+    if (!surface)
+        return;
 
-void grid::generatesurf(int i){
-    if (cisosurface){
-        delete cisosurface;
-        cisosurface = nullpointer;
+//    surface->allvertices.clear();
+//    surface->allvertices.reserve(static_cast<int>(iso.m_nVertices));
+
+    surface->clearGeometry();
+    surface->reserveVertices(static_cast<int>(iso.m_nVertices));
+
+    const QColor surfaceColor = surface->getsurfcolor();
+    const float opacity = surface->getopacity();
+
+    const QVector4D vertexColor(
+        surfaceColor.redF(),
+        surfaceColor.greenF(),
+        surfaceColor.blueF(),
+        opacity
+    );
+
+    const QVector3D displacement = sup_corner_min;
+
+    for (unsigned int i = 0; i < iso.m_nVertices; ++i) {
+        VertexNormalData vertex;
+
+        vertex.position = QVector3D(
+            iso.m_ppt3dVertices[i][0],
+            iso.m_ppt3dVertices[i][1],
+            iso.m_ppt3dVertices[i][2]
+        ) + displacement;
+
+        vertex.normal = QVector3D(
+            iso.m_pvec3dNormals[i][0],
+            iso.m_pvec3dNormals[i][1],
+            iso.m_pvec3dNormals[i][2]
+        );
+
+        vertex.color = vertexColor;
+
+//        surface->allvertices.append(vertex);
+
+        surface->addVertex(vertex);
     }
-    cisosurface = new CIsoSurface<float>();
-    float cell_sizes[3] = {	fun->voxel_x() / (fun->x()-1), fun->voxel_y() / (fun->y()-1), fun->voxel_z() / (fun->z()-1)};
-    if (compatderiv && surfaces->at(i)->getnormalgrad()){
-        cisosurface->GenerateSurfacewithgrad(fun->data(), dxfun->data(), dyfun->data(), dzfun->data(), surfaces->at(i)->getcontourvalue(),
-                    fun->x()-1, fun->y()-1, fun->z()-1, cell_sizes[0], cell_sizes[1], cell_sizes[2]);
+
+    const unsigned int indexCount = 3 * iso.m_nTriangles;
+
+//    surface->allindices.clear();
+//    surface->allindices.reserve(static_cast<int>(indexCount));
+
+    surface->reserveIndices(static_cast<int>(indexCount));
+
+    for (unsigned int i = 0; i < indexCount; ++i)
+//        surface->allindices.append(iso.m_piTriangleIndices[i]);
+
+        surface->addIndex(iso.m_piTriangleIndices[i]);
+}
+
+
+void grid::generatesurf(int i)
+{
+    auto* surface = surfaces.at(i);
+
+    CIsoSurface<float> iso;
+
+    const float cellSizes[3] = {
+        fun->voxel_x() / (fun->x() - 1),
+        fun->voxel_y() / (fun->y() - 1),
+        fun->voxel_z() / (fun->z() - 1)
+    };
+
+    if (compatderiv && surface->getnormalgrad()) {
+        iso.GenerateSurfacewithgrad(
+            fun->data(),
+            dxfun->data(),
+            dyfun->data(),
+            dzfun->data(),
+            surface->getcontourvalue(),
+            fun->x() - 1,
+            fun->y() - 1,
+            fun->z() - 1,
+            cellSizes[0],
+            cellSizes[1],
+            cellSizes[2]
+        );
+    } else {
+        iso.GenerateSurface(
+            fun->data(),
+            surface->getcontourvalue(),
+            fun->x() - 1,
+            fun->y() - 1,
+            fun->z() - 1,
+            cellSizes[0],
+            cellSizes[1],
+            cellSizes[2]
+        );
     }
-    else{
-        cisosurface->GenerateSurface(fun->data(), surfaces->at(i)->getcontourvalue(),
-                    fun->x()-1, fun->y()-1, fun->z()-1, cell_sizes[0], cell_sizes[1], cell_sizes[2]);
-    }
-    if (!cisosurface->IsSurfaceValid()){
-        QMessageBox msgBox;
-        msgBox.setText(tr("generatesurf"));
-        msgBox.setInformativeText(tr("Invalid surface"));
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.exec();
+
+    if (!iso.IsSurfaceValid()) {
+        QMessageBox::warning(
+            this,
+            tr("generatesurf"),
+            tr("Invalid surface")
+        );
         return;
     }
-    else{
-        float despl[3]={sup_corner_min.x(),sup_corner_min.y(),sup_corner_min.z()};
-        if (cisosurface->m_nVertices != cisosurface->m_nNormals){
-            QMessageBox msgBox;
-            msgBox.setText(tr("generatesurf"));
-            msgBox.setInformativeText(tr("Number of vertices (%1)").arg(cisosurface->m_nVertices)
-                + QString(tr("\ndoes not coincide with the number of normals (%1).")).arg(cisosurface->m_nNormals));
-            msgBox.setIcon(QMessageBox::Warning);
-            return;
-        }
-        surfaces->at(i)->allvertices.clear();
-        QColor surfcolor = surfaces->at(i)->getsurfcolor();
-        float opacity = surfaces->at(i)->getopacity();
-        VertexNormalData v;
-        for (unsigned int j = 0 ; j < cisosurface->m_nVertices ; j++){
-            v.position.setX(cisosurface->m_ppt3dVertices[j][0]+despl[0]);
-            v.position.setY(cisosurface->m_ppt3dVertices[j][1]+despl[1]);
-            v.position.setZ(cisosurface->m_ppt3dVertices[j][2]+despl[2]);
-            v.normal.setX(cisosurface->m_pvec3dNormals[j][0]);
-            v.normal.setY(cisosurface->m_pvec3dNormals[j][1]);
-            v.normal.setZ(cisosurface->m_pvec3dNormals[j][2]);
-            v.color.setX(surfcolor.redF());
-            v.color.setY(surfcolor.greenF());
-            v.color.setZ(surfcolor.blueF());
-            v.color.setW(opacity);
-            surfaces->at(i)->allvertices.append(v);
-        }
-        surfaces->at(i)->allindices.clear();
-        for (unsigned int j = 0 ; j < 3*cisosurface->m_nTriangles ; j++){
-            surfaces->at(i)->allindices.append(cisosurface->m_piTriangleIndices[j]);
-        }
-        float vaux[6] = {sup_corner_min[0],sup_corner_max[0],sup_corner_min[1],sup_corner_max[1],
-                         sup_corner_min[2],sup_corner_max[2]};
-        surfaces->at(i)->generategridbounds(vaux);
+
+    if (iso.m_nVertices != iso.m_nNormals) {
+        QMessageBox::warning(
+            this,
+            tr("generatesurf"),
+            tr("Number of vertices (%1)\n"
+               "does not coincide with the number of normals (%2).")
+                .arg(iso.m_nVertices)
+                .arg(iso.m_nNormals)
+        );
+        return;
     }
+
+    copyMeshToSurface(iso, surface);
+
+    const float bounds[6] = {
+        sup_corner_min.x(),
+        sup_corner_max.x(),
+        sup_corner_min.y(),
+        sup_corner_max.y(),
+        sup_corner_min.z(),
+        sup_corner_max.z()
+    };
+
+    surface->generategridbounds(bounds);
 }
 
 QPoint grid::getinitialposition(){
@@ -334,64 +383,6 @@ bool grid::loadnormals(FILE *f1, FILE *f2, FILE *f3, VVBuffer*v1, VVBuffer*v2, V
     }
 }
 
-bool grid::loadderiv(FILE *f, VVBuffer*v, int *iref, float *vref, int kntbar, QProgressBar *bar){
-    bool fdouble;
-    int iaux[3];
-    fread( iaux , sizeof(int) , 2 , f);     // reads two integer values
-    if (iaux[0] == 0){   // if the first one is zero: grid data in double precision
-        fdouble = true;
-    }
-    else{                // elsel grid data: float
-        fdouble = false;
-    }
-    fread( iaux , sizeof(int) , 3 , f);     // reads nz, ny , nx (in this order)
-    if (iaux[0] != iref[0] || iaux[1] != iref[1] || iaux[2] != iref[2])
-        return false;
-    float vaux[6];
-    if (fdouble){
-        double dvaux[6];
-        fread(dvaux , sizeof(double) , 6 , f);
-        for(int i = 0 ; i < 6 ; i++){
-            vaux[i] = (float)dvaux[i];
-        }
-        if (std::abs(vaux[0]-vref[0]) + std::abs(vaux[1]-vref[1]) + std::abs(vaux[2]-vref[2]) + std::abs(vaux[3]-vref[3])
-                + std::abs(vaux[4]-vref[4]) + std::abs(vaux[5]-vref[5]) > 1.e-5){
-            return false;
-        }
-        float *dp = v->data();
-        double *buff=new double[nx];
-        for (int j = 0; j < nz; j++){
-            for (int i = 0; i < ny; i++) {
-                fread(buff, sizeof(double), nx, f);
-                for (int k = 0; k < nx; k++) {
-                        *dp++ = (float)buff[k];
-                }
-                bar->setValue(i*nx+j*nx*ny + kntbar*nx*ny*nz);
-            }
-        }
-        return true;
-    }
-    else{
-        fread(vaux , sizeof(float) , 6 , f);
-        if (std::abs(vaux[0]-vref[0]) + std::abs(vaux[1]-vref[1]) + std::abs(vaux[2]-vref[2]) + std::abs(vaux[3]-vref[3])
-                + std::abs(vaux[4]-vref[4]) + std::abs(vaux[5]-vref[5]) > 1.e-5){
-            return false;
-        }
-        float *dp = v->data();
-        float *buff=new float[nx];
-        for (int j = 0; j < nz; j++){
-            for (int i = 0; i < ny; i++) {
-                fread(buff, sizeof(float), nx, f);
-                for (int k = 0; k < nx; k++) {
-                        *dp++ = (float)buff[k];
-                }
-                bar->setValue(i*nx+j*nx*ny + kntbar*nx*ny*nz);
-            }
-        }
-        return true;
-    }
-}
-
 bool grid::loadderivnew(QFile *inputfile, VVBuffer*v, int *iref, float *vref, int kntbar, QProgressBar *bar){
     bool fdouble;
     int iaux[3];
@@ -447,7 +438,7 @@ bool grid::loadderivnew(QFile *inputfile, VVBuffer*v, int *iref, float *vref, in
     else{
         for (int i = 0 ; i < 6 ; i++){
             bytar = inputfile->read(sizeof(float));
-            memcpy(&vaux[i], bytar.constData(), sizeof(double));
+            memcpy(&vaux[i], bytar.constData(), sizeof(float));
 //            qDebug() << "dvaux[" << i << "] = " << dvaux[i];
         }
         if (std::abs(vaux[0]-vref[0]) + std::abs(vaux[1]-vref[1]) + std::abs(vaux[2]-vref[2]) + std::abs(vaux[3]-vref[3])
@@ -470,156 +461,6 @@ bool grid::loadderivnew(QFile *inputfile, VVBuffer*v, int *iref, float *vref, in
     }
 }
 
-bool grid::readplt(QString filename){
-    const double factor=0.529177249; // units conversion factor
-
-    int  iaux[3]; //iaux[0]=z, iaux[1]=y, iaux[2]=x
-    bool fdouble;
-    bool existderivs;
-    FILE *f, *fdx, *fdy, *fdz;
-    QByteArray ba = filename.toLatin1();
-    ba = ba.remove(ba.size()-4,4);
-    QByteArray badx = ba+QByteArray("-dx.pltd");
-    QByteArray bady = ba+QByteArray("-dy.pltd");
-    QByteArray badz = ba+QByteArray("-dz.pltd");
-    ba = ba.append(".plt");
-    const char *file = ba.data();
-    const char *filedx = badx.data();
-    const char *filedy = bady.data();
-    const char *filedz = badz.data();
-
-//    Open files with function and existderivs
-    f   = fopen(file   , "rb" );
-    fdx = fopen(filedx , "rb" );
-    fdy = fopen(filedy , "rb" );
-    fdz = fopen(filedz , "rb" );
-    existderivs = true;
-    compatderiv = true;
-//    Checks if the files exist
-    if (fdx==nullpointer || fdy==nullpointer || fdz==nullpointer) {
-        existderivs = false;
-        compatderiv = false;
-        if (fdx != nullpointer) fclose(fdx);
-        if (fdy != nullpointer) fclose(fdy);
-        if (fdz != nullpointer) fclose(fdz);
-    }
-//    Read file with function
-    fread( iaux , sizeof(int) , 2 , f); //reads two integers
-    if (iaux[0] == 0)   // if the first one is zero: grid data in double precision
-        fdouble = true;
-    else                // elsel grid data: float
-        fdouble = false;
-    fread( iaux , sizeof(int) , 3 , f); //reads nz, ny , nx (in this order)
-    nx=iaux[2]; ny=iaux[1]; nz=iaux[0];
-    if ( nx < 0 || ny < 0 || nz < 0) {
-        QMessageBox msgBox;
-        msgBox.setText(tr("readplt"));
-        msgBox.setInformativeText(tr("Error: wrong dimensions"));
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.exec();
-        return false;
-    }
-
-    if (!fun)   fun   = new VVBuffer(file, nx, ny, nz);
-    if (!dxfun) dxfun = new VVBuffer(filedx, nx, ny, nz);
-    if (!dyfun) dyfun = new VVBuffer(filedy, nx, ny, nz);
-    if (!dzfun) dzfun = new VVBuffer(filedz, nx, ny, nz);
-
-    QWidget *win;
-    win = new QWidget(this);
-    win->setAutoFillBackground(true);
-    win->setFixedSize(320,50);
-    win->setWindowTitle(tr("Loading files"));
-    win->raise();
-    QVBoxLayout* layout;
-    layout = new QVBoxLayout(this);
-    QLabel *label;
-    label = new QLabel(tr("Loading files"), win);
-    QProgressBar *bar;
-    bar = new QProgressBar(win);
-    bar->resize(300,25);
-    bar->setOrientation(Qt::Horizontal);	//Orientation can be vertical too
-    bar->setMinimumWidth(300);
-    bar->setMaximumWidth(300);
-    bar->setMinimum(0);
-    if (existderivs)
-        bar->setMaximum(4*nx*ny*nz);
-    else
-        bar->setMaximum(nx*ny*nz);
-    layout->addWidget(label,Qt::AlignCenter);
-    layout->addWidget(bar,Qt::AlignCenter);
-    win->setLayout(layout);
-    win->show();
-    float *dp = fun->data();
-    float min = FLT_MAX, max = FLT_MIN;
-    float vaux[6];
-    if (fdouble){
-        double dvaux[6];
-        fread(dvaux , sizeof(double) , 6 , f);
-        for(int i = 0 ; i < 6 ; i++){
-            vaux[i] = (float)dvaux[i];
-        }
-        fun->set_voxel_size((vaux[5]-vaux[4])/factor, (vaux[3]-vaux[2])/factor, (vaux[1]-vaux[0])/factor);
-        double *buff=new double[nx];
-        for (int j = 0; j < nz; j++){
-            for (int i = 0; i < ny; i++) {
-                    fread(buff, sizeof(double), nx, f);
-                    for (int k = 0; k < nx; k++) {
-                            if (max < buff[k]) max = buff[k];
-                            if (min > buff[k]) min = buff[k];
-                            *dp++ = (float)buff[k];
-                    }
-                    bar->setValue(i*nx+j*nx*ny);
-            }
-        }
-    }
-    else{
-        fread(vaux , sizeof(float) , 6 , f);
-        fun->set_voxel_size((vaux[5]-vaux[4])/factor, (vaux[3]-vaux[2])/factor, (vaux[1]-vaux[0])/factor);
-        float *buff=new float[nx];
-        for (int j = 0; j < nz; j++){
-            for (int i = 0; i < ny; i++) {
-                fread(buff, sizeof(float), nx, f);
-                for (int k = 0; k < nx; k++) {
-                        if (max < buff[k]) max = buff[k];
-                        if (min > buff[k]) min = buff[k];
-                        *dp++ = buff[k];
-                }
-                bar->setValue(i*nx+j*nx*ny);
-            }
-        }
-    }
-    fclose(f);
-    sup_corner_min.setX(vaux[4]/factor);
-    sup_corner_min.setY(vaux[2]/factor);
-    sup_corner_min.setZ(vaux[0]/factor);
-    sup_corner_max.setX(vaux[5]/factor);
-    sup_corner_max.setY(vaux[3]/factor);
-    sup_corner_max.setZ(vaux[1]/factor);
-    setmaxcontourvalue(max);
-    setmincontourvalue(min);
-
-//    Read files with function derivatives (gradient), and computes and stores them for normals interpolation
-    if (existderivs){
-        compatderiv = loadderiv(fdx, dxfun, iaux, vaux, 1, bar);
-        if (compatderiv) compatderiv = loadderiv(fdy, dyfun, iaux, vaux, 2, bar);
-        if (compatderiv) compatderiv = loadderiv(fdz, dzfun, iaux, vaux, 3, bar);
-
-//        compatderiv = loadnormals(fdx, fdy, fdz, dxfun, dyfun, dzfun, iaux, vaux, 1, bar);    // alternative: loads normalized gradient
-        fclose(fdx);
-        fclose(fdy);
-        fclose(fdz);
-        if (!compatderiv){
-            QMessageBox msgBox;
-            msgBox.setText(tr("readplt"));
-            msgBox.setInformativeText(tr("Files with derivatives are not compatible with function file.\n")
-                                      +tr("Computes gradient numerically."));
-            msgBox.setIcon(QMessageBox::Warning);
-            msgBox.exec();
-        }
-    }
-    return true;
-}
 
 bool grid::readpltnew(QString fileName){
     const double factor=0.529177249; // units conversion factor
@@ -717,7 +558,8 @@ bool grid::readpltnew(QString fileName){
     layout->addWidget(bar,Qt::AlignCenter);
     win->setLayout(layout);
     win->show();
-    const char *file = filename.toUtf8()+".plt";
+    QByteArray fileNameUtf8 = (filename + ".plt").toUtf8();
+    const char *file = fileNameUtf8.constData();
     if (!fun)   fun   = new VVBuffer(file, nx, ny, nz);
     float *dp = fun->data();
     float min = FLT_MAX, max = FLT_MIN;
@@ -735,7 +577,7 @@ bool grid::readpltnew(QString fileName){
         QByteArray bytar;
         for (int i = 0 ; i < 6 ; i++){
             bytar = inputfile.read(sizeof(float));
-            memcpy(&vaux[i], bytar.constData(), sizeof(double));
+            memcpy(&vaux[i], bytar.constData(), sizeof(float));
 //            qDebug() << "dvaux[" << i << "] = " << dvaux[i];
         }
     }
@@ -770,10 +612,7 @@ bool grid::readpltnew(QString fileName){
             }
         }
     }
-//    qDebug() << "fun->data()";
-//    for (int i = 0 ; i < 10 ; i++){
-//        qDebug() << fun->data()[i];
-//    }
+
     sup_corner_min.setX(vaux[4]/factor);
     sup_corner_min.setY(vaux[2]/factor);
     sup_corner_min.setZ(vaux[0]/factor);
@@ -787,16 +626,19 @@ bool grid::readpltnew(QString fileName){
 
 //    Read files with function derivatives (gradient), and computes and stores them for normals interpolation
     if (existderivs){
-        const char *filedx = filename.toUtf8()+"-dx.pltd";
+        QByteArray fileNameUtf8 = (filename + "-dx.pltd").toUtf8();
+        const char *filedx = fileNameUtf8.constData();
         if (!dxfun)   dxfun   = new VVBuffer(filedx, nx, ny, nz);
         compatderiv = loadderivnew(&inputfiledx, dxfun, iaux, vaux, 1, bar);
         if (compatderiv){
-            const char *filedy = filename.toUtf8()+"-dy.pltd";
+            QByteArray fileNameUtf8 = (filename + "-dy.pltd").toUtf8();
+            const char *filedy = fileNameUtf8.constData();
             if (!dyfun)   dyfun   = new VVBuffer(filedy, nx, ny, nz);
             compatderiv = loadderivnew(&inputfiledy, dyfun, iaux, vaux, 1, bar);
         }
         if (compatderiv){
-            const char *filedz = filename.toUtf8()+"-dz.pltd";
+            QByteArray fileNameUtf8 = (filename + "-dz.pltd").toUtf8();
+            const char *filedz = fileNameUtf8.constData();
             if (!dzfun)   dzfun   = new VVBuffer(filedz, nx, ny, nz);
             compatderiv = loadderivnew(&inputfiledz, dzfun, iaux, vaux, 1, bar);
         }
@@ -834,5 +676,5 @@ void grid::set_ProjectName(QString name){
 }
 
 void grid::toggleshowsurf(int i){
-    surfaces->at(i)->toggleshowsurf();
+    surfaces.at(i)->toggleshowsurf();
 }
