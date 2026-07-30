@@ -352,7 +352,7 @@ void geomProcessor::loadbuffers(QList<molecule*> *m){
                 alllineswidth->append(0.);
             }
 //            Loads surfaces
-            m->at(i)->sortedSurfaces = *m->at(i)->surfaces;
+            m->at(i)->sortedSurfaces = m->at(i)->surfaces;
             std::sort(m->at(i)->sortedSurfaces.begin(), m->at(i)->sortedSurfaces.end(), compareSurfaceByAbsContourValue);
             for (int j = 0 ; j < m->at(i)->sortedSurfaces.count() ; j++){
                 if (m->at(i)->sortedSurfaces.at(j)->getvisible()){
@@ -437,8 +437,8 @@ void geomProcessor::loadbuffers(QList<molecule*> *m){
                 }
             }
 //            Loads grid isosurfaces
-            for (int j = 0 ; j < m->at(i)->grids->count() ; j++){
-                QList<isosurface*> sortedIsoSurfaces = m->at(i)->grids->at(j)->surfaces;
+            for (int j = 0 ; j < m->at(i)->grids.count() ; j++){
+                QList<isosurface*> sortedIsoSurfaces = m->at(i)->grids.at(j)->surfaces;
                 std::sort(sortedIsoSurfaces.begin(), sortedIsoSurfaces.end(), compareIsoSurfaceByAbsContourValue);
                 for (int k = 0 ; k < sortedIsoSurfaces.count() ; k++){
                     if (sortedIsoSurfaces.at(k)->isvisible()){

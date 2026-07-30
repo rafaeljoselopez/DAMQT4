@@ -152,9 +152,6 @@ void grid::copyMeshToSurface(const CIsoSurface<float>& iso,
 
     const unsigned int indexCount = 3 * iso.m_nTriangles;
 
-//    surface->allindices.clear();
-//    surface->allindices.reserve(static_cast<int>(indexCount));
-
     surface->reserveIndices(static_cast<int>(indexCount));
 
     for (unsigned int i = 0; i < indexCount; ++i)
@@ -391,7 +388,6 @@ bool grid::loadderivnew(QFile *inputfile, VVBuffer*v, int *iref, float *vref, in
         QByteArray bar;
         bar = inputfile->read(sizeof(int));
         memcpy(&iaux[i], bar.constData(), sizeof(int));
-//        qDebug() << "en loadderivnew: iaux[" << i << "] = " << iaux[i];
     }
     if (iaux[0] == 0){   // if the first one is zero: grid data in double precision
         fdouble = true;
@@ -403,7 +399,6 @@ bool grid::loadderivnew(QFile *inputfile, VVBuffer*v, int *iref, float *vref, in
         QByteArray bar;
         bar = inputfile->read(sizeof(int));
         memcpy(&iaux[i], bar.constData(), sizeof(int));
-//        qDebug() << "iaux[" << i << "] = " << iaux[i];
     }
     if (iaux[0] != iref[0] || iaux[1] != iref[1] || iaux[2] != iref[2])
         return false;
@@ -415,7 +410,6 @@ bool grid::loadderivnew(QFile *inputfile, VVBuffer*v, int *iref, float *vref, in
             bytar = inputfile->read(sizeof(double));
             memcpy(&dvaux[i], bytar.constData(), sizeof(double));
             vaux[i] = (float)dvaux[i];
-//            qDebug() << "dvaux[" << i << "] = " << dvaux[i];
         }
         if (std::abs(vaux[0]-vref[0]) + std::abs(vaux[1]-vref[1]) + std::abs(vaux[2]-vref[2]) + std::abs(vaux[3]-vref[3])
                 + std::abs(vaux[4]-vref[4]) + std::abs(vaux[5]-vref[5]) > 1.e-5){
@@ -439,7 +433,6 @@ bool grid::loadderivnew(QFile *inputfile, VVBuffer*v, int *iref, float *vref, in
         for (int i = 0 ; i < 6 ; i++){
             bytar = inputfile->read(sizeof(float));
             memcpy(&vaux[i], bytar.constData(), sizeof(float));
-//            qDebug() << "dvaux[" << i << "] = " << dvaux[i];
         }
         if (std::abs(vaux[0]-vref[0]) + std::abs(vaux[1]-vref[1]) + std::abs(vaux[2]-vref[2]) + std::abs(vaux[3]-vref[3])
                 + std::abs(vaux[4]-vref[4]) + std::abs(vaux[5]-vref[5]) > 1.e-5){
@@ -473,31 +466,27 @@ bool grid::readpltnew(QString fileName){
     QFile inputfiledx(filename.remove(".plt")+"-dx.pltd");
     QFile inputfiledy(filename+"-dy.pltd");
     QFile inputfiledz(filename+"-dz.pltd");
-//    qDebug() << "inputfile = " << filename;
-//    qDebug() << "inputfiledx = " << filename+"-dx.pltd";
-//    qDebug() << "inputfiledy = " << filename+"-dy.pltd";
-//    qDebug() << "inputfiledz = " << filename+"-dz.pltd";
 
     compatderiv = true;
 
     if (!inputfile.open(QIODevice::ReadOnly)){
-//        qDebug() << "No puede abrir " << filename+".plt";
+//        qDebug() << "Cannot open " << filename+".plt";
         return false;
     }
 //    qDebug() << filename+".plt" << "opened";
     existderivs = true;
     if (!inputfiledx.open(QIODevice::ReadOnly)){
-//        qDebug() << "No puede abrir " << filename+"-dx.pltd";
+//        qDebug() << "Cannot open " << filename+"-dx.pltd";
         existderivs = false;
     }
 //    qDebug() << filename+"-dx.pltd" << "opened";
     if (!inputfiledy.open(QIODevice::ReadOnly)){
-//        qDebug() << "No puede abrir " << filename+"-dy.pltd";
+//        qDebug() << "Cannot open " << filename+"-dy.pltd";
         existderivs = false;
     }
 //    qDebug() << filename+"-dy.pltd" << "opened";
     if (!inputfiledz.open(QIODevice::ReadOnly)){
-//        qDebug() << "No puede abrir " << filename+"-dz.pltd";
+//        qDebug() << "Cannot open " << filename+"-dz.pltd";
         existderivs = false;
     }
 //    qDebug() << filename+"-dz.pltd" << "opened";

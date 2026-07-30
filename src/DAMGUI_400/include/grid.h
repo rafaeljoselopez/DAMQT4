@@ -39,12 +39,6 @@
 #include "CIsoSurface.h"
 #include "VVBuffer.h"
 
-//#if __cplusplus <= 199711L
-//    #define nullpointer NULL
-//#else
-////  C++11 compliant compiler
-//    #define nullpointer nullptr
-//#endif
 
 class grid : public QWidget
 {

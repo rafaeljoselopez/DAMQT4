@@ -117,13 +117,6 @@
 #define Z_TRANS_INI  -20.
 #endif
 
-#if __cplusplus <= 199711L
-    #define nullpointer NULL
-#else
-//  C++11 compliant compiler
-    #define nullpointer nullptr
-#endif
-
 class editMoleculeDialog : public QDialog
 {
     Q_OBJECT
@@ -164,9 +157,7 @@ public:
     bool isvisible();
     bool loadgrid();
     bool loadsurf();
-//    bool retrievegrid(QString);
     bool retrievegrid(const QString &filename);
-//    bool retrievesurf(QString);
     bool retrievesurf(const QString &filename);
 
     double getz_trans_ini();
@@ -185,9 +176,9 @@ public:
     void set_ProjectFolder(QString);
     void set_ProjectName(QString);
 
-    fieldlines *flines;
-    forces *hfforces;
-    criticalpoints *cps;
+    fieldlines *flines = nullptr;
+    forces *hfforces = nullptr;
+    criticalpoints *cps = nullptr;
 
     QColor getfontcolor();
     QColor getXaxis_color();
@@ -197,8 +188,8 @@ public:
     QFont getfont();
     QFont getfontaxeslabels();
 
-    QList<grid*> *grids;
-    QList<surface*> *surfaces;
+    QList<grid*> grids;
+    QList<surface*> surfaces;
     QList<surface*> sortedSurfaces;
 
     QPoint getparentposition();
@@ -265,7 +256,6 @@ signals:
     void updateRightMenu();
 
 public slots:
-//    bool QDLcriticalpoints_isVisible();
     bool QDLeditMolecule_isVisible();
     bool startanimate();
     bool stopanimate();
@@ -417,42 +407,42 @@ private:
     QVector <QVector3D> conenormals;
     QVector <QVector3D> cylindervertices;
 
-    bool active;                          // If true, the molecule is active for transformations
-    bool angstrom;                        // If true translation distances displayed in angstrom
-    bool angstromcoor;                    // If true atoms coordinates displayed in angstrom
-    bool angstromcp;                      // If true CPs coordinates displayed in angstrom
-    bool axes_visible;
-    bool axeslabels_visible;
-    bool cpschecked[MAX_CPS];
-    bool drawatomcoords;                  // If true displays atom coordinates
-    bool drawatomindices;                 // If true displays atom indices
-    bool drawatomsymbols;                 // If true displays atom symbols
-    bool hideatoms;                       // If true, does not display atoms
-    bool hidebonds;                       // If true, does not display bonds
-    bool hidehydrogens;                   // If true, does not display hydrogen atoms
-    bool iscluster;
-    bool maxnumver;                       // If true, cannot add more vertices in structures
-    bool startanimation;                  // If true animates rotation  
-    bool onlyatomactive;                  // If true atom labels displayed only for active atoms
-    bool rotatex;
-    bool rotatey;
-    bool rotatez;
-    bool scaleradii;
-    bool visible;                         // If true molecule is displayed
+    bool active = true;                           // If true, the molecule is active for transformations
+    bool angstrom = false;                        // If true translation distances displayed in angstrom
+    bool angstromcoor = false;                    // If true atoms coordinates displayed in angstrom
+    bool angstromcp = false;                      // If true CPs coordinates displayed in angstrom
+    bool axes_visible = false;
+    bool axeslabels_visible = false;
+    bool cpschecked[MAX_CPS] = {};
+    bool drawatomcoords = false;                  // If true displays atom coordinates
+    bool drawatomindices = false;                 // If true displays atom indices
+    bool drawatomsymbols = false;                 // If true displays atom symbols
+    bool hideatoms = false;                       // If true, does not display atoms
+    bool hidebonds = false;                       // If true, does not display bonds
+    bool hidehydrogens = false;                   // If true, does not display hydrogen atoms
+    bool iscluster = false;
+    bool maxnumver = false;                       // If true, cannot add more vertices in structures
+    bool startanimation = false;                  // If true animates rotation
+    bool onlyatomactive = false;                  // If true atom labels displayed only for active atoms
+    bool rotatex = false;
+    bool rotatey = false;
+    bool rotatez = false;
+    bool scaleradii = true;
+    bool visible = true;                          // If true molecule is displayed
 
-    Elements *elem;
+    Elements *elem = nullptr;
 
-    float deltaAngles;
-    float dltinterval;
-    float interval;
-    float stepwheel;
+    float deltaAngles = 4.f;
+    float dltinterval = (MAX_INTERVAL-MIN_INTERVAL)/float(INTERVAL_SCALE);
+    float interval = MAX_INTERVAL - dltinterval * INTERVAL_INI;
+    float stepwheel = 0.1;
 
-    int axesarrowssize;
-    int axesarrowswidth;
-    int axeslength;
-    int axesthickness;
-    int coordprecision;
-    int labelsvshift;
+    int axesarrowssize = 9;
+    int axesarrowswidth = 4;
+    int axeslength = 10;
+    int axesthickness = 2;
+    int coordprecision = 2;
+    int labelsvshift = 0;
 
     struct Sphere {
         QVector3D position;
@@ -460,167 +450,165 @@ private:
     };
 
     ColorButton *BTNcpcolor[MAX_CPS];
-    ColorButton *BTNcpcolorfont;
-    ColorButton *BTNcpeigcolor[3];
-    ColorButton *BTNcpselectall;
-    ColorButton *BTNcpselectnone;
-    ColorButton *BTNflinescolor;          // Opens dialog for lines color
-    ColorButton *BTNfontcolor;            // Opens dialog for font color
+    ColorButton *BTNcpcolorfont = nullptr;
+    ColorButton *BTNcpeigcolor[3] { nullptr, nullptr, nullptr };
+    ColorButton *BTNcpselectall = nullptr;
+    ColorButton *BTNcpselectnone = nullptr;
+    ColorButton *BTNflinescolor = nullptr;          // Opens dialog for lines color
+    ColorButton *BTNfontcolor = nullptr;            // Opens dialog for font color
     ColorButton *BTNforcecolors[MAX_FORCES];
-    ColorButton *BTNselectall;            // Marks all centers as active for indices display
-    ColorButton *BTNselectnone;           // Marks all centers as nonactive for indices display
-    ColorButton *BTNXaxiscolor;           // Dialog for X axis color
-    ColorButton *BTNYaxiscolor;           // Dialog for Y axis color
-    ColorButton *BTNZaxiscolor;           // Dialog for Z axis color
+    ColorButton *BTNselectall = nullptr;            // Marks all centers as active for indices display
+    ColorButton *BTNselectnone = nullptr;           // Marks all centers as nonactive for indices display
+    ColorButton *BTNXaxiscolor = nullptr;           // Dialog for X axis color
+    ColorButton *BTNYaxiscolor = nullptr;           // Dialog for Y axis color
+    ColorButton *BTNZaxiscolor = nullptr;           // Dialog for Z axis color
 
-    DoubleSpinBox *SPBrot_angle;         // Rotation angle
-    DoubleSpinBox *SPBrot_x;             // x component of rotation axis
-    DoubleSpinBox *SPBrot_y;             // y component of rotation axis
-    DoubleSpinBox *SPBrot_z;             // z component of rotation axis
-    DoubleSpinBox *SPBstepwheel;         // stride for translation with mouse wheel
-    DoubleSpinBox *SPBtras_x;            // x component of translation vector
-    DoubleSpinBox *SPBtras_y;            // y component of translation vector
-    DoubleSpinBox *SPBtras_z;            // z component of translation vector
+    DoubleSpinBox *SPBrot_angle = nullptr;         // Rotation angle
+    DoubleSpinBox *SPBrot_x = nullptr;             // x component of rotation axis
+    DoubleSpinBox *SPBrot_y = nullptr;             // y component of rotation axis
+    DoubleSpinBox *SPBrot_z = nullptr;             // z component of rotation axis
+    DoubleSpinBox *SPBstepwheel = nullptr;         // stride for translation with mouse wheel
+    DoubleSpinBox *SPBtras_x = nullptr;            // x component of translation vector
+    DoubleSpinBox *SPBtras_y = nullptr;            // y component of translation vector
+    DoubleSpinBox *SPBtras_z = nullptr;            // z component of translation vector
 
-    editMoleculeDialog *QDLeditMolecule;
+    editMoleculeDialog *QDLeditMolecule = nullptr;
 
-    myScrollArea *scrollArea;
+    myScrollArea *scrollArea = nullptr;
 
-    QCheckBox *CHKactiveonly;
-    QCheckBox *CHKcpactiveonly;
-    QCheckBox *CHKcpcoords;
-    QCheckBox *CHKcpeigvec;
-    QCheckBox *CHKcpindices;
-    QCheckBox *CHKcps[MAX_CPS];
-    QCheckBox *CHKcpsymbols;
-    QCheckBox *CHKcpvalues;
-    QCheckBox *CHKflines;
-    QCheckBox *CHKflinesarrows;
-    QCheckBox *CHKforces[MAX_FORCES];
-    QCheckBox *CHKhideatoms;
-    QCheckBox *CHKhidebonds;
-    QCheckBox *CHKhidehydrogens;
-    QCheckBox *CHKrotatex;
-    QCheckBox *CHKrotatey;
-    QCheckBox *CHKrotatez;
-    QCheckBox *CHKshowaxes;
-    QCheckBox *CHKshowaxeslabels;
-    QCheckBox *CHKshowcoords;
-    QCheckBox *CHKshowindices;
-    QCheckBox *CHKshowsymbols;
+    QCheckBox *CHKactiveonly = nullptr;
+    QCheckBox *CHKcpactiveonly = nullptr;
+    QCheckBox *CHKcpcoords = nullptr;
+    QCheckBox *CHKcpeigvec = nullptr;
+    QCheckBox *CHKcpindices = nullptr;
+    QCheckBox *CHKcps[MAX_CPS] = {};
+    QCheckBox *CHKcpsymbols = nullptr;
+    QCheckBox *CHKcpvalues = nullptr;
+    QCheckBox *CHKflines = nullptr;
+    QCheckBox *CHKflinesarrows = nullptr;
+    QCheckBox *CHKforces[MAX_FORCES] = {};
+    QCheckBox *CHKhideatoms = nullptr;
+    QCheckBox *CHKhidebonds = nullptr;
+    QCheckBox *CHKhidehydrogens = nullptr;
+    QCheckBox *CHKrotatex = nullptr;
+    QCheckBox *CHKrotatey = nullptr;
+    QCheckBox *CHKrotatez = nullptr;
+    QCheckBox *CHKshowaxes = nullptr;
+    QCheckBox *CHKshowaxeslabels = nullptr;
+    QCheckBox *CHKshowcoords = nullptr;
+    QCheckBox *CHKshowindices = nullptr;
+    QCheckBox *CHKshowsymbols = nullptr;
 
-    QColor fontcolor;
-    QColor Xaxis_color;
-    QColor Yaxis_color;
-    QColor Zaxis_color;
+    QColor fontcolor = QColor(255, 172, 0, 255);
+    QColor Xaxis_color = QColor(0,255,0);
+    QColor Yaxis_color = QColor(0,0,255);
+    QColor Zaxis_color = QColor(255,0,0);
 
 
-    QFont font;
-    QFont fontaxeslabels;
+    QFont font = QFont("Helvetica", 20, QFont::Bold);
+    QFont fontaxeslabels = QFont("Noto Sans", 20, QFont::Bold);
 
-    QGridLayout *layoutgrids;
+    QGridLayout *layoutgrids = nullptr;
 
-    QGroupBox *FRMaxes;
-    QGroupBox *FRMcoorunits;
-    QGroupBox *FRMcps;
-    QGroupBox *FRMcpeigvec;
-    QGroupBox *FRMcpunits;
-    QGroupBox *FRMcriticalpoints;
-    QGroupBox *FRMfield;
-    QGroupBox *FRMflinesarrows;
-    QGroupBox *FRMforces;
-    QGroupBox *FRMrotation;
-    QGroupBox *FRMskeleton;
-    QGroupBox *FRMsymbols;
-    QGroupBox *FRMtranslation;
-    QGroupBox *FRMtranslationunits;
+    QGroupBox *FRMaxes = nullptr;
+    QGroupBox *FRMcoorunits = nullptr;
+    QGroupBox *FRMcps = nullptr;
+    QGroupBox *FRMcpeigvec = nullptr;
+    QGroupBox *FRMcpunits = nullptr;
+    QGroupBox *FRMcriticalpoints = nullptr;
+    QGroupBox *FRMfield = nullptr;
+    QGroupBox *FRMflinesarrows = nullptr;
+    QGroupBox *FRMforces = nullptr;
+    QGroupBox *FRMrotation = nullptr;
+    QGroupBox *FRMskeleton = nullptr;
+    QGroupBox *FRMsymbols = nullptr;
+    QGroupBox *FRMtranslation = nullptr;
+    QGroupBox *FRMtranslationunits = nullptr;
 
-    QLabel *LBLcoordprecision;
-    QLabel *LBLcpcoordprecision;
-    QLabel *LBLcpprecision;
-    QLabel *LBLcpselect;
-    QLabel *LBLloadinggrid;
-    QLabel *LBLselect;
+    QLabel *LBLcoordprecision = nullptr;
+    QLabel *LBLcpcoordprecision = nullptr;
+    QLabel *LBLcpprecision = nullptr;
+    QLabel *LBLcpselect = nullptr;
+    QLabel *LBLloadinggrid = nullptr;
+    QLabel *LBLselect = nullptr;
 
-    QLineEdit *TXTcps;
-    QLineEdit *TXTfieldlines;
-    QLineEdit *TXTforces;
+    QLineEdit *TXTcps = nullptr;
+    QLineEdit *TXTfieldlines = nullptr;
+    QLineEdit *TXTforces = nullptr;
 
-    QList<QMetaObject::Connection> connections;
+    QPoint parentposition = QPoint(200,200);
+    QPoint scrollAreaposition = QPoint(200,200);
 
-    QPoint parentposition;
-    QPoint scrollAreaposition;
-
-    QPushButton *BTNaddaxes;
-    QPushButton *BTNaddcriticalpoints;
-    QPushButton *BTNaddfieldlines;
-    QPushButton *BTNaddforces;
-    QPushButton *BTNaddgrid;
-    QPushButton *BTNaddsurface;
-    QPushButton *BTNanimation;
-    QPushButton *BTNcplblfont;
-    QPushButton *BTNfont;
-    QPushButton *BTNfontaxeslabels;
-    QPushButton *BTNhide;
-    QPushButton *BTNrotation;
-    QPushButton *BTNskeleton;
-    QPushButton *BTNsymbols;
-    QPushButton *BTNtranslation;
+    QPushButton *BTNaddaxes = nullptr;
+    QPushButton *BTNaddcriticalpoints = nullptr;
+    QPushButton *BTNaddfieldlines = nullptr;
+    QPushButton *BTNaddforces = nullptr;
+    QPushButton *BTNaddgrid = nullptr;
+    QPushButton *BTNaddsurface = nullptr;
+    QPushButton *BTNanimation = nullptr;
+    QPushButton *BTNcplblfont = nullptr;
+    QPushButton *BTNfont = nullptr;
+    QPushButton *BTNfontaxeslabels = nullptr;
+    QPushButton *BTNhide = nullptr;
+    QPushButton *BTNrotation = nullptr;
+    QPushButton *BTNskeleton = nullptr;
+    QPushButton *BTNsymbols = nullptr;
+    QPushButton *BTNtranslation = nullptr;
 
     QQuaternion rotation;                 // Quaternion for rotation
     QQuaternion world_rotation;
 
-    QRadioButton *RBTangstrom;
-    QRadioButton *RBTangstromcoor;
-    QRadioButton *RBTangstromcp;
-    QRadioButton *RBTbohr;
-    QRadioButton *RBTbohrcoor;
-    QRadioButton *RBTbohrcp;
+    QRadioButton *RBTangstrom = nullptr;
+    QRadioButton *RBTangstromcoor = nullptr;
+    QRadioButton *RBTangstromcp = nullptr;
+    QRadioButton *RBTbohr = nullptr;
+    QRadioButton *RBTbohrcoor = nullptr;
+    QRadioButton *RBTbohrcp = nullptr;
 
     QSlider *SLDspeed;                    // Speed of rotation animation
 
-    QSpinBox *SPBaxesarrowsize;
-    QSpinBox *SPBaxesarrowwidth;
-    QSpinBox *SPBaxeslength;
-    QSpinBox *SPBaxesthickness;
-    QSpinBox *SPBcoordprecision;
-    QSpinBox *SPBcpballradius;
-    QSpinBox *SPBcpcoordprecision;
-    QSpinBox *SPBcpeigarrowsize;
-    QSpinBox *SPBcpeigarrowwidth;
-    QSpinBox *SPBcpeigthickness;
-    QSpinBox *SPBcpeiglength;
-    QSpinBox *SPBcpprecision;
-    QSpinBox *SPBcpvshift;
-    QSpinBox *SPBflinesarrowssep;             // Arrows separation
-    QSpinBox *SPBflineslinewidth;             // Lines width
-    QSpinBox *SPBflinesarrowssize;            // Arrows size
-    QSpinBox *SPBflinesarrowswidth;            // Arrows size
-    QSpinBox *SPBforcesarrowlength;
-    QSpinBox *SPBforcesarrowwidth;
-    QSpinBox *SPBforceslength;
-    QSpinBox *SPBforcesthickness;
-    QSpinBox *SPBlabelsvshift;
+    QSpinBox *SPBaxesarrowsize = nullptr;
+    QSpinBox *SPBaxesarrowwidth = nullptr;
+    QSpinBox *SPBaxeslength = nullptr;
+    QSpinBox *SPBaxesthickness = nullptr;
+    QSpinBox *SPBcoordprecision = nullptr;
+    QSpinBox *SPBcpballradius = nullptr;
+    QSpinBox *SPBcpcoordprecision = nullptr;
+    QSpinBox *SPBcpeigarrowsize = nullptr;
+    QSpinBox *SPBcpeigarrowwidth = nullptr;
+    QSpinBox *SPBcpeigthickness = nullptr;
+    QSpinBox *SPBcpeiglength = nullptr;
+    QSpinBox *SPBcpprecision = nullptr;
+    QSpinBox *SPBcpvshift = nullptr;
+    QSpinBox *SPBflinesarrowssep = nullptr;             // Arrows separation
+    QSpinBox *SPBflinesarrowssize = nullptr;            // Arrows size
+    QSpinBox *SPBflinesarrowswidth = nullptr;            // Arrows width
+    QSpinBox *SPBflineslinewidth = nullptr;             // Lines width
+    QSpinBox *SPBforcesarrowlength = nullptr;
+    QSpinBox *SPBforcesarrowwidth = nullptr;
+    QSpinBox *SPBforceslength = nullptr;
+    QSpinBox *SPBforcesthickness = nullptr;
+    QSpinBox *SPBlabelsvshift = nullptr;
 
     QString fullname;                     // Full geometry file name including path
     QString name;                         // Name for window
-    QString path;                         // Path to molecule home directory (that which contains the file with geometry)
+    QString path = QString(".");          // Path to molecule home directory (that which contains the file with geometry)
     QString ProjectFolder;
     QString ProjectName;
 
-    QTimer *timer;
+    QTimer *timer = nullptr;
 
-    QToolButton *BTNcps;
-    QToolButton *BTNfieldlines;
+    QToolButton *BTNcps = nullptr;;
+    QToolButton *BTNfieldlines = nullptr;
     QToolButton *BTNforces;
 
-    QVBoxLayout *layoutsurfs;
+    QVBoxLayout *layoutsurfs = nullptr;
 
     QVector <QVector3D> positionaxeslabels;
     QVector3D rotationAxis;               // Rotation axis
-    QVector3D translation;                // Translation vector
+    QVector3D translation = QVector3D(0,0,0);                // Translation vector
 
-    QVector4D darkenshift;
+    QVector4D darkenshift = QVector4D(0.3f,0.3f,0.3f,0.f);
 
     QVector<bool> atomactive;   // Atom active for visualization
     QVector<bool> atomvisible;   // Atom not hidden in the scene
@@ -628,9 +616,9 @@ private:
     QVector<QVector3D > xyz;    // Cartesian coordinates
     QVector<Sphere> atomspheres;
 
-    qreal ballradius;                       // Radius of atom spheres
-    qreal cylradius;                        // Radius of bond cylinders
-    qreal disthressq;                       // Threshold for bonding
+    qreal ballradius = 0.2;                       // Radius of atom spheres
+    qreal cylradius = 0.05;                       // Radius of bond cylinders
+    qreal disthressq = pow((INIT_BOND_THRESHOLD * ANGSTROM_TO_BOHR),2); // Threshold for bonding
 
 };
 

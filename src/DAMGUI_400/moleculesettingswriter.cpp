@@ -96,8 +96,7 @@ void MoleculeSettingsWriter::writeMolecule(
     );
 
     if (saveSurfaces) {
-        const int numberOfSurfaces =
-            mol->surfaces ? mol->surfaces->count() : 0;
+        const int numberOfSurfaces = mol->surfaces.count();
 
         writer_.writeInt(
             "nsurf",
@@ -106,15 +105,14 @@ void MoleculeSettingsWriter::writeMolecule(
 
         for (int i = 0; i < numberOfSurfaces; ++i) {
             writeSurface(
-                mol->surfaces->at(i),
+                mol->surfaces.at(i),
                 i
             );
         }
     }
 
     if (saveGrids) {
-        const int numberOfGrids =
-            mol->grids ? mol->grids->count() : 0;
+        const int numberOfGrids = mol->grids.count();
 
         writer_.writeInt(
             "ngrids",
@@ -123,7 +121,7 @@ void MoleculeSettingsWriter::writeMolecule(
 
         for (int i = 0; i < numberOfGrids; ++i) {
             writeGrid(
-                mol->grids->at(i),
+                mol->grids.at(i),
                 i,
                 saveIsosurfaces
             );
@@ -181,8 +179,6 @@ void MoleculeSettingsWriter::writeGrid(
     if (!saveIsosurfaces)
         return;
 
-//    const int numberOfIsosurfaces =
-//        grd->surfaces ? grd->surfaces->count() : 0;
     const int numberOfIsosurfaces = grd->surfaces.count();
 
     writer_.writeInt(

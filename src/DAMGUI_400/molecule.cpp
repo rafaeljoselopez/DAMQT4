@@ -35,7 +35,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QPoint>
-//#include <QSignalMapper>
+#include <QSignalBlocker>
 #include <QVBoxLayout>
 
 #include "molecule.h"
@@ -43,231 +43,36 @@
 
 molecule::molecule(QWidget *parent) : QWidget(parent)
 {
-    allaxesindices.clear();
-    allaxesindicesoffset.clear();
-    allaxesvertices.clear();
-    allindices.clear();
-    allindicesoffset.clear();
-    allvertices.clear();
-    atomactive.clear();
-    coneindices.clear();
-    conenormals.clear();
-    conevertices.clear();
-    connections.clear();
-    cylinderindices.clear();
-    cylindervertices.clear();
-    positionaxeslabels.clear();
-    xyz.clear();
-    znuc.clear();
-    setdrawatomcoords(false);
-    setdrawatomindices(false);
-    setdrawatomsymbols(false);
-    setvisible(true);
-    coordprecision = 2;
-    darkenshift = QVector4D(0.3f,0.3f,0.3f,0.f);
-    labelsvshift = 0;
-    translation = QVector3D(0,0,0);
-    ballradius = 0.2;
-    cylradius = 0.05;
-    disthressq = pow((INIT_BOND_THRESHOLD * ANGSTROM_TO_BOHR),2);
-    deltaAngles = 4.f;
-    elem = new Elements();
-    font = QFont("Helvetica", 20, QFont::Bold);
-    fontaxeslabels = QFont("Noto Sans", 20, QFont::Bold);
-    fontcolor = QColor(255, 172, 0, 255);
-    dltinterval = (MAX_INTERVAL-MIN_INTERVAL)/float(INTERVAL_SCALE);
-    interval = MAX_INTERVAL - dltinterval * INTERVAL_INI;
-    angstrom = false;
-    angstromcoor = false;
-    angstromcp = false;
-    axes_visible = false;
-    axeslabels_visible = false;
     for (int i = 0 ; i < MAX_CPS; i++){
         cpschecked[i] = true;
     }
-    hideatoms = false;
-    hidebonds = false;
-    hidehydrogens = false;
-    iscluster = false;
-    startanimation = false;
-    visible = true;
-    onlyatomactive = false;
-    rotatex = false;
-    rotatey = false;
-    rotatez = false;
-    scaleradii = true;
-    path = QString(".");
-    ProjectFolder = "";
-    grids = new QList<grid*>();
-    parentposition = QPoint(200,200);
-    scrollAreaposition = QPoint(200,200);
-    surfaces = new QList<surface*>();
-    BTNaddaxes = nullpointer;
-    BTNaddcriticalpoints = nullpointer;
-    BTNaddfieldlines = nullpointer;
-    BTNaddforces = nullpointer;
-    BTNaddgrid = nullpointer;
-    BTNaddsurface = nullpointer;
-    BTNanimation = nullpointer;
-    BTNcpcolorfont = nullpointer;
-    BTNcpeigcolor[0] = nullpointer;
-    BTNcpeigcolor[1] = nullpointer;
-    BTNcpeigcolor[2] = nullpointer;
-    BTNcps = nullpointer;
-    BTNcpselectall = nullpointer;
-    BTNcpselectnone = nullpointer;
-    BTNcplblfont = nullpointer;
-    BTNfieldlines = nullpointer;
-    BTNfont = nullpointer;
-    BTNfontcolor = nullpointer;
-    BTNfontaxeslabels = nullpointer;
-    BTNhide = nullpointer;
-    BTNrotation = nullpointer;
-    BTNselectall = nullpointer;
-    BTNselectnone = nullpointer;   
-    BTNskeleton = nullpointer;
-    BTNsymbols = nullpointer;
-    BTNtranslation = nullpointer;
-    BTNXaxiscolor = nullpointer;
-    BTNYaxiscolor = nullpointer;
-    BTNZaxiscolor = nullpointer;
-    CHKactiveonly = nullpointer;
-    CHKcpactiveonly = nullpointer;
-    CHKcpcoords = nullpointer;
-    CHKcpeigvec = nullpointer;
-    CHKcpindices = nullpointer;
-    for (int i = 0 ; i < MAX_CPS; i++){
-        CHKcps[i] = nullpointer;
-    }
-    CHKcpsymbols = nullpointer;
-    CHKcpvalues = nullpointer;
-    CHKflines = nullpointer;
-    CHKflinesarrows = nullpointer;
-    for (int i = 0 ; i < MAX_FORCES; i++){
-        CHKforces[i] = nullpointer;
-    }
-    CHKhideatoms = nullpointer;
-    CHKhidebonds = nullpointer;
-    CHKhidehydrogens = nullpointer;
-    CHKrotatex = nullpointer;
-    CHKrotatey = nullpointer;
-    CHKrotatez = nullpointer;
-    CHKshowaxes = nullpointer;
-    CHKshowaxeslabels = nullpointer;
-    CHKshowcoords = nullpointer;
-    CHKshowindices = nullpointer;
-    CHKshowsymbols = nullpointer;
-    cps = nullpointer;
-    flines = nullpointer;
-    hfforces = nullpointer;
-    FRMaxes = nullpointer;
-    FRMcps = nullpointer;
-    FRMcpeigvec = nullpointer;
-    FRMcpunits = nullpointer;
-    FRMcriticalpoints = nullpointer;
-    FRMfield = nullpointer;
-    FRMrotation = nullpointer;
-    FRMsymbols = nullpointer;
-    FRMtranslation = nullpointer;
-    FRMtranslationunits = nullpointer;
-    layoutgrids = nullpointer;
-    layoutsurfs = nullpointer;
-    LBLcoordprecision = nullpointer;
-    LBLcpcoordprecision = nullpointer;
-    LBLcpprecision = nullpointer;
-    LBLcpselect = nullpointer;
-    LBLloadinggrid = nullpointer;
-    LBLselect = nullpointer;
-    QDLeditMolecule = nullpointer;
-    RBTangstrom = nullpointer;
-    RBTangstromcoor = nullpointer;
-    RBTangstromcp = nullpointer;
-    RBTbohr = nullpointer;
-    RBTbohrcoor = nullpointer;
-    RBTbohrcp = nullpointer;
-    scrollArea = nullpointer;
-    SPBaxesarrowsize = nullpointer;
-    SPBaxesarrowwidth = nullpointer;
-    SPBaxeslength = nullpointer;
-    SPBaxesthickness = nullpointer;
-    SPBcoordprecision = nullpointer;
-    SPBcpballradius = nullpointer;
-    SPBcpcoordprecision = nullpointer;
-    SPBcpeigarrowsize = nullpointer;
-    SPBcpeigarrowwidth = nullpointer;
-    SPBcpeigthickness = nullpointer;
-    SPBcpeiglength = nullpointer;
-    SPBcpprecision = nullpointer;
-    SPBcpvshift = nullpointer;
-    SPBflinesarrowssep = nullpointer;
-    SPBflinesarrowssize = nullpointer;
-    SPBflinesarrowswidth = nullpointer;
-    SPBflineslinewidth = nullpointer;
-    SPBlabelsvshift = nullpointer;
-    SPBrot_angle = nullpointer;
-    SPBrot_x = nullpointer;
-    SPBrot_y = nullpointer;
-    SPBrot_z = nullpointer;
-    SPBtras_x = nullpointer;
-    SPBtras_y = nullpointer;
-    SPBtras_z = nullpointer;
-    TXTcps = nullpointer;
-    TXTfieldlines = nullpointer;
-    TXTforces = nullpointer;
-    timer = new QTimer();
-    setactive(true);
-    axesarrowssize = 9;
-    axesarrowswidth = 4;
-    axeslength = 10;
-    axesthickness = 2;
-    stepwheel = 0.1;
-    name = "";
-    Xaxis_color = QColor(0,255,0);
-    Yaxis_color = QColor(0,0,255);
-    Zaxis_color = QColor(255,0,0);
     makeAxesCylinder(15,15);    // computes vertices of a cylinder and its indices
     makeAxesCone(15,15,2.);    // computes vertices of a cone and its indices
+    timer = new QTimer();
 }
 
 molecule::~molecule(){
     if (scrollArea){
         delete scrollArea;
-        scrollArea = nullpointer;
-        QDLeditMolecule = nullpointer;
+        scrollArea = nullptr;
+        QDLeditMolecule = nullptr;
     }
-    for (int i = 0 ; i < connections.size() ; i++){
-        QObject::disconnect(connections.at(i));
-    }
-    if (grids){
-        for (int i = grids->count()-1 ; i >= 0  ; i--){
-            delete grids->at(i);
-        }
-        grids->clear();
-        delete grids;
-        grids = nullpointer;
-    }
-    if (surfaces){
-        for (int i = surfaces->count()-1 ; i >= 0  ; i--){
-            delete surfaces->at(i);
-        }
-        surfaces->clear();
-        delete surfaces;
-        surfaces = nullpointer;
-    }
+    qDeleteAll(grids);
+    qDeleteAll(surfaces);
     if (hfforces){
         delete hfforces;
-        hfforces = nullpointer;
+        hfforces = nullptr;
     }
     if (flines){
         delete flines;
-        flines = nullpointer;
+        flines = nullptr;
     }
     if (cps){
         delete cps;
-        cps = nullpointer;
+        cps = nullptr;
     }
     delete timer;
-    timer = nullpointer;
+    timer = nullptr;
 
 }
 
@@ -296,16 +101,16 @@ void molecule::editmolecule(){
 //      Molecule editor dialog
 void molecule::createeditMoleculeDialog(){
     closeisosurfeditors();
-    for (int i = 0 ; i < connections.size() ; i++){
-        QObject::disconnect(connections.at(i));
-    }
-    connections.clear();
+
     QDLeditMolecule = new editMoleculeDialog(this);
     QDLeditMolecule->setMinimumWidth(400);
     QDLeditMolecule->setWindowIcon(QIcon(":/images/icon.png"));
 
-    connections << connect(QDLeditMolecule,SIGNAL(closed()),this,SLOT(QDLeditMolecule_close()));
-    connections << connect(QDLeditMolecule,SIGNAL(closed()),this,SLOT(emitupdateRightMenu()));
+    connect(QDLeditMolecule, &editMoleculeDialog::closed,
+            this, &molecule::QDLeditMolecule_close);
+
+    connect(QDLeditMolecule, &editMoleculeDialog::closed,
+            this, &molecule::emitupdateRightMenu);
 
 //        Molecular skeleton
     create_molecular_skeleton_widgets_and_layouts();
@@ -341,7 +146,9 @@ void molecule::createeditMoleculeDialog(){
     if (!BTNhide)
         BTNhide = new QPushButton(QDLeditMolecule);
     BTNhide->setText(tr("Hide this menu"));
-    connections << connect(BTNhide, SIGNAL(clicked()), this, SLOT(QDLeditMolecule_close()));
+
+    connect(BTNhide, &QPushButton::clicked,
+            this, &molecule::QDLeditMolecule_close);
 
 //        Layouts
     QVBoxLayout *layout = new QVBoxLayout(QDLeditMolecule);
@@ -373,15 +180,20 @@ void molecule::createeditMoleculeDialog(){
     if (scrollArea){
         scrollAreaposition = scrollArea->pos();
         delete scrollArea;
-        scrollArea = nullpointer;
+        scrollArea = nullptr;
     }
     scrollArea = new myScrollArea();
     scrollArea->setWidget(QDLeditMolecule);
     scrollArea->setWindowTitle(name);
     scrollArea->setWindowIcon(QIcon(":/images/icon.png"));
     scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    connections << connect(scrollArea,SIGNAL(closed()),this,SLOT(QDLeditMolecule_close()));
-    connections << connect(scrollArea,SIGNAL(closed()),this,SLOT(emitupdateRightMenu()));
+
+    connect(scrollArea, &myScrollArea::closed,
+            this, &molecule::QDLeditMolecule_close);
+
+    connect(scrollArea, &myScrollArea::closed,
+            this, &molecule::emitupdateRightMenu);
+
     if (!scrollArea->isVisible()){
         scrollArea->move(scrollAreaposition);
         scrollArea->updatesize(QDLeditMolecule->size());
@@ -395,7 +207,9 @@ void molecule::create_molecular_skeleton_widgets_and_layouts(){
 
 //        Show/hide molecular skeleton widgets
     BTNskeleton = new QPushButton(tr("Molecular skeleton"));
-    connections << connect(BTNskeleton, SIGNAL(clicked()), this, SLOT(BTNskeleton_clicked()));
+
+    connect(BTNskeleton, &QPushButton::clicked,
+            this, &molecule::BTNskeleton_clicked);
 
     FRMskeleton = new QGroupBox(tr("Atoms and bonds"));
     FRMskeleton->setVisible(false);
@@ -403,16 +217,22 @@ void molecule::create_molecular_skeleton_widgets_and_layouts(){
     CHKhideatoms = new QCheckBox(FRMskeleton);
     CHKhideatoms->setText(tr("Hide atoms"));
     CHKhideatoms->setChecked(false);
-    connections << connect(CHKhideatoms,SIGNAL(stateChanged(int)), this, SLOT(CHKhideatoms_changed()));
+
+    connect(CHKhideatoms, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKhideatoms_changed);
 
     CHKhidebonds = new QCheckBox(FRMskeleton);
     CHKhidebonds->setText(tr("Hide bonds"));
     CHKhidebonds->setChecked(false);
-    connections << connect(CHKhidebonds,SIGNAL(stateChanged(int)), this, SLOT(CHKhidebonds_changed()));
+
+    connect(CHKhidebonds, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKhidebonds_changed);
 
     CHKhidehydrogens = new QCheckBox(tr("Hide hydrogens"));
     CHKhidehydrogens->setChecked(false);
-    connections << connect(CHKhidehydrogens, SIGNAL(stateChanged(int)), this, SLOT(CHKhidehydrogens_changed()));
+
+    connect(CHKhidehydrogens, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKhidehydrogens_changed);
 
 //          Layouts
 
@@ -426,7 +246,9 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
 
 //        Symbols and indices
     BTNsymbols = new QPushButton(tr("Labels"));
-    connections << connect(BTNsymbols, SIGNAL(clicked()), this, SLOT(BTNsymbols_clicked()));
+
+    connect(BTNsymbols, &QPushButton::clicked,
+            this, &molecule::BTNsymbols_clicked);
 
     FRMsymbols = new QGroupBox(tr("Symbols and indices"));
     FRMsymbols->setVisible(false);
@@ -434,19 +256,25 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     CHKshowsymbols = new QCheckBox(FRMsymbols);
     CHKshowsymbols->setText(tr("Atom symbols"));
     CHKshowsymbols->setChecked(drawatomsymbols);
-    connections << connect(CHKshowsymbols,SIGNAL(stateChanged(int)), this, SLOT(CHKshowsymbols_changed(int)));
+
+    connect(CHKshowsymbols, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKshowsymbols_changed);
 
     CHKshowindices = new QCheckBox(FRMsymbols);
     CHKshowindices->setText(tr("Atom indices"));
     CHKshowindices->setChecked(drawatomindices);
-    connections << connect(CHKshowindices,SIGNAL(stateChanged(int)), this, SLOT(CHKshowindices_changed(int)));
+
+    connect(CHKshowindices, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKshowindices_changed);
 
 
 //         Atom coordinates
 
     CHKshowcoords = new QCheckBox(tr("Atom coordinates"));
     CHKshowcoords->setChecked(drawatomcoords);
-    connections << connect(CHKshowcoords, SIGNAL(stateChanged(int)), this, SLOT(CHKshowcoords_changed(int)));
+
+    connect(CHKshowcoords, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKshowcoords_changed);
 
     LBLcoordprecision = new QLabel(tr("Precision"));
     LBLcoordprecision->setHidden(true);
@@ -456,7 +284,9 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     SPBcoordprecision->setMaximumWidth(50);
     SPBcoordprecision->setValue(coordprecision);
     SPBcoordprecision->setHidden(true);
-    connections << connect(SPBcoordprecision,SIGNAL(valueChanged(int)),this,SLOT(SPBcoordprecision_changed(int)));
+
+    connect(SPBcoordprecision, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcoordprecision_changed);
 
 
     FRMcoorunits = new QGroupBox();
@@ -466,13 +296,17 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     RBTangstromcoor->setVisible(CHKshowcoords->isChecked());
     RBTangstromcoor->setChecked(angstromcoor);
     RBTbohrcoor->setVisible(CHKshowcoords->isChecked());
-    connections << connect(RBTbohrcoor, SIGNAL(toggled (bool)),this,SLOT(RBTbohrcoor_changed()));
+
+    connect(RBTbohrcoor, &QRadioButton::toggled,
+            this, &molecule::RBTbohrcoor_changed);
 
 
     CHKactiveonly = new QCheckBox(tr("Only selected atoms"));
     CHKactiveonly->setChecked(onlyatomactive);
     CHKactiveonly->setVisible(drawatomsymbols || drawatomindices);
-    connections << connect(CHKactiveonly, SIGNAL(stateChanged(int)), this, SLOT(CHKactiveonly_changed(int)));
+
+    connect(CHKactiveonly, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKactiveonly_changed);
 
     LBLselect = new QLabel(tr("Select")+":");
     LBLselect->setHidden(true);
@@ -481,31 +315,42 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     BTNselectall->setText(tr("All"));
     BTNselectall->setColor(btnbkgcolor);
     BTNselectall->setHidden(true);
-    connections << connect(BTNselectall, SIGNAL(clicked()), this, SLOT(BTNselectall_clicked()));
+
+    connect(BTNselectall, &QPushButton::clicked,
+            this, &molecule::BTNselectall_clicked);
+
     btnbkgcolor = new QColor(255,0,0);
     BTNselectnone = new ColorButton(FRMsymbols);
     BTNselectnone->setText(tr("None"));
     BTNselectnone->setColor(btnbkgcolor);
     BTNselectnone->setHidden(true);
-    connections << connect(BTNselectnone, SIGNAL(clicked()), this, SLOT(BTNselectnone_clicked()));
+
+    connect(BTNselectnone, &QPushButton::clicked,
+            this, &molecule::BTNselectnone_clicked);
 
 //        Fonts
     BTNfont = new QPushButton(QIcon(":/images/fonts48.png"),tr("Font"));
-    connections << connect(BTNfont, SIGNAL(clicked()), this, SLOT(BTNfont_clicked()));
+
+    connect(BTNfont, &QPushButton::clicked,
+            this, &molecule::BTNfont_clicked);
+
     BTNfontcolor = new ColorButton(FRMsymbols);
     BTNfontcolor->setIcon(QIcon(":/images/fonts48.png"));
     BTNfontcolor->setText(tr("Color"));
     BTNfontcolor->setColor(&fontcolor);
     BTNfontcolor->setEnabled(true);
-    connections << connect(BTNfontcolor, SIGNAL(clicked()), this, SLOT(BTNfontcolor_clicked()));
+
+    connect(BTNfontcolor, &QPushButton::clicked,
+            this, &molecule::BTNfontcolor_clicked);
 
     QLabel *LBLlabelsvshift = new QLabel(tr("Vertical shift"));
     SPBlabelsvshift = new QSpinBox();
     SPBlabelsvshift->setRange(-50,50);
     SPBlabelsvshift->setMaximumWidth(70);
     SPBlabelsvshift->setValue(labelsvshift);
-    connections << connect(SPBlabelsvshift,SIGNAL(valueChanged(int)),this,SLOT(SPBlabelsvshift_changed(int)));
 
+    connect(SPBlabelsvshift, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBlabelsvshift_changed);
 
     QGridLayout *Layout1=new QGridLayout();
     Layout1->addWidget(CHKshowsymbols,0,0);
@@ -544,47 +389,15 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     layout->addLayout(Layout4);
     layout->addLayout(Layout5);
 
-//    QHBoxLayout *layout1=new QHBoxLayout();
-//    layout1->addWidget(LBLlabelsvshift);
-//    layout1->addWidget(SPBlabelsvshift);
-//    layout1->setAlignment(Qt::AlignLeft);
-
-//    QHBoxLayout *layout2=new QHBoxLayout();
-//    layout2->addStretch();
-//    layout2->addWidget(LBLcoordprecision);
-//    layout2->addWidget(SPBcoordprecision);
-//    layout2->addStretch();
-
-//    QHBoxLayout *layout3 = new QHBoxLayout();
-//    layout3->addStretch();
-//    layout3->addWidget(LBLselect);
-//    layout3->addWidget(BTNselectall);
-//    layout3->addWidget(BTNselectnone);
-//    layout3->setAlignment(Qt::AlignLeft);
-//    layout3->addStretch();
-
-//    QHBoxLayout *layout4 = new QHBoxLayout();
-//    layout4->addStretch();
-//    layout4->addWidget(BTNfontcolor);
-//    layout4->addWidget(BTNfont);
-//    layout4->addStretch();
-
-//    QVBoxLayout *layout = new QVBoxLayout(FRMsymbols);
-//    layout->addWidget(CHKshowsymbols);
-//    layout->addWidget(CHKshowindices);
-//    layout->addWidget(CHKshowcoords);
-//    layout->addLayout(layout2);
-//    layout->addWidget(CHKactiveonly);
-//    layout->addLayout(layout3);
-//    layout->addLayout(layout1);
-//    layout->addLayout(layout4);
 }
 
 void molecule::create_rotation_widgets_and_layouts(){
 
 //        Rotations
     BTNrotation = new QPushButton(tr("Rotations"));
-    connections << connect(BTNrotation, SIGNAL(clicked()), this, SLOT(BTNrotation_clicked()));
+
+    connect(BTNrotation, &QPushButton::clicked,
+            this, &molecule::BTNrotation_clicked);
 
     FRMrotation = new QGroupBox(tr("Rotation"));
     FRMrotation->setVisible(false);
@@ -596,27 +409,21 @@ void molecule::create_rotation_widgets_and_layouts(){
     SPBrot_x->setDecimals(3);
     SPBrot_x->setSingleStep(0.01);
     SPBrot_x->setRange(-1.,1.);
-    SPBrot_x->setValue(rotation.x());
     SPBrot_x->setEnabled(true);
-    connections << connect(SPBrot_x,SIGNAL(valueChanged(double)),this,SLOT(rotation_changed()));
 
     QLabel *LBLrot_y = new QLabel("y:");
     SPBrot_y=new DoubleSpinBox();
     SPBrot_y->setDecimals(3);
     SPBrot_y->setSingleStep(0.01);
     SPBrot_y->setRange(-1.,1.);
-    SPBrot_y->setValue(rotation.y());
     SPBrot_y->setEnabled(true);
-    connections << connect(SPBrot_y,SIGNAL(valueChanged(double)),this,SLOT(rotation_changed()));
 
     QLabel *LBLrot_z = new QLabel("z:");
     SPBrot_z=new DoubleSpinBox();
     SPBrot_z->setDecimals(3);
     SPBrot_z->setSingleStep(0.01);
     SPBrot_z->setRange(-1.,1.);
-    SPBrot_z->setValue(rotation.z());
     SPBrot_z->setEnabled(true);
-    connections << connect(SPBrot_z,SIGNAL(valueChanged(double)),this,SLOT(rotation_changed()));
 
     QLabel *LBLrot_w = new QLabel("w:");
     SPBrot_angle=new DoubleSpinBox();
@@ -625,39 +432,65 @@ void molecule::create_rotation_widgets_and_layouts(){
     SPBrot_angle->setRange(0,360);
     SPBrot_angle->setValue(360. * qAcos(rotation.scalar()) / pi);
     SPBrot_angle->setEnabled(true);
-    connections << connect(SPBrot_angle,SIGNAL(valueChanged(double)),this,SLOT(rotation_changed()));
+
+    setrotationButtons();
+
+    connect(SPBrot_x,QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,&molecule::rotation_changed);
+
+    connect(SPBrot_y,QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,&molecule::rotation_changed);
+
+    connect(SPBrot_z,QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,&molecule::rotation_changed);
+
+    connect(SPBrot_angle,QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this,&molecule::rotation_changed);
 
     QPushButton *BTNapplyrot = new QPushButton();
     BTNapplyrot->setText(tr("Apply"));
-    connections << connections << connect(BTNapplyrot,SIGNAL(clicked()),this,SLOT(rotation_changed()));
+
+    connect(BTNapplyrot, &QPushButton::clicked,
+            this, &molecule::rotation_changed);
 
     QPushButton *BTNresetrot = new QPushButton();
     BTNresetrot->setText(tr("Reset"));
-    connections << connections << connect(BTNresetrot,SIGNAL(clicked()),this,SLOT(reset_rotation()));
+
+    connect(BTNresetrot, &QPushButton::clicked,
+            this, &molecule::reset_rotation);
 
     QGroupBox *FRManimate = new QGroupBox(tr("Animate rotation"));
 
     CHKrotatex = new QCheckBox(FRManimate);
     CHKrotatex->setText(tr("X axis"));
     CHKrotatex->setChecked(rotatex);
-    connections << connect(CHKrotatex, SIGNAL(stateChanged(int)), this, SLOT(CHKrotate_changed()));
+
+    connect(CHKrotatex, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKrotate_changed);
 
     CHKrotatey = new QCheckBox(FRManimate);
     CHKrotatey->setText(tr("Y axis"));
     CHKrotatey->setChecked(rotatey);
-    connections << connect(CHKrotatey, SIGNAL(stateChanged(int)), this, SLOT(CHKrotate_changed()));
+
+    connect(CHKrotatey, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKrotate_changed);
 
     CHKrotatez = new QCheckBox(FRManimate);
     CHKrotatez->setText(tr("Z axis"));
     CHKrotatez->setChecked(rotatez);
-    connections << connect(CHKrotatez, SIGNAL(stateChanged(int)), this, SLOT(CHKrotate_changed()));
+
+    connect(CHKrotatez, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKrotate_changed);
 
     BTNanimation = new QPushButton(QIcon(":/images/empezar.png"),tr("Start"));
     if (startanimation)
         BTNanimation->setText(tr("Stop"));
-    connections << connect(BTNanimation,SIGNAL(clicked()), this, SLOT(BTNanimation_clicked()));
 
-    connections << connect(timer, SIGNAL(timeout()), this, SLOT(animaterotation()));
+    connect(BTNanimation, &QPushButton::clicked,
+            this, &molecule::BTNanimation_clicked);
+
+    connect(timer, &QTimer::timeout,
+            this, &molecule::animaterotation);
 
     SLDspeed = new QSlider(Qt::Horizontal);
     SLDspeed->setRange(0,INTERVAL_SCALE);
@@ -665,7 +498,9 @@ void molecule::create_rotation_widgets_and_layouts(){
     SLDspeed->setPageStep(10);
     SLDspeed->setTickPosition(QSlider::TicksBelow);
     SLDspeed->setValue(INTERVAL_INI);
-    connections << connect(SLDspeed,SIGNAL(valueChanged(int)), this, SLOT(resetinterval()));
+
+    connect(SLDspeed, &QSlider::valueChanged,
+            this, &molecule::resetinterval);
 
     QLabel *LBLslow = new QLabel(tr("Slow"));
     QLabel *LBLfast = new QLabel(tr("Fast"));
@@ -717,7 +552,9 @@ void molecule::create_translation_widgets_and_layouts(){
 
 //        Translations
     BTNtranslation = new QPushButton(tr("Translations"));
-    connections << connect(BTNtranslation, SIGNAL(clicked()), this, SLOT(BTNtranslation_clicked()));
+
+    connect(BTNtranslation, &QPushButton::clicked,
+            this, &molecule::BTNtranslation_clicked);
 
     FRMtranslation = new QGroupBox(tr("Translation"));
     FRMtranslation->setVisible(false);
@@ -729,42 +566,56 @@ void molecule::create_translation_widgets_and_layouts(){
     RBTbohr->setChecked(true);
     RBTangstrom->setChecked(false);
     angstrom = false;
-    connections << connect(RBTbohr, SIGNAL(toggled (bool)),this,SLOT(RBTbohr_changed()));
+
+    connect(RBTbohr, &QRadioButton::toggled,
+            this, &molecule::RBTbohr_changed);
 
     QLabel *LBLtras_x = new QLabel("x:");
     SPBtras_x=new DoubleSpinBox();
     SPBtras_x->setDecimals(2);
     SPBtras_x->setSingleStep(0.1);
     SPBtras_x->setRange(-1000,1000);
-    SPBtras_x->setValue(translation.x());
+//    SPBtras_x->setValue(translation.x());
     SPBtras_x->setEnabled(true);
-    connections << connect(SPBtras_x,SIGNAL(valueChanged(double)),this,SLOT(translation_changed()));
 
     QLabel *LBLtras_y = new QLabel("y:");
     SPBtras_y=new DoubleSpinBox();
     SPBtras_y->setDecimals(2);
     SPBtras_y->setSingleStep(0.1);
     SPBtras_y->setRange(-1000,1000);
-    SPBtras_y->setValue(translation.y());
+//    SPBtras_y->setValue(translation.y());
     SPBtras_y->setEnabled(true);
-    connections << connect(SPBtras_y,SIGNAL(valueChanged(double)),this,SLOT(translation_changed()));
 
     QLabel *LBLtras_z = new QLabel("z:");
     SPBtras_z=new DoubleSpinBox();
     SPBtras_z->setDecimals(2);
     SPBtras_z->setSingleStep(0.1);
     SPBtras_z->setRange(-1000,1000);
-    SPBtras_z->setValue(translation.z());
+//    SPBtras_z->setValue(translation.z());
     SPBtras_z->setEnabled(true);
-    connections << connect(SPBtras_z,SIGNAL(valueChanged(double)),this,SLOT(translation_changed()));
+
+    settranslationButtons();
+
+    connect(SPBtras_x, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &molecule::translation_changed);
+
+    connect(SPBtras_y, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &molecule::translation_changed);
+
+    connect(SPBtras_z, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &molecule::translation_changed);
 
     QPushButton *BTNapplytrans = new QPushButton();
     BTNapplytrans->setText(tr("Apply"));
-    connections << connect(BTNapplytrans,SIGNAL(clicked()),this,SLOT(translation_changed()));
+
+    connect(BTNapplytrans, &QPushButton::clicked,
+            this, &molecule::translation_changed);
 
     QPushButton *BTNresetrans = new QPushButton();
     BTNresetrans->setText(tr("Reset"));
-    connections << connect(BTNresetrans,SIGNAL(clicked()),this,SLOT(reset_translation()));
+
+    connect(BTNresetrans, &QPushButton::clicked,
+            this, &molecule::reset_translation);
 
     QLabel *LBLstepwheel = new QLabel(tr("Stride for zooming with mouse wheel: "));
     SPBstepwheel=new DoubleSpinBox();
@@ -773,9 +624,15 @@ void molecule::create_translation_widgets_and_layouts(){
     SPBstepwheel->setRange(0,100);
     SPBstepwheel->setValue(stepwheel);
     SPBstepwheel->setEnabled(true);
-    connections << connect(SPBstepwheel,SIGNAL(valueChanged(double)),this,SLOT(SPBstepwheel_changed()));
-    connections << connect(SPBstepwheel,SIGNAL(textChanged(QString)),this,SLOT(SPBstepwheel_changed()));
-    connections << connect(BTNapplytrans,SIGNAL(clicked()),this,SLOT(SPBstepwheel_changed()));
+
+    connect(SPBstepwheel, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &molecule::SPBstepwheel_changed);
+
+    connect(SPBstepwheel, &QDoubleSpinBox::textChanged,
+            this, &molecule::SPBstepwheel_changed);
+
+    connect(BTNapplytrans, &QPushButton::clicked,
+            this, &molecule::SPBstepwheel_changed);
 
     QHBoxLayout *layout8 = new QHBoxLayout(FRMtranslationunits);
     layout8->addWidget(RBTbohr);
@@ -813,23 +670,31 @@ void molecule::create_translation_widgets_and_layouts(){
 void molecule::create_axes_widgets_and_layouts(){
 
     BTNaddaxes = new QPushButton(tr("Axes"));
-    connections << connect(BTNaddaxes, SIGNAL(clicked()), this, SLOT(BTNaddaxes_clicked()));
+
+    connect(BTNaddaxes, &QPushButton::clicked,
+            this, &molecule::BTNaddaxes_clicked);
 
     FRMaxes = new QGroupBox(tr("Axes"));
     FRMaxes->setVisible(false);
 
     CHKshowaxes = new QCheckBox(tr("Show axes"));
     CHKshowaxes->setChecked(axes_visible);
-    connections << connect(CHKshowaxes, SIGNAL(stateChanged(int)), this, SLOT(CHKshowaxes_changed(int)));
+
+    connect(CHKshowaxes, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKshowaxes_changed);
 
     CHKshowaxeslabels = new QCheckBox(tr("Show axes labels"));
     CHKshowaxeslabels->setChecked(axes_visible && axeslabels_visible);
     CHKshowaxeslabels->setEnabled(axes_visible);
-    connections << connect(CHKshowaxeslabels, SIGNAL(stateChanged(int)), this, SLOT(CHKshowaxeslabels_changed(int)));
+
+    connect(CHKshowaxeslabels, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKshowaxeslabels_changed);
 
 //        Fonts
     BTNfontaxeslabels = new QPushButton(QIcon(":/images/fonts48.png"),tr("Font"));
-    connections << connect(BTNfontaxeslabels, SIGNAL(clicked()), this, SLOT(BTNfontaxeslabels_clicked()));
+
+    connect(BTNfontaxeslabels, &QPushButton::clicked,
+            this, &molecule::BTNfontaxeslabels_clicked);
 
 //    Colors
 
@@ -837,19 +702,25 @@ void molecule::create_axes_widgets_and_layouts(){
     BTNXaxiscolor->setIcon(QIcon(":/images/colores48.png"));
     BTNXaxiscolor->setText(tr("X axis"));
     BTNXaxiscolor->setColor(&Xaxis_color);
-    connections << connect(BTNXaxiscolor,SIGNAL(clicked()),this,SLOT(BTNXaxiscolor_clicked()));
+
+    connect(BTNXaxiscolor, &QPushButton::clicked,
+            this, &molecule::BTNXaxiscolor_clicked);
 
     BTNYaxiscolor = new ColorButton();
     BTNYaxiscolor->setIcon(QIcon(":/images/colores48.png"));
     BTNYaxiscolor->setText(tr("Y axis"));
     BTNYaxiscolor->setColor(&Yaxis_color);
-    connections << connect(BTNYaxiscolor,SIGNAL(clicked()),this,SLOT(BTNYaxiscolor_clicked()));
+
+    connect(BTNYaxiscolor, &QPushButton::clicked,
+            this, &molecule::BTNYaxiscolor_clicked);
 
     BTNZaxiscolor = new ColorButton();
     BTNZaxiscolor->setIcon(QIcon(":/images/colores48.png"));
     BTNZaxiscolor->setText(tr("Z axis"));
     BTNZaxiscolor->setColor(&Zaxis_color);
-    connections << connect(BTNZaxiscolor,SIGNAL(clicked()),this,SLOT(BTNZaxiscolor_clicked()));
+
+    connect(BTNZaxiscolor, &QPushButton::clicked,
+            this, &molecule::BTNZaxiscolor_clicked);
 
 //         Thickness
 
@@ -859,7 +730,9 @@ void molecule::create_axes_widgets_and_layouts(){
     SPBaxesthickness->setMaximum(50);
     SPBaxesthickness->setMaximumWidth(50);
     SPBaxesthickness->setValue(4);
-    connections << connect(SPBaxesthickness,SIGNAL(valueChanged(int)),this,SLOT(SPBaxesthickness_changed(int)));
+
+    connect(SPBaxesthickness, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBaxesthickness_changed);
 
 //         Vectors length
 
@@ -870,7 +743,9 @@ void molecule::create_axes_widgets_and_layouts(){
     SPBaxeslength->setMaximumWidth(50);
     SPBaxeslength->setSingleStep(1);
     SPBaxeslength->setValue(10);
-    connections << connect(SPBaxeslength,SIGNAL(valueChanged(int)),this,SLOT(SPBaxeslength_changed(int)));
+
+    connect(SPBaxeslength, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBaxeslength_changed);
 
 //         Arrowlength
 
@@ -881,7 +756,9 @@ void molecule::create_axes_widgets_and_layouts(){
     SPBaxesarrowsize->setMaximumWidth(50);
     SPBaxesarrowsize->setSingleStep(1);
     SPBaxesarrowsize->setValue(4);
-    connections << connect(SPBaxesarrowsize,SIGNAL(valueChanged(int)),this,SLOT(SPBaxesarrowssize_changed(int)));
+
+    connect(SPBaxesarrowsize, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBaxesarrowssize_changed);
 
 
 //         Arrowwidth
@@ -893,7 +770,9 @@ void molecule::create_axes_widgets_and_layouts(){
     SPBaxesarrowwidth->setMaximumWidth(50);
     SPBaxesarrowwidth->setSingleStep(1);
     SPBaxesarrowwidth->setValue(10);
-    connections << connect(SPBaxesarrowwidth,SIGNAL(valueChanged(int)),this,SLOT(SPBaxesarrowswidth_changed(int)));
+
+    connect(SPBaxesarrowwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBaxesarrowswidth_changed);
 
     QVBoxLayout *layout1 = new QVBoxLayout();
     layout1->addWidget(CHKshowaxes);
@@ -933,7 +812,10 @@ void molecule::create_axes_widgets_and_layouts(){
 void molecule::create_forces_widgets_and_layouts(){
 //        Add Hellmann-Feynman forces
     BTNaddforces = new QPushButton(tr("Hellmann-Feynman forces"));
-    connections << connect(BTNaddforces, SIGNAL(clicked()), this, SLOT(BTNaddforces_clicked()));
+
+    connect(BTNaddforces, &QPushButton::clicked,
+            this, &molecule::BTNaddforces_clicked);
+
     addforces();
 
     FRMforces = new QGroupBox(tr("Hellmann-Feynman forces"));
@@ -941,11 +823,16 @@ void molecule::create_forces_widgets_and_layouts(){
 
     TXTforces = new QLineEdit();
     TXTforces->setText(hfforces->getforcesfilename());
-    connections << connect(TXTforces, SIGNAL(returnPressed()), this, SLOT(TXTforces_changed()));
+
+    connect(TXTforces, &QLineEdit::returnPressed,
+            this, &molecule::TXTforces_changed);
+
     BTNforces = new QToolButton();
     BTNforces->setText(tr("..."));
     BTNforces->setToolTip(tr("Open file with Hellmann-Feynman forces ..."));
-    connections << connect(BTNforces, SIGNAL(clicked()), this, SLOT(readforcefiles_dialog()));
+
+    connect(BTNforces, &QPushButton::clicked,
+            this, &molecule::readforcefiles_dialog);
 
     QLabel *LBLforcecolors0 = new QLabel(tr("External")+":");
     QLabel *LBLforcecolors1 = new QLabel(tr("Internal")+":");
@@ -956,14 +843,20 @@ void molecule::create_forces_widgets_and_layouts(){
     for (int i=0 ; i<MAX_FORCES ; i++){
         CHKforces[i] = new QCheckBox();
         CHKforces[i]->setChecked(hfforces->getvisibleforces(i));
-        connections << connect(CHKforces[i], SIGNAL(stateChanged(int)), this, SLOT(CHKforces_changed()));
+
+        connect(CHKforces[i], QOverload<int>::of(&QCheckBox::stateChanged),
+                this, &molecule::CHKforces_changed);
+
         hfforces->setvisibleforces(i,true);
         BTNforcecolors[i] = new ColorButton();
         BTNforcecolors[i]->setIcon(QIcon(":/images/colores48.png"));
         BTNforcecolors[i]->setText(tr("Color"));
         QColor color = hfforces->getcolor(i);
         BTNforcecolors[i]->setColor(&color);
-        connections << connect(BTNforcecolors[i],SIGNAL(clicked()),this,SLOT(BTNforcescolor_changed()));
+
+        connect(BTNforcecolors[i], &QPushButton::clicked,
+                this, &molecule::BTNforcescolor_changed);
+
     }
 
 //         Vectors thickness
@@ -975,7 +868,9 @@ void molecule::create_forces_widgets_and_layouts(){
     SPBforcesthickness->setMinimumWidth(60);
     SPBforcesthickness->setMaximumWidth(60);
     SPBforcesthickness->setValue(hfforces->getforcesthickness());
-    connections << connect(SPBforcesthickness,SIGNAL(valueChanged(int)),this,SLOT(SPBforcesthickness_changed(int)));
+
+    connect(SPBforcesthickness, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBforcesthickness_changed);
 
 //         Vectors length
 
@@ -987,7 +882,9 @@ void molecule::create_forces_widgets_and_layouts(){
     SPBforceslength->setMaximumWidth(60);
     SPBforceslength->setSingleStep(1);
     SPBforceslength->setValue(hfforces->getforceslength());
-    connections << connect(SPBforceslength,SIGNAL(valueChanged(int)),this,SLOT(SPBforceslength_changed(int)));
+
+    connect(SPBforceslength, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBforceslength_changed);
 
 //         Arrows length
 
@@ -999,7 +896,9 @@ void molecule::create_forces_widgets_and_layouts(){
     SPBforcesarrowlength->setMaximumWidth(60);
     SPBforcesarrowlength->setSingleStep(1);
     SPBforcesarrowlength->setValue(hfforces->getarrowlength());
-    connections << connect(SPBforcesarrowlength,SIGNAL(valueChanged(int)),this,SLOT(SPBforcesarrowlength_changed(int)));
+
+    connect(SPBforcesarrowlength, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBforcesarrowlength_changed);
 
 //         Arrows width
 
@@ -1011,7 +910,9 @@ void molecule::create_forces_widgets_and_layouts(){
     SPBforcesarrowwidth->setMaximumWidth(60);
     SPBforcesarrowwidth->setSingleStep(1);
     SPBforcesarrowwidth->setValue(hfforces->getarrowwidth());
-    connections << connect(SPBforcesarrowwidth,SIGNAL(valueChanged(int)),this,SLOT(SPBforcesarrowwidth_changed(int)));
+
+    connect(SPBforcesarrowwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBforcesarrowwidth_changed);
 
 //    Layouts
     QLabel *LBLforces = new QLabel(tr("File")+":");
@@ -1062,7 +963,10 @@ void molecule::create_forces_widgets_and_layouts(){
 void molecule::create_field_lines_widgets_and_layouts(){
 //        Add field lines
     BTNaddfieldlines = new QPushButton(tr("3D lines"));
-    connections << connect(BTNaddfieldlines, SIGNAL(clicked()), this, SLOT(BTNaddfieldlines_clicked()));
+
+    connect(BTNaddfieldlines, &QPushButton::clicked,
+            this, &molecule::BTNaddfieldlines_clicked);
+
     addfield();
 
     FRMfield = new QGroupBox(tr("3D lines"));
@@ -1070,22 +974,30 @@ void molecule::create_field_lines_widgets_and_layouts(){
 
     TXTfieldlines = new QLineEdit();
     TXTfieldlines->setText(flines->getfieldfilename());
-    connections << connect(TXTfieldlines, SIGNAL(returnPressed()), this, SLOT(TXTfieldlines_changed()));
+
+    connect(TXTfieldlines, &QLineEdit::returnPressed,
+            this, &molecule::TXTfieldlines_changed);
 
     QLabel *LBLfieldlines = new QLabel(tr("File")+":");
     BTNfieldlines = new QToolButton();
     BTNfieldlines->setText(tr("..."));
     BTNfieldlines->setToolTip(tr("Open geometry file ..."));
-    connections << connect(BTNfieldlines, SIGNAL(clicked()), this, SLOT(readfieldlines_dialog()));
+
+    connect(BTNfieldlines, &QPushButton::clicked,
+            this, &molecule::readfieldlines_dialog);
 
     CHKflines = new QCheckBox(tr("Show lines"));
     CHKflines->setChecked(flines->isvisible());
-    connections << connect(CHKflines, SIGNAL(stateChanged(int)), this, SLOT(CHKflines_changed()));
+
+    connect(CHKflines, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKflines_changed);
 
     BTNflinescolor = new ColorButton(QIcon(":/images/colores48.png"),tr("Color"));
     QColor currcolor = flines->getlinescolor();
     BTNflinescolor->setColor(&currcolor);
-    connections << connect(BTNflinescolor, SIGNAL(clicked()), this, SLOT(BTNflinescolor_clicked()));
+
+    connect(BTNflinescolor, &QPushButton::clicked,
+            this, &molecule::BTNflinescolor_clicked);
 
     QLabel *LBLlinewidth = new QLabel(tr("Width"));
     SPBflineslinewidth = new QSpinBox();
@@ -1093,14 +1005,18 @@ void molecule::create_field_lines_widgets_and_layouts(){
     SPBflineslinewidth->setMaximum(20);
     SPBflineslinewidth->setMaximumWidth(50);
     SPBflineslinewidth->setValue(flines->getlineswidth());
-    connections << connect(SPBflineslinewidth,SIGNAL(valueChanged(int)),this,SLOT(SPBflineslinewidth_changed(int)));
+
+    connect(SPBflineslinewidth, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBflineslinewidth_changed);
 
     FRMflinesarrows = new QGroupBox();
     FRMflinesarrows->setTitle(tr("Arrows"));
 
     CHKflinesarrows = new QCheckBox(tr("Show arrows"));
     CHKflinesarrows->setChecked(flines->getshowarrows());
-    connections << connect(CHKflinesarrows, SIGNAL(stateChanged(int)), this, SLOT(CHKflinesarrows_changed()));
+
+    connect(CHKflinesarrows, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKflinesarrows_changed);
 
     QLabel *LBLarrowssep = new QLabel(tr("Arrows spacing"));
     SPBflinesarrowssep = new QSpinBox();
@@ -1109,7 +1025,9 @@ void molecule::create_field_lines_widgets_and_layouts(){
     SPBflinesarrowssep->setMaximumWidth(100);
     SPBflinesarrowssep->setSingleStep(5);
     SPBflinesarrowssep->setValue(flines->getarrowsseparation());
-    connections << connect(SPBflinesarrowssep,SIGNAL(valueChanged(int)),this,SLOT(SPBflinesarrowssep_changed(int)));
+
+    connect(SPBflinesarrowssep, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBflinesarrowssep_changed);
 
     QLabel *LBLarrowssize = new QLabel(tr("Arrows length"));
     SPBflinesarrowssize = new QSpinBox();
@@ -1119,7 +1037,9 @@ void molecule::create_field_lines_widgets_and_layouts(){
     SPBflinesarrowssize->setSingleStep(1);
     SPBflinesarrowssize->setValue(flines->getarrowssize());
     flines->setarrowssize(SPBflinesarrowssize->value());
-    connections << connect(SPBflinesarrowssize,SIGNAL(valueChanged(int)),this,SLOT(SPBflinesarrowssize_changed(int)));
+
+    connect(SPBflinesarrowssize,  QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBflinesarrowssize_changed);
 
     QLabel *LBLarrowswidth = new QLabel(tr("Arrows width"));
     SPBflinesarrowswidth = new QSpinBox();
@@ -1129,7 +1049,9 @@ void molecule::create_field_lines_widgets_and_layouts(){
     SPBflinesarrowswidth->setSingleStep(1);
     SPBflinesarrowswidth->setValue(flines->getarrowswidth());
     flines->setarrowswidth(SPBflinesarrowswidth->value());
-    connections << connect(SPBflinesarrowswidth,SIGNAL(valueChanged(int)),this,SLOT(SPBflinesarrowswidth_changed(int)));
+
+    connect(SPBflinesarrowswidth, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBflinesarrowswidth_changed);
 
     QHBoxLayout *Layout1 = new QHBoxLayout();
     Layout1->addWidget(LBLfieldlines);
@@ -1170,7 +1092,10 @@ void molecule::create_field_lines_widgets_and_layouts(){
 void molecule::create_critical_points_widgets_and_layouts(){
 //        Add critical points
     BTNaddcriticalpoints = new QPushButton(tr("Critical points"));
-    connections << connect(BTNaddcriticalpoints, SIGNAL(clicked()), this, SLOT(BTNaddcriticalpoints_clicked()));
+
+    connect(BTNaddcriticalpoints, &QPushButton::clicked,
+            this, &molecule::BTNaddcriticalpoints_clicked);
+
     addcriticalpoints();
 
     FRMcriticalpoints= new QGroupBox(tr("Critical points"));
@@ -1183,12 +1108,16 @@ void molecule::create_critical_points_widgets_and_layouts(){
     QLabel *LBLcps = new QLabel(tr("File")+":");
     TXTcps = new QLineEdit();
     TXTcps->setText(cps->getcpsfilename());
-    connections << connect(TXTcps, SIGNAL(returnPressed()), this, SLOT(TXTcps_changed()));
+
+    connect(TXTcps, &QLineEdit::returnPressed,
+            this, &molecule::TXTcps_changed);
 
     BTNcps = new QToolButton();
     BTNcps->setText(tr("..."));
     BTNcps->setToolTip(tr("Open file with critical points ..."));
-    connections << connect(BTNcps, SIGNAL(clicked()), this, SLOT(readcpsfiles_dialog()));
+
+    connect(BTNcps, &QPushButton::clicked,
+            this, &molecule::readcpsfiles_dialog);
 
     QLabel *LBLcpscolor0 = new QLabel(tr("(3,+3) CP")+":");
     QLabel *LBLcpscolor1 = new QLabel(tr("(3,+1) CP")+":");
@@ -1197,13 +1126,18 @@ void molecule::create_critical_points_widgets_and_layouts(){
     for (int i=0 ; i<MAX_CPS ; i++){
         CHKcps[i] = new QCheckBox();
         CHKcps[i]->setChecked(cpschecked[i]);
-        connections << connect(CHKcps[i], SIGNAL(stateChanged(int)), this, SLOT(CHKcps_changed()));
+
+        connect(CHKcps[i], QOverload<int>::of(&QCheckBox::stateChanged),
+                this, &molecule::CHKcps_changed);
+
         BTNcpcolor[i] = new ColorButton();
         BTNcpcolor[i]->setIcon(QIcon(":/images/colores48.png"));
         BTNcpcolor[i]->setText(tr("Color"));
         QColor currcolor = cps->getcolor(i);
         BTNcpcolor[i]->setColor(&currcolor);
-        connect(BTNcpcolor[i],SIGNAL(clicked()),this,SLOT(BTNcpcolor_change()));
+
+        connect(BTNcpcolor[i], &QPushButton::clicked,
+                this, &molecule::BTNcpcolor_change);
     }
 //         Ball radius
 
@@ -1213,13 +1147,18 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpballradius->setMaximum(100);
     SPBcpballradius->setMaximumWidth(50);
     SPBcpballradius->setValue(cps->getradius());
-    connections << connect(SPBcpballradius,SIGNAL(valueChanged(int)),this,SLOT(SPBcpballradius_changed(int)));
+
+    connect(SPBcpballradius, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcpballradius_changed);
+
 
 //         CP coordinates
 
     CHKcpcoords = new QCheckBox(tr("CP coordinates"));
     CHKcpcoords->setChecked(cps->getdrawcpscoords());
-    connections << connect(CHKcpcoords, SIGNAL(stateChanged(int)), this, SLOT(CHKcpcoords_changed(int)));
+
+    connect(CHKcpcoords, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKcpcoords_changed);
 
     FRMcpunits = new QGroupBox();
     RBTangstromcp = new QRadioButton(tr("angstrom"),FRMcpunits);
@@ -1228,7 +1167,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     RBTangstromcp->setVisible(CHKcpcoords->isChecked());
     RBTangstromcp->setChecked(angstromcp);
     RBTbohrcp->setVisible(CHKcpcoords->isChecked());
-    connections << connect(RBTbohrcp, SIGNAL(toggled (bool)),this,SLOT(RBTbohrcp_changed()));
+
+    connect(RBTbohrcp, &QRadioButton::toggled,
+            this, &molecule::RBTbohrcp_changed);
 
     LBLcpcoordprecision = new QLabel(tr("Precision"));
     LBLcpcoordprecision->setVisible(CHKcpcoords->isChecked());
@@ -1238,22 +1179,31 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpcoordprecision->setMaximumWidth(50);
     SPBcpcoordprecision->setValue(cps->getcpcoordprecision());
     SPBcpcoordprecision->setVisible(CHKcpcoords->isChecked());
-    connections << connect(SPBcpcoordprecision,SIGNAL(valueChanged(int)),this,SLOT(SPBcpcoordprecision_changed(int)));
+
+    connect(SPBcpcoordprecision, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcpcoordprecision_changed);
 
 //         CP symbols, CP indices
 
     CHKcpsymbols = new QCheckBox(tr("CP symbols"));
     CHKcpsymbols->setChecked(cps->getdrawcpssymbols());
-    connections << connect(CHKcpsymbols, SIGNAL(stateChanged(int)), this, SLOT(CHKcpsymbols_changed(int)));
+
+    connect(CHKcpsymbols, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKcpsymbols_changed);
+
     CHKcpindices = new QCheckBox(tr("CP indices"));
     CHKcpindices->setChecked(cps->getdrawcpsindices());
-    connections << connect(CHKcpindices, SIGNAL(stateChanged(int)), this, SLOT(CHKcpindices_changed(int)));
+
+    connect(CHKcpindices, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKcpindices_changed);
 
 //         CP values
 
     CHKcpvalues = new QCheckBox(tr("CP field values"));
     CHKcpvalues->setChecked(cps->getdrawcpsvalues());
-    connections << connect(CHKcpvalues, SIGNAL(stateChanged(int)), this, SLOT(CHKcpvalues_changed(int)));
+
+    connect(CHKcpvalues, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKcpvalues_changed);
 
     LBLcpprecision = new QLabel(tr("Precision"));
     LBLcpprecision->setVisible(CHKcpvalues->isChecked());
@@ -1263,7 +1213,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpprecision->setMaximumWidth(50);
     SPBcpprecision->setValue(cps->getcpprecision());
     SPBcpprecision->setVisible(CHKcpvalues->isChecked());
-    connections << connect(SPBcpprecision,SIGNAL(valueChanged(int)),this,SLOT(SPBcpprecision_changed(int)));
+
+    connect(SPBcpprecision, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcpprecision_changed);
 
     CHKcpactiveonly = new QCheckBox(tr("Only selected CPs"));
     CHKcpactiveonly->setChecked(cps->getonlycpsactive());
@@ -1273,7 +1225,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     else {
         CHKcpactiveonly->setVisible(false);
     }
-    connections << connect(CHKcpactiveonly, SIGNAL(stateChanged(int)), this, SLOT(CHKcpactiveonly_changed(int)));
+
+    connect(CHKcpactiveonly, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKcpactiveonly_changed);
 
 //         CP selection
 
@@ -1282,12 +1236,18 @@ void molecule::create_critical_points_widgets_and_layouts(){
     BTNcpselectall = new ColorButton();
     BTNcpselectall->setText(tr("All"));
     BTNcpselectall->setColor(cpbtnbkgcolor);
-    connections << connect(BTNcpselectall, SIGNAL(clicked()), this, SLOT(BTNcpselectall_clicked()));
+
+    connect(BTNcpselectall, &QPushButton::clicked,
+            this, &molecule::BTNcpselectall_clicked);
+
     cpbtnbkgcolor = new QColor(255,0,0);
     BTNcpselectnone = new ColorButton();
     BTNcpselectnone->setText(tr("None"));
     BTNcpselectnone->setColor(cpbtnbkgcolor);
-    connections << connect(BTNcpselectnone, SIGNAL(clicked()), this, SLOT(BTNcpselectnone_clicked()));
+
+    connect(BTNcpselectnone, &QPushButton::clicked,
+            this, &molecule::BTNcpselectnone_clicked);
+
     if (CHKcpactiveonly->isChecked()){
         LBLcpselect->setVisible(true);
         BTNcpselectall->setVisible(true);
@@ -1301,14 +1261,18 @@ void molecule::create_critical_points_widgets_and_layouts(){
 
 
     BTNcplblfont = new QPushButton(QIcon(":/images/fonts48.png"),tr("Font"));
-    connections << connect(BTNcplblfont, SIGNAL(clicked()), this, SLOT(BTNcplblfont_clicked()));
+
+    connect(BTNcplblfont, &QPushButton::clicked,
+            this, &molecule::BTNcplblfont_clicked);
 
     QLabel *LBLcpvshift = new QLabel(tr("Vertical shift"));
     SPBcpvshift = new QSpinBox();
     SPBcpvshift->setRange(-150,150);
     SPBcpvshift->setMaximumWidth(70);
     SPBcpvshift->setValue(cps->getcpvshift());
-    connections << connect(SPBcpvshift,SIGNAL(valueChanged(int)),this,SLOT(SPBcpvshift_changed(int)));
+
+    connect(SPBcpvshift, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcpvshift_changed);
 
     BTNcpcolorfont = new ColorButton();
     BTNcpcolorfont->setIcon(QIcon(":/images/fonts48.png"));
@@ -1316,8 +1280,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     QColor fontcolor = cps->getfontcolor();
     BTNcpcolorfont->setColor(&fontcolor);
     BTNcpcolorfont->setVisible(true);
-    connections << connect(BTNcpcolorfont, SIGNAL(clicked()), this, SLOT(BTNcpcolorfont_clicked()));
 
+    connect(BTNcpcolorfont, &QPushButton::clicked,
+            this, &molecule::BTNcpcolorfont_clicked);
 
 //        Hessian eigenvectors
 
@@ -1331,7 +1296,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
         FRMcpeigvec->setVisible(true);
 
     CHKcpeigvec = new QCheckBox(tr("Display hessian eigenvectors"));
-    connections << connect(CHKcpeigvec, SIGNAL(stateChanged(int)), this, SLOT(CHKcpeigvec_changed(int)));
+
+    connect(CHKcpeigvec, QOverload<int>::of(&QCheckBox::stateChanged),
+            this, &molecule::CHKcpeigvec_changed);
 
     QLabel *LBLcolorcpeigvec0 = new QLabel(tr("Highest abs. eigenvalue"));
     QLabel *LBLcolorcpeigvec1 = new QLabel(tr("Interm. abs. eigenvalue"));
@@ -1342,7 +1309,10 @@ void molecule::create_critical_points_widgets_and_layouts(){
         BTNcpeigcolor[i]->setText(tr("Color"));
         QColor color = cps->geteigcolor(i);
         BTNcpeigcolor[i]->setColor(&color);
-        connections << connect(BTNcpeigcolor[i],SIGNAL(clicked()),this,SLOT(BTNcpeigcolor_change()));
+
+        connect(BTNcpeigcolor[i], &QPushButton::clicked,
+                this, &molecule::BTNcpeigcolor_change);
+
     }
 
 //         Thickness
@@ -1353,7 +1323,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpeigthickness->setMaximum(50);
     SPBcpeigthickness->setMaximumWidth(50);
     SPBcpeigthickness->setValue(cps->geteigthickness());
-    connections << connect(SPBcpeigthickness,SIGNAL(valueChanged(int)),this,SLOT(SPBcpeigthickness_changed(int)));
+
+    connect(SPBcpeigthickness, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcpeigthickness_changed);
 
 //         Vectors length
 
@@ -1364,7 +1336,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpeiglength->setMaximumWidth(50);
     SPBcpeiglength->setSingleStep(1);
     SPBcpeiglength->setValue(cps->geteiglength());
-    connections << connect(SPBcpeiglength,SIGNAL(valueChanged(int)),this,SLOT(SPBcpeiglength_change(int)));
+
+    connect(SPBcpeiglength, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcpeiglength_change);
 
 //         Arrowlength
 
@@ -1375,8 +1349,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpeigarrowsize->setMaximumWidth(50);
     SPBcpeigarrowsize->setSingleStep(1);
     SPBcpeigarrowsize->setValue(cps->geteigarrowsize());
-    connections << connect(SPBcpeigarrowsize,SIGNAL(valueChanged(int)),this,SLOT(SPBcpeigarrowsize_changed(int)));
 
+    connect(SPBcpeigarrowsize, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcpeigarrowsize_changed);
 
 //         Arrowwidth
 
@@ -1387,7 +1362,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpeigarrowwidth->setMaximumWidth(50);
     SPBcpeigarrowwidth->setSingleStep(1);
     SPBcpeigarrowwidth->setValue(10);
-    connections << connect(SPBcpeigarrowwidth,SIGNAL(valueChanged(int)),this,SLOT(SPBcpeigarrowwidth_changed(int)));
+
+    connect(SPBcpeigarrowwidth, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &molecule::SPBcpeigarrowwidth_changed);
 
 //    Layouts
 
@@ -1503,67 +1480,6 @@ void molecule::create_critical_points_widgets_and_layouts(){
     Layout->addStretch();
 }
 
-//void molecule::create_surfaces_widgets_and_layouts(){
-////        Add surface
-//    BTNaddsurface = new QPushButton(tr("Add surface"));
-//    connections << connect(BTNaddsurface, SIGNAL(clicked()), this, SLOT(addsurface()));
-
-//    layoutsurfs = new QVBoxLayout();
-//    if (surfaces->count() > 0){
-//        QLabel *LBLavailablesurfs = new QLabel();
-//        LBLavailablesurfs->setText(tr("<font color=\"black\">Loaded surfaces</font>"));
-//        layoutsurfs->addWidget(LBLavailablesurfs,Qt::AlignCenter);
-//        QSignalMapper* deletesurfsignalMapper = new QSignalMapper (this) ;
-//        QSignalMapper* showsurfsignalMapper = new QSignalMapper (this) ;
-//        for (int i = 0, knt = 0 ; i < surfaces->count() ; i++){
-//            togglingGroupBox *FRMsurfaceeditor = surfaces_editor(surfaces->at(i));
-//            FRMsurfaceeditor->setVisible(false);
-
-//            QLabel *LBLsurf = new QLabel();
-//            LBLsurf->setText(surfaces->at(i)->getname());
-//            editclosePushButton *BTNeditsurf = new editclosePushButton();
-//            connections << connect(BTNeditsurf, SIGNAL(clicked()), BTNeditsurf,
-//                            SLOT(toggletext()), Qt::UniqueConnection);
-//            connections << connect(BTNeditsurf, SIGNAL(clicked()), FRMsurfaceeditor,
-//                            SLOT(toggleVisible()), Qt::UniqueConnection);
-//            connections << connect(FRMsurfaceeditor, SIGNAL(isvisible(bool)), this,
-//                            SLOT(updateQDLeditMolecule(bool)), Qt::UniqueConnection);
-//            connections << connect(surfaces->at(i), SIGNAL(opendialog()), this,
-//                            SLOT(closeisosurfeditors()), Qt::UniqueConnection);
-//            QPushButton *BTNdeletesurf = new QPushButton();
-//            BTNdeletesurf->setText(tr("Delete"));
-//            connections << connect(BTNdeletesurf, SIGNAL(clicked()), deletesurfsignalMapper, SLOT(map()), Qt::UniqueConnection);
-//            deletesurfsignalMapper -> setMapping(BTNdeletesurf,i);
-//            showhidePushButton *BTNshowsurf = new showhidePushButton();
-//            if (surfaces->at(i)->getvisible())
-//                BTNshowsurf->inittext(1);
-//            else
-//                BTNshowsurf->inittext(0);
-//            connections << connect(BTNshowsurf, SIGNAL(clicked()), showsurfsignalMapper, SLOT(map()), Qt::UniqueConnection);
-//            showsurfsignalMapper -> setMapping(BTNshowsurf,i);
-//            connections << connect(BTNshowsurf, SIGNAL(clicked()), BTNshowsurf,
-//                            SLOT(toggletext()), Qt::UniqueConnection);
-
-//            QGridLayout *layout0 = new QGridLayout();
-//            layout0->addWidget(LBLsurf,knt+1,0,1,3);
-//            layout0->addWidget(BTNeditsurf,knt+1,3);
-//            layout0->addWidget(BTNshowsurf,knt+1,4);
-//            layout0->addWidget(BTNdeletesurf,knt+1,5);
-
-//            layoutsurfs->addLayout(layout0);
-
-
-//            layoutsurfs->addWidget(FRMsurfaceeditor);
-
-//            knt++;
-//        }
-//        connections << connect (deletesurfsignalMapper, SIGNAL(mapped(int)), this,
-//                        SLOT(deletesurf(int)), Qt::UniqueConnection) ;
-//        connections << connect (showsurfsignalMapper, SIGNAL(mapped(int)), this,
-//                        SLOT(toggleshowsurf(int)), Qt::UniqueConnection) ;
-//    }
-//}
-
 void molecule::create_surfaces_widgets_and_layouts()
 {
     BTNaddsurface = new QPushButton(tr("Add surface"));
@@ -1573,20 +1489,20 @@ void molecule::create_surfaces_widgets_and_layouts()
 
     layoutsurfs = new QVBoxLayout();
 
-    if (surfaces->count() > 0) {
+    if (surfaces.count() > 0) {
         QLabel *LBLavailablesurfs = new QLabel(
             tr("<font color=\"black\">Loaded surfaces</font>")
         );
 
         layoutsurfs->addWidget(LBLavailablesurfs, Qt::AlignCenter);
 
-        for (int i = 0, knt = 0; i < surfaces->count(); ++i) {
+        for (int i = 0, knt = 0; i < surfaces.count(); ++i) {
             togglingGroupBox *FRMsurfaceeditor =
-                surfaces_editor(surfaces->at(i));
+                surfaces_editor(surfaces.at(i));
 
             FRMsurfaceeditor->setVisible(false);
 
-            QLabel *LBLsurf = new QLabel(surfaces->at(i)->getname());
+            QLabel *LBLsurf = new QLabel(surfaces.at(i)->getname());
 
             editclosePushButton *BTNeditsurf = new editclosePushButton();
 
@@ -1599,7 +1515,7 @@ void molecule::create_surfaces_widgets_and_layouts()
             connect(FRMsurfaceeditor,&togglingGroupBox::isvisible,
                     this,&molecule::updateQDLeditMolecule);
 
-            connect(surfaces->at(i),&surface::opendialog,
+            connect(surfaces.at(i),&surface::opendialog,
                     this,&molecule::closeisosurfeditors);
 
             QPushButton *BTNdeletesurf = new QPushButton(tr("Delete"));
@@ -1610,7 +1526,7 @@ void molecule::create_surfaces_widgets_and_layouts()
             showhidePushButton *BTNshowsurf = new showhidePushButton();
 
             BTNshowsurf->inittext(
-                surfaces->at(i)->getvisible() ? 1 : 0
+                surfaces.at(i)->getvisible() ? 1 : 0
             );
 
             connect(BTNshowsurf,&QPushButton::clicked,
@@ -1644,7 +1560,9 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     RBTsolidsurf->setChecked(surf->getsolidsurf());
     QRadioButton *RBTwiresurf = new QRadioButton(tr("Wire frame"),FRMsurftype);
     RBTwiresurf->setChecked(!surf->getsolidsurf());
-    connections << connect(RBTsolidsurf, SIGNAL(toggled (bool)), surf, SLOT(setsolidsurf(bool)));
+
+    connect(RBTsolidsurf, &QRadioButton::toggled,
+            surf, &surface::setsolidsurf);
 
 //        Opacity
     labelSlider *SLDopacity = new labelSlider();
@@ -1653,14 +1571,19 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     SLDopacity->setSingleStep(1);
     SLDopacity->setPageStep(10);
     SLDopacity->setValue(100.f * surf->getopacity());
-    connections << connect(SLDopacity, SIGNAL(valueChanged(int)), surf, SLOT(opacity_changed(int)));
-    connections << connect(SLDopacity, SIGNAL(sliderReleased()), surf, SLOT(opacity_released()));
 
+    connect(SLDopacity, &labelSlider::valueChanged,
+            surf, &surface::opacity_changed);
+
+    connect(SLDopacity, &labelSlider::sliderReleased,
+            surf, &surface::opacity_released);
 
 //        Translucency correction
     QCheckBox *CHKtranslucence = new QCheckBox(tr("Translucence correction"));
     CHKtranslucence->setChecked(surf->gettranslucence());
-    connections << connect(CHKtranslucence, SIGNAL(toggled (bool)), surf, SLOT(settranslucence(bool)));
+
+    connect(CHKtranslucence, &QCheckBox::toggled,
+            surf, &surface::settranslucence);
 
 //        Basins color
     ColorButton *BTNsurfacecolor = new ColorButton();
@@ -1669,8 +1592,13 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     QColor surfacecolor = surf->getsurfacecolor();
     BTNsurfacecolor->setColor(&surfacecolor);
     BTNsurfacecolor->setEnabled(true);
-    connect(BTNsurfacecolor,SIGNAL(clicked()),surf,SLOT(selectsurfacecolor()));
-    connect(surf,SIGNAL(surfaceColor(QColor *)),BTNsurfacecolor,SLOT(setColor(QColor *)));
+
+    connect(BTNsurfacecolor, &QPushButton::clicked,
+            surf, &surface::selectsurfacecolor);
+
+    connect(surf, &surface::surfaceColor,
+            BTNsurfacecolor, QOverload<QColor *>::of(&ColorButton::setColor));
+
 
 //        Color boundaries
 
@@ -1690,10 +1618,19 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     SLDcolorbounds->setTXTtext(QString("%1").arg(surf->gettopcolor()));
 
     SLDcolorbounds->setValue(surf->getfabstop());
-    connections << connect(SLDcolorbounds, SIGNAL(valueChanged(float)), surf, SLOT(settopcolor(float)));
-    connections << connect(SLDcolorbounds, SIGNAL(valueChanged(float)), surf, SLOT(settrianglecolors()));
-    connections << connect(SLDcolorbounds, SIGNAL(sliderReleased()), surf, SLOT(settrianglecolors()));
-    connections << connect(SLDcolorbounds, SIGNAL(sliderReleased()), this, SLOT(emitupdatedisplay()));
+
+    connect(SLDcolorbounds, &lineEditSlider::valueChanged,
+            surf, &surface::settopcolor);
+
+    connect(SLDcolorbounds, &lineEditSlider::valueChanged,
+            surf, &surface::settrianglecolors);
+
+    connect(SLDcolorbounds, &lineEditSlider::sliderReleased,
+            surf, &surface::settrianglecolors);
+
+    connect(SLDcolorbounds, &lineEditSlider::sliderReleased,
+            this, &molecule::emitupdatedisplay);
+
 
 //        Show local maxima and minima
     QLabel *LBLshowlocalmax = new QLabel(tr("Local maxima"));
@@ -1708,33 +1645,48 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     QGroupBox *FRMlocalextremaoptions = new QGroupBox();
     FRMlocalextremaoptions->setVisible(CHKshowlocalmax->isChecked()||CHKshowlocalmin->isChecked());
 
-    connections << connect(CHKshowlocalmax, SIGNAL(toggled(bool)), signalshowlocal, SLOT(setSignal1(bool)));
-    connections << connect(CHKshowlocalmax, SIGNAL(toggled(bool)), surf, SLOT(setshowlocalmax(bool)));
+    connect(CHKshowlocalmax, &QCheckBox::toggled,
+            signalshowlocal, &combineSignalsOr::setSignal1);
 
-    connections << connect(CHKshowlocalmin, SIGNAL(toggled(bool)), signalshowlocal, SLOT(setSignal2(bool)));
-    connections << connect(CHKshowlocalmin, SIGNAL(toggled(bool)), surf, SLOT(setshowlocalmin(bool)));
+    connect(CHKshowlocalmax, &QCheckBox::toggled,
+            surf, &surface::setshowlocalmax);
 
-    connections << connect(signalshowlocal, SIGNAL(signalsCombined(bool)), FRMlocalextremaoptions, SLOT(setVisible(bool)));
-    connections << connect(signalshowlocal, SIGNAL(signalsCombined(bool)), this, SLOT(resizeQDLeditMolecule()));
+    connect(CHKshowlocalmin, &QCheckBox::toggled,
+            signalshowlocal, &combineSignalsOr::setSignal2);
 
+    connect(CHKshowlocalmin, &QCheckBox::toggled,
+            surf, &surface::setshowlocalmin);
+
+    connect(signalshowlocal, &combineSignalsOr::signalsCombined,
+            FRMlocalextremaoptions, &QWidget::setVisible);
+
+    connect(signalshowlocal, &combineSignalsOr::signalsCombined,
+            this, &molecule::resizeQDLeditMolecule);
 
 //        Show symbols of local extrema
 
     QCheckBox *CHKshowextremasymbols = new QCheckBox(tr("Show symbols"));
     CHKshowextremasymbols->setChecked(surf->getshowextremasymbols());
-    connections << connect(CHKshowextremasymbols, SIGNAL(toggled(bool)), surf, SLOT(setshowextremasymbols(bool)));
+
+    connect(CHKshowextremasymbols, &QCheckBox::toggled,
+            surf, &surface::setshowextremasymbols);
+
 
 //        Show indices of local extrema
 
     QCheckBox *CHKshowextremaindices = new QCheckBox(tr("Show indices"));
     CHKshowextremaindices->setChecked(surf->getshowextremaindices());
-    connections << connect(CHKshowextremaindices, SIGNAL(toggled(bool)), surf, SLOT(setshowextremaindices(bool)));
+
+    connect(CHKshowextremaindices, &QCheckBox::toggled,
+            surf, &surface::setshowextremaindices);
 
 //        Show values of local extrema
 
     QCheckBox *CHKshowextremavalues = new QCheckBox(tr("Show MESP values"));
     CHKshowextremavalues->setChecked(surf->getshowextremavalues());
-    connections << connect(CHKshowextremavalues, SIGNAL(toggled(bool)), surf, SLOT(setshowextremavalues(bool)));
+
+    connect(CHKshowextremavalues, &QCheckBox::toggled,
+            surf, &surface::setshowextremavalues);
 
     QLabel *LBLvalueprecision = new QLabel(tr("Precision"));
     LBLvalueprecision->setVisible(CHKshowextremavalues->isChecked());
@@ -1744,16 +1696,29 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     SPBvalueprecision->setMaximumWidth(50);
     SPBvalueprecision->setValue(surf->getvalueprecision());
     SPBvalueprecision->setVisible(CHKshowextremavalues->isChecked());
-    connections << connect(SPBvalueprecision,SIGNAL(valueChanged(int)),surf,SLOT(setvalueprecision(int)));
-    connections << connect(CHKshowextremavalues, SIGNAL(toggled(bool)), LBLvalueprecision, SLOT(setVisible(bool)));
-    connections << connect(CHKshowextremavalues, SIGNAL(toggled(bool)), SPBvalueprecision, SLOT(setVisible(bool)));
-    connections << connect(CHKshowextremavalues, SIGNAL(toggled(bool)), this, SLOT(resizeQDLeditMolecule()));
+
+    connect(SPBvalueprecision, QOverload<int>::of(&QSpinBox::valueChanged),
+            surf, &surface::setvalueprecision);
+
+    connect(CHKshowextremavalues, &QCheckBox::toggled,
+            LBLvalueprecision, &QWidget::setVisible);
+
+    connect(CHKshowextremavalues, &QCheckBox::toggled,
+            SPBvalueprecision, &QWidget::setVisible);
+
+    connect(CHKshowextremavalues, &QCheckBox::toggled,
+            this, &molecule::resizeQDLeditMolecule);
+
+
 
 //        Show coordinates of local extrema
 
     QCheckBox *CHKshowextremacoords = new QCheckBox(tr("Show coordinates"));
     CHKshowextremacoords->setChecked(surf->getshowextremacoords());
-    connections << connect(CHKshowextremacoords, SIGNAL(toggled(bool)), surf, SLOT(setshowextremacoords(bool)));
+
+    connect(CHKshowextremacoords, &QCheckBox::toggled,
+            surf, &surface::setshowextremacoords);
+
 
     LBLcoordprecision = new QLabel(tr("Precision"));
     LBLcoordprecision->setVisible(CHKshowextremacoords->isChecked());
@@ -1763,32 +1728,55 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     SPBcoordprecision->setMaximumWidth(50);
     SPBcoordprecision->setValue(surf->getcoordprecision());
     SPBcoordprecision->setVisible(CHKshowextremacoords->isChecked());
-    connections << connect(SPBcoordprecision,SIGNAL(valueChanged(int)),surf,SLOT(setcoordprecision(int)));
-    connections << connect(CHKshowextremacoords, SIGNAL(toggled(bool)), LBLcoordprecision, SLOT(setVisible(bool)));
-    connections << connect(CHKshowextremacoords, SIGNAL(toggled(bool)), SPBcoordprecision, SLOT(setVisible(bool)));
-    connections << connect(CHKshowextremacoords, SIGNAL(toggled(bool)), this, SLOT(resizeQDLeditMolecule()));
+
+    connect(SPBcoordprecision, QOverload<int>::of(&QSpinBox::valueChanged),
+            surf, &surface::setcoordprecision);
+
+    connect(CHKshowextremacoords, &QCheckBox::toggled,
+            LBLcoordprecision, &QWidget::setVisible);
+
+    connect(CHKshowextremacoords, &QCheckBox::toggled,
+            SPBcoordprecision, &QWidget::setVisible);
+
+    connect(CHKshowextremacoords, &QCheckBox::toggled,
+            this, &molecule::resizeQDLeditMolecule);
+
 
 //            Only selected local extrema
 
     QCheckBox *CHKextremactiveonly = new QCheckBox(tr("Only selected extrema"));
     CHKextremactiveonly->setChecked(surf->getonlyextremactive());
-    connections << connect(CHKextremactiveonly, SIGNAL(toggled(bool)), surf, SLOT(setonlyextremactive(bool)));
+
+    connect(CHKextremactiveonly, &QCheckBox::toggled,
+            surf, &surface::setonlyextremactive);
 
     QColor *cpbtnbkgcolor = new QColor(29,124,31);
     ColorButton *BTNextremaselectall = new ColorButton();
     BTNextremaselectall->setText(tr("All"));
     BTNextremaselectall->setColor(cpbtnbkgcolor);
     BTNextremaselectall->setHidden(true);
-    connections << connect(BTNextremaselectall, SIGNAL(clicked()), surf, SLOT(extremaselectall()));
+
+    connect(BTNextremaselectall, &QPushButton::clicked,
+            surf, &surface::extremaselectall);
+
     cpbtnbkgcolor = new QColor(255,0,0);
     ColorButton *BTNextremaselectnone = new ColorButton();
     BTNextremaselectnone->setText(tr("None"));
     BTNextremaselectnone->setColor(cpbtnbkgcolor);
     BTNextremaselectnone->setHidden(true);
-    connections << connect(BTNextremaselectnone, SIGNAL(clicked()), surf, SLOT(extremaselectnone()));
-    connections << connect(CHKextremactiveonly, SIGNAL(toggled(bool)), BTNextremaselectall, SLOT(setVisible(bool)));
-    connections << connect(CHKextremactiveonly, SIGNAL(toggled(bool)), BTNextremaselectnone, SLOT(setVisible(bool)));
-    connections << connect(CHKextremactiveonly, SIGNAL(toggled(bool)), this, SLOT(resizeQDLeditMolecule()));
+
+    connect(BTNextremaselectnone, &QPushButton::clicked,
+            surf, &surface::extremaselectnone);
+
+    connect(CHKextremactiveonly, &QCheckBox::toggled,
+            BTNextremaselectall, &QWidget::setVisible);
+
+    connect(CHKextremactiveonly, &QCheckBox::toggled,
+            BTNextremaselectnone, &QWidget::setVisible);
+
+    connect(CHKextremactiveonly, &QCheckBox::toggled,
+            this, &molecule::resizeQDLeditMolecule);
+
 
 //         Ball radius
 
@@ -1798,7 +1786,9 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     SPBballradius->setMaximum(100);
     SPBballradius->setMaximumWidth(50);
     SPBballradius->setValue(surf->getballradius());
-    connections << connect(SPBballradius,SIGNAL(valueChanged(int)),surf,SLOT(setballradius(int)));
+
+    connect(SPBballradius, QOverload<int>::of(&QSpinBox::valueChanged),
+            surf, &surface::setballradius);
 
 //         Extrema colors
 
@@ -1807,16 +1797,24 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     BTNmaximacolor->setText(tr("Color"));
     QColor maximacolor = surf->getextremacolor(0);
     BTNmaximacolor->setColor(&maximacolor);
-    connect(BTNmaximacolor,SIGNAL(clicked()),surf,SLOT(selectmaximacolor()));
-    connect(surf,SIGNAL(maximaColor(QColor *)),BTNmaximacolor,SLOT(setColor(QColor *)));
+
+    connect(BTNmaximacolor, &QPushButton::clicked,
+            surf, &surface::selectmaximacolor);
+
+    connect(surf, &surface::maximaColor,
+            BTNmaximacolor, QOverload<QColor *>::of(&ColorButton::setColor));
 
     ColorButton *BTNminimacolor = new ColorButton();
     BTNminimacolor->setIcon(QIcon(":/images/colores48.png"));
     BTNminimacolor->setText(tr("Color"));
     QColor minimacolor = surf->getextremacolor(1);
     BTNminimacolor->setColor(&minimacolor);
-    connect(BTNminimacolor,SIGNAL(clicked()),surf,SLOT(selectminimacolor()));
-    connect(surf,SIGNAL(minimaColor(QColor *)),BTNminimacolor,SLOT(setColor(QColor *)));
+
+    connect(BTNminimacolor, &QPushButton::clicked,
+            surf, &surface::selectminimacolor);
+
+    connect(surf, &surface::minimaColor, BTNminimacolor,
+            QOverload<QColor *>::of(&ColorButton::setColor));
 
 //        Vertical shift
 
@@ -1825,7 +1823,9 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     SPBvshift->setRange(-150,150);
     SPBvshift->setMaximumWidth(70);
     SPBvshift->setValue(surf->getvshift());
-    connections << connect(SPBvshift,SIGNAL(valueChanged(int)),surf,SLOT(setvshift(int)));
+
+    connect(SPBvshift, QOverload<int>::of(&QSpinBox::valueChanged),
+            surf, &surface::setvshift);
 
 //         Extrema labels format
 
@@ -1833,19 +1833,28 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
     QPushButton *BTNextremafont = new QPushButton();
     BTNextremafont = new QPushButton(QIcon(":/images/fonts48.png"),tr("Font"));
-    connections << connect(BTNextremafont, SIGNAL(clicked()), surf, SLOT(changeextremafont()));
+
+    connect(BTNextremafont, &QPushButton::clicked,
+            surf, &surface::changeextremafont);
+
     ColorButton *BTNextremacolorfont = new ColorButton();
     BTNextremacolorfont->setIcon(QIcon(":/images/fonts48.png"));
     BTNextremacolorfont->setText(tr("Color"));
     BTNextremacolorfont->setColor(&fontcolor);
     BTNextremacolorfont->setEnabled(true);
-    connections << connect(BTNextremacolorfont, SIGNAL(clicked()), surf, SLOT(selectfontcolor()));
-    connect(surf,SIGNAL(fontColor(QColor *)),BTNextremacolorfont,SLOT(setColor(QColor *)));
+
+    connect(BTNextremacolorfont, &QPushButton::clicked,
+            surf, &surface::selectfontcolor);
+;
+    connect(surf, &surface::fontColor,
+            BTNextremacolorfont, QOverload<QColor *>::of(&ColorButton::setColor));
 
 //        Show grid
     QCheckBox *CHKshowgrid = new QCheckBox(tr("Show grid boundaries"));
     CHKshowgrid->setChecked(surf->getshowgridbounds());
-    connections << connect(CHKshowgrid, SIGNAL(toggled(bool)), surf, SLOT(setshowgridbounds(bool)));
+
+    connect(CHKshowgrid, &QCheckBox::toggled,
+            surf, &surface::setshowgridbounds);
 
     QGroupBox *FRMlocalextrema = new QGroupBox();
     if (QFileInfo(surf->getname()).suffix() == "sgh" || QFileInfo(surf->getname()).suffix() == "srf"){
@@ -1958,10 +1967,8 @@ void molecule::create_grids_widgets_and_layouts()
 
     BTNaddgrid = new QPushButton(tr("Add grid for isosurfaces"));
 
-    connect(BTNaddgrid,
-            &QPushButton::clicked,
-            this,
-            &molecule::addgrid);
+    connect(BTNaddgrid, &QPushButton::clicked,
+            this, &molecule::addgrid);
 
     LBLloadinggrid = new QLabel(tr("Loading grid"));
     LBLloadinggrid->setStyleSheet("QLabel { color : red; }");
@@ -1973,7 +1980,7 @@ void molecule::create_grids_widgets_and_layouts()
 
     layoutgrids = new QGridLayout();
 
-    if (grids->count() > 0) {
+    if (grids.count() > 0) {
         QLabel *LBLavailablegrids =
             new QLabel(tr("<font color=\"black\">Loaded grids</font>"));
 
@@ -1981,8 +1988,8 @@ void molecule::create_grids_widgets_and_layouts()
             LBLavailablegrids, 0, 0, 1, 5, Qt::AlignCenter
         );
 
-        for (int i = 0; i < grids->count(); ++i) {
-            auto *grid = grids->at(i);
+        for (int i = 0; i < grids.count(); ++i) {
+            auto *grid = grids.at(i);
 
             QLabel *LBLgrid = new QLabel(grid->getname());
             LBLgrid->setStyleSheet("QLabel { color : black; }");
@@ -2145,7 +2152,8 @@ void molecule::addcriticalpoints(){
     if (!cps){
         cps = new criticalpoints(path);
         cps->set_ProjectFolder(ProjectFolder);
-        connect(cps,SIGNAL(updatedisplay()),this,SIGNAL(updatedisplay()));
+        connect(cps, &criticalpoints::updatedisplay,
+                this, &molecule::updatedisplay);
     }
 }
 //  End of function addcriticalpoints
@@ -2156,7 +2164,8 @@ void molecule::addfield(){
     if (!flines){
         flines = new fieldlines(path);
         flines->set_ProjectFolder(ProjectFolder);
-        connect(flines,SIGNAL(updatedisplay()),this,SIGNAL(updatedisplay()));
+        connect(flines, &fieldlines::updatedisplay,
+                this, &molecule::updatedisplay);
     }
 }
 //  End of function addfield
@@ -2167,7 +2176,9 @@ void molecule::addforces(){
     if (!hfforces){
         hfforces = new forces(path);
         hfforces->set_ProjectFolder(ProjectFolder);
-        connect(hfforces,SIGNAL(updatedisplay()),this,SIGNAL(updatedisplay()));
+
+        connect(hfforces, &forces::updatedisplay,
+                this, &molecule::updatedisplay);
     }
 }
 //  End of function addforces
@@ -2176,19 +2187,24 @@ void molecule::addforces(){
 //
 void molecule::addgrid(){
     closeisosurfeditors();
-    grids->append(new grid());
+    grids.append(new grid());
     if (!loadgrid()){
-        grids->removeLast();
+        grids.removeLast();
         LBLloadinggrid->setVisible(false);
     }
     else{
         LBLloadinggrid->setVisible(false);
-        grids->last()->set_ProjectFolder(ProjectFolder);
-        grids->last()->set_ProjectName(ProjectName);
+        grids.last()->set_ProjectFolder(ProjectFolder);
+        grids.last()->set_ProjectName(ProjectName);
         if (QDLeditMolecule)
             updateeditMoleculeDialog();
-        connect (grids->last(), SIGNAL(surfaceadded()), this, SLOT(updateeditMoleculeDialog())) ;
-        connect (grids->last(), SIGNAL(surfacedeleted()), this, SLOT(updateeditMoleculeDialog())) ;
+
+        connect(grids.last(), &grid::surfaceadded,
+                this, &molecule::updateeditMoleculeDialog);
+
+        connect(grids.last(), &grid::surfacedeleted,
+                this, &molecule::updateeditMoleculeDialog);
+
     }
 
 }
@@ -2198,15 +2214,15 @@ void molecule::addgrid(){
 //
 void molecule::addsurface(){
     closeisosurfeditors();
-    surfaces->append(new surface());
-//    qDebug() << "ProjectFolder = " << ProjectFolder;
-//    qDebug() << "ProjectName = " << ProjectName;
+    surfaces.append(new surface());
     if (!loadsurf()){
-        delete surfaces->last();
-        surfaces->removeLast();
+        delete surfaces.last();
+        surfaces.removeLast();
     }
     else{
-        connect (surfaces->last(), SIGNAL(updatedisplay()), this, SLOT(emitupdatedisplay()));
+        connect(surfaces.last(), &surface::updatedisplay,
+                this, &molecule::emitupdatedisplay);
+
         if (QDLeditMolecule)
             updateeditMoleculeDialog();
     }
@@ -2393,7 +2409,7 @@ void molecule::BTNcpeigcolor_change(){
 }
 
 void molecule::BTNcplblfont_clicked(){
-    font = QFontDialog::getFont(nullpointer, font);
+    font = QFontDialog::getFont(nullptr, font);
     cps->setfont(font);
     emit updatedisplay();
 }
@@ -2449,14 +2465,14 @@ void molecule::BTNfontcolor_clicked(){
 }
 
 void molecule::BTNfont_clicked(){
-    setfont(QFontDialog::getFont(nullpointer, font));
+    setfont(QFontDialog::getFont(nullptr, font));
     if (visible)
         emit updatedisplay();
     return;
 }
 
 void molecule::BTNfontaxeslabels_clicked(){
-    setfontaxeslabels(QFontDialog::getFont(nullpointer, fontaxeslabels));
+    setfontaxeslabels(QFontDialog::getFont(nullptr, fontaxeslabels));
     if (axeslabels_visible)
         emit updatedisplay();
     return;
@@ -2944,20 +2960,18 @@ void molecule::CHKshowsymbols_changed(int a){
 }
 
 void molecule::closeisosurfeditors(){
-    if (grids){
-        for (int i = 0 ; i < grids->count() ; i++){
-            for (int j = 0 ; j < grids->at(i)->surfaces.count() ; j++){
-                grids->at(i)->surfaces.at(j)->closeeditor();
-            }
+    for (int i = 0 ; i < grids.count() ; i++){
+        for (int j = 0 ; j < grids.at(i)->surfaces.count() ; j++){
+            grids.at(i)->surfaces.at(j)->closeeditor();
         }
     }
 }
 
 void molecule::deletegrid(int i){
     closeisosurfeditors();
-    if (grids->count() > i){
-        delete grids->at(i);
-        grids->removeAt(i);
+    if (grids.count() > i){
+        delete grids.at(i);
+        grids.removeAt(i);
         if (QDLeditMolecule)
             updateeditMoleculeDialog();
     }
@@ -2984,10 +2998,10 @@ double molecule::extractContourFromSghName(const std::string& filename) {
 }
 
 void molecule::deletesurf(int i){
-    if (surfaces->count() > i){
+    if (surfaces.count() > i){
         closeisosurfeditors();
-        delete surfaces->at(i);
-        surfaces->removeAt(i);
+        delete surfaces.at(i);
+        surfaces.removeAt(i);
         if (QDLeditMolecule)
             updateeditMoleculeDialog();
     }
@@ -3000,16 +3014,16 @@ bool molecule::loadgrid(){
     QFileDialog filedialog(this);
     filedialog.setDirectory(ProjectFolder);
     filedialog.setWindowFlags(Qt::WindowStaysOnTopHint);
-    QString filename = filedialog.getOpenFileName(nullpointer,tr("Open 3D grid file ..."),path, tr("3D grid files")
+    QString filename = filedialog.getOpenFileName(nullptr,tr("Open 3D grid file ..."),path, tr("3D grid files")
                 + " *.plt" + " (*.plt);;"+tr("All files")+" (*)");
     if (filename.length()==0){
         return false;
     }
     QString suf=QFileInfo(filename).suffix().toLower();
     if (suf=="plt"){
-        if (grids->last()->readpltnew(filename)){
-            grids->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-            grids->last()->setname(QFileInfo(filename).completeBaseName());
+        if (grids.last()->readpltnew(filename)){
+            grids.last()->setfullname(QFileInfo(filename).absoluteFilePath());
+            grids.last()->setname(QFileInfo(filename).completeBaseName());
             return true;
         }
         else
@@ -3038,42 +3052,42 @@ bool molecule::loadsurf(){
     }
     QString suf=QFileInfo(filename).suffix().toLower();
     if (suf=="srf"){
-        if (surfaces->last()->readsrfnew(filename)){
-            surfaces->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-            surfaces->last()->setname(QFileInfo(filename).fileName());
+        if (surfaces.last()->readsrfnew(filename)){
+            surfaces.last()->setfullname(QFileInfo(filename).absoluteFilePath());
+            surfaces.last()->setname(QFileInfo(filename).fileName());
             return true;
         }
         else
             return false;
     }
     else if (suf=="sgh"){
-        if (surfaces->last()->readsgh(filename)){
-            surfaces->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-            surfaces->last()->setname(QFileInfo(filename).fileName());;
+        if (surfaces.last()->readsgh(filename)){
+            surfaces.last()->setfullname(QFileInfo(filename).absoluteFilePath());
+            surfaces.last()->setname(QFileInfo(filename).fileName());;
             double contourvalue = extractContourFromSghName(QFileInfo(filename).fileName().toStdString());
-            surfaces->last()->setcontourvalue(contourvalue);
+            surfaces.last()->setcontourvalue(contourvalue);
             return true;
         }
         else
             return false;
     }
     else if (suf=="isoden" || suf=="isopot" || suf=="ellipsoid"){
-        if (surfaces->last()->readisosurfnew(filename)){
-            surfaces->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-            surfaces->last()->setname(QFileInfo(filename).fileName());
+        if (surfaces.last()->readisosurfnew(filename)){
+            surfaces.last()->setfullname(QFileInfo(filename).absoluteFilePath());
+            surfaces.last()->setname(QFileInfo(filename).fileName());
             return true;
         }
         else
             return false;
     }
     else if (suf=="basins"){
-        if (surfaces->last()->readbasinsnew(filename)){
-            surfaces->last()->setfullname(QFileInfo(filename).absoluteFilePath());
-            surfaces->last()->setname(QFileInfo(filename).fileName());
+        if (surfaces.last()->readbasinsnew(filename)){
+            surfaces.last()->setfullname(QFileInfo(filename).absoluteFilePath());
+            surfaces.last()->setname(QFileInfo(filename).fileName());
             return true;
         }
         else{
-            surfaces->removeLast();
+            surfaces.removeLast();
             return false;
         }
     }
@@ -3089,9 +3103,9 @@ bool molecule::loadsurf(){
 
 void molecule::QDLeditMolecule_close(){
     if (QDLeditMolecule){
-        for (int i = 0 ; i < grids->count() ; i++){
-            for (int j = 0 ; j < grids->at(i)->surfaces.count() ; j++){
-                grids->at(i)->surfaces.at(j)->closeeditor();
+        for (int i = 0 ; i < grids.count() ; i++){
+            for (int j = 0 ; j < grids.at(i)->surfaces.count() ; j++){
+                grids.at(i)->surfaces.at(j)->closeeditor();
             }
         }
         if (scrollArea){
@@ -3120,50 +3134,47 @@ void molecule::QDLeditMolecule_raise(){
 }
 
 void molecule::QDLeditMolecule_delete(){
-    for (int i = 0 ; i < connections.size() ; i++){
-        QObject::disconnect(connections.at(i));
-    }
     closeisosurfeditors();
     delete LBLloadinggrid;
-    LBLloadinggrid = nullpointer;
+    LBLloadinggrid = nullptr;
     delete BTNfont;
-    BTNfont = nullpointer;
+    BTNfont = nullptr;
     delete BTNfontcolor;
-    BTNfontcolor = nullpointer;
+    BTNfontcolor = nullptr;
     delete BTNselectall;
-    BTNselectall = nullpointer;
+    BTNselectall = nullptr;
     delete BTNselectnone;
-    BTNselectnone = nullpointer;
+    BTNselectnone = nullptr;
     delete BTNhide;
-    BTNhide = nullpointer;
+    BTNhide = nullptr;
     delete CHKactiveonly;
-    CHKactiveonly = nullpointer;
+    CHKactiveonly = nullptr;
     delete SPBrot_angle;
-    SPBrot_angle = nullpointer;
+    SPBrot_angle = nullptr;
     delete SPBrot_x;
-    SPBrot_x = nullpointer;
+    SPBrot_x = nullptr;
     delete SPBrot_y;
-    SPBrot_y = nullpointer;
+    SPBrot_y = nullptr;
     delete SPBrot_z;
-    SPBrot_z = nullpointer;
+    SPBrot_z = nullptr;
     delete SPBtras_x;
-    SPBtras_x = nullpointer;
+    SPBtras_x = nullptr;
     delete SPBtras_y;
-    SPBtras_y = nullpointer;
+    SPBtras_y = nullptr;
     delete SPBtras_z;
-    SPBtras_z = nullpointer;
+    SPBtras_z = nullptr;
     delete BTNanimation;
-    BTNanimation = nullpointer;
+    BTNanimation = nullptr;
     delete CHKrotatex;
-    CHKrotatex = nullpointer;
+    CHKrotatex = nullptr;
     delete CHKrotatey;
-    CHKrotatey = nullpointer;
+    CHKrotatey = nullptr;
     delete CHKrotatez;
-    CHKrotatez = nullpointer;
+    CHKrotatez = nullptr;
     delete SLDspeed;
-    SLDspeed = nullpointer;
+    SLDspeed = nullptr;
     delete QDLeditMolecule;
-    QDLeditMolecule = nullpointer;
+    QDLeditMolecule = nullptr;
     return;
 }
 
@@ -3259,7 +3270,7 @@ void molecule::resizeQDLeditMolecule(){
 bool molecule::retrievegrid(const QString &filename)
 {
     grid *newGrid = new grid();
-    grids->append(newGrid);
+    grids.append(newGrid);
 
     newGrid->set_ProjectFolder(ProjectFolder);
     newGrid->set_ProjectName(ProjectName);
@@ -3275,7 +3286,7 @@ bool molecule::retrievegrid(const QString &filename)
     }
 
     if (!newGrid->readpltnew(filename)) {
-        delete grids->takeLast();
+        delete grids.takeLast();
         return false;
     }
 
@@ -3298,7 +3309,7 @@ bool molecule::retrievegrid(const QString &filename)
 bool molecule::retrievesurf(const QString &filename)
 {
     surface *newSurface = new surface();
-    surfaces->append(newSurface);
+    surfaces.append(newSurface);
 
     const QString suffix = QFileInfo(filename).suffix().toLower();
 
@@ -3314,7 +3325,7 @@ bool molecule::retrievesurf(const QString &filename)
         loaded = newSurface->readbasinsnew(filename);
 
     if (!loaded) {
-        delete surfaces->takeLast();
+        delete surfaces.takeLast();
         return false;
     }
 
@@ -3324,21 +3335,33 @@ bool molecule::retrievesurf(const QString &filename)
     return true;
 }
 
-void molecule::reset_rotation(){
-    SPBrot_x->setValue(0);
-    SPBrot_y->setValue(0);
-    SPBrot_z->setValue(0);
-    SPBrot_angle->setValue(0);
-    rotationAxis = QVector3D(0,0,0);
-    rotation_changed();
+void molecule::reset_rotation()
+{
+    {
+        const QSignalBlocker blockerX(SPBrot_x);
+        const QSignalBlocker blockerY(SPBrot_y);
+        const QSignalBlocker blockerZ(SPBrot_z);
+        const QSignalBlocker blockerAngle(SPBrot_angle);
+
+        SPBrot_x->setValue(0.0);
+        SPBrot_y->setValue(0.0);
+        SPBrot_z->setValue(0.0);
+        SPBrot_angle->setValue(0.0);
+    }
+
+    rotation = QQuaternion();
+    rotationAxis = QVector3D(0.0, 0.0, 0.0);
+
+    emit updatedisplay();
 }
 
+void molecule::reset_translation()
+{
+    translation = QVector3D(0.0, 0.0, 0.0);
 
-void molecule::reset_translation(){
-    SPBtras_x->setValue(0);
-    SPBtras_y->setValue(0);
-    SPBtras_z->setValue(0);
-    translation_changed();
+    settranslationButtons();
+
+    emit updatedisplay();
 }
 
 void molecule::rotation_changed(){
@@ -3377,17 +3400,25 @@ bool molecule::stopanimate(){
 }
 
 void molecule::toggleshowsurf(int i){
-    surfaces->at(i)->toggleshowsurf();
+    surfaces.at(i)->toggleshowsurf();
 }
 
-void molecule::translation_changed(){
-    if (angstrom){
-        translation = QVector3D(SPBtras_x->value()*BOHR_TO_ANGSTROM,SPBtras_y->value()*BOHR_TO_ANGSTROM,
-                                SPBtras_z->value()*BOHR_TO_ANGSTROM);
+void molecule::translation_changed()
+{
+    if (angstrom) {
+        translation = QVector3D(
+            SPBtras_x->value() * ANGSTROM_TO_BOHR,
+            SPBtras_y->value() * ANGSTROM_TO_BOHR,
+            SPBtras_z->value() * ANGSTROM_TO_BOHR
+        );
+    } else {
+        translation = QVector3D(
+            SPBtras_x->value(),
+            SPBtras_y->value(),
+            SPBtras_z->value()
+        );
     }
-    else{
-        translation = QVector3D(SPBtras_x->value(),SPBtras_y->value(),SPBtras_z->value());
-    }
+
     emit updatedisplay();
 }
 
@@ -3415,13 +3446,13 @@ void molecule::TXTforces_changed(){
 void molecule::updateeditMoleculeDialog(){
     if (QDLeditMolecule){
         delete BTNhide;
-        BTNhide = nullpointer;
+        BTNhide = nullptr;
         QDLeditMolecule_delete();
     }
     if (scrollArea){
         scrollAreaposition = scrollArea->pos();
         delete scrollArea;
-        scrollArea = nullpointer;
+        scrollArea = nullptr;
     }
     createeditMoleculeDialog();
     emit updatedisplay();
@@ -3430,9 +3461,9 @@ void molecule::updateeditMoleculeDialog(){
 void molecule::updateQDLeditMolecule(bool a){
     if (QDLeditMolecule){
         if (!a){
-            for (int i = 0 ; i < grids->count() ; i++){
-                for (int j = 0 ; j < grids->at(i)->surfaces.count() ; j++){
-                    grids->at(i)->surfaces.at(j)->closeeditor();
+            for (int i = 0 ; i < grids.count() ; i++){
+                for (int j = 0 ; j < grids.at(i)->surfaces.count() ; j++){
+                    grids.at(i)->surfaces.at(j)->closeeditor();
                 }
             }
             updateeditMoleculeDialog();
@@ -3982,25 +4013,23 @@ void molecule::darken(){
         Vertices.color -=  darkenshift;
         allvertices.replace(i,Vertices);
     }
-    if (surfaces && !surfaces->isEmpty()){
-        for (int i = 0 ; i < surfaces->length() ; i++){
-            for (int j = 0 ; j < surfaces->at(i)->allvertices.length() ; j++){
-                Vertices = surfaces->at(i)->allvertices.at(j);
+    if (!surfaces.isEmpty()){
+        for (int i = 0 ; i < surfaces.length() ; i++){
+            for (int j = 0 ; j < surfaces.at(i)->allvertices.length() ; j++){
+                Vertices = surfaces.at(i)->allvertices.at(j);
                 Vertices.color -=  darkenshift;
-                surfaces->at(i)->allvertices.replace(j,Vertices);
+                surfaces.at(i)->allvertices.replace(j,Vertices);
             }
         }
     }
 
-    if (grids) {
-        for (grid *currentGrid : *grids) {
-            if (!currentGrid)
-                continue;
+    for (grid *currentGrid : grids) {
+        if (!currentGrid)
+            continue;
 
-            for (isosurface *surface : currentGrid->surfaces) {
-                if (surface)
-                    surface->shiftVertexColors(-darkenshift);
-            }
+        for (isosurface *surface : currentGrid->surfaces) {
+            if (surface)
+                surface->shiftVertexColors(-darkenshift);
         }
     }
 
@@ -4039,25 +4068,23 @@ void molecule::lighten(){
         Vertices.color +=  darkenshift;
         allvertices.replace(i,Vertices);
     }
-    if (surfaces && !surfaces->isEmpty()){
-        for (int i = 0 ; i < surfaces->length() ; i++){
-            for (int j = 0 ; j < surfaces->at(i)->allvertices.length() ; j++){
-                Vertices = surfaces->at(i)->allvertices.at(j);
+    if (!surfaces.isEmpty()){
+        for (int i = 0 ; i < surfaces.length() ; i++){
+            for (int j = 0 ; j < surfaces.at(i)->allvertices.length() ; j++){
+                Vertices = surfaces.at(i)->allvertices.at(j);
                 Vertices.color +=  darkenshift;
-                surfaces->at(i)->allvertices.replace(j,Vertices);
+                surfaces.at(i)->allvertices.replace(j,Vertices);
             }
         }
     }
 
-    if (grids) {
-        for (grid *currentGrid : *grids) {
-            if (!currentGrid)
-                continue;
+    for (grid *currentGrid : grids) {
+        if (!currentGrid)
+            continue;
 
-            for (isosurface *surface : currentGrid->surfaces) {
-                if (surface)
-                    surface->shiftVertexColors(darkenshift);
-            }
+        for (isosurface *surface : currentGrid->surfaces) {
+            if (surface)
+                surface->shiftVertexColors(darkenshift);
         }
     }
 
@@ -4538,28 +4565,45 @@ void molecule::setstepwheel(float a){
     stepwheel = a;
 }
 
-void molecule::settranslationButtons(){
-    if (!SPBtras_x || !SPBtras_y || !SPBtras_z )
+void molecule::settranslationButtons()
+{
+    if (!SPBtras_x || !SPBtras_y || !SPBtras_z)
         return;
-    if (!angstrom){
+
+    const QSignalBlocker blockerX(SPBtras_x);
+    const QSignalBlocker blockerY(SPBtras_y);
+    const QSignalBlocker blockerZ(SPBtras_z);
+
+    if (angstrom) {
+        SPBtras_x->setValue(translation.x() * BOHR_TO_ANGSTROM);
+        SPBtras_y->setValue(translation.y() * BOHR_TO_ANGSTROM);
+        SPBtras_z->setValue(translation.z() * BOHR_TO_ANGSTROM);
+    } else {
         SPBtras_x->setValue(translation.x());
         SPBtras_y->setValue(translation.y());
         SPBtras_z->setValue(translation.z());
     }
-    else{
-        SPBtras_x->setValue(translation.x()*BOHR_TO_ANGSTROM);
-        SPBtras_y->setValue(translation.y()*BOHR_TO_ANGSTROM);
-        SPBtras_z->setValue(translation.z()*BOHR_TO_ANGSTROM);
-    }
 }
 
-void molecule::setrotationButtons(){
-    if (!SPBrot_x || !SPBrot_y || !SPBrot_z || !SPBrot_angle  )
+void molecule::setrotationButtons()
+{
+    if (!SPBrot_x || !SPBrot_y || !SPBrot_z || !SPBrot_angle)
         return;
-    SPBrot_x->setValue(rotation.x());
-    SPBrot_y->setValue(rotation.y());
-    SPBrot_z->setValue(rotation.z());
-    SPBrot_angle->setValue(360. * qAcos(rotation.scalar())/pi);
+
+    const QSignalBlocker blockerX(SPBrot_x);
+    const QSignalBlocker blockerY(SPBrot_y);
+    const QSignalBlocker blockerZ(SPBrot_z);
+    const QSignalBlocker blockerAngle(SPBrot_angle);
+
+    QVector3D axis;
+    float angle = 0.0f;
+
+    rotation.getAxisAndAngle(&axis, &angle);
+
+    SPBrot_x->setValue(axis.x());
+    SPBrot_y->setValue(axis.y());
+    SPBrot_z->setValue(axis.z());
+    SPBrot_angle->setValue(angle);
 }
 
 void molecule::setscaleradii(bool a){

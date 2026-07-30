@@ -115,7 +115,7 @@ void MoleculeSettingsLoader::loadSurfaces(
         if (!mol->retrievesurf(fileName))
             continue;
 
-        surface *currentSurface = mol->surfaces->last();
+        surface *currentSurface = mol->surfaces.last();
 
         QObject::connect(
             currentSurface,&surface::updatedisplay,
@@ -202,7 +202,7 @@ void MoleculeSettingsLoader::loadGrids(
          * Using last() is safer than using at(i), because a previous
          * grid may have failed to load.
          */
-        grid *currentGrid = mol->grids->last();
+        grid *currentGrid = mol->grids.last();
 
         applyGridSettings(
             currentGrid,section,i

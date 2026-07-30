@@ -1171,7 +1171,7 @@ void glWindow::drawlabels(QPainter *painter, QRect viewport){
                         molecules->at(i)->cps->getdrawcpsvalues() )){
                 drawcplabels(painter, viewport, i);
             }
-            if (molecules->at(i)->surfaces){
+            if (!molecules->at(i)->surfaces.isEmpty()) {
                 drawextremalabels(painter, viewport, i);
             }
         }
@@ -1383,24 +1383,24 @@ void glWindow::drawcplabels(QPainter *painter, QRect viewport, int i){
 //
 
 void glWindow::drawextremalabels(QPainter *painter, QRect viewport, int i){
-    for (int j = 0 ; j < molecules->at(i)->surfaces->count() ; j++){
-        if (molecules->at(i)->surfaces->at(j)->getvisible() &&
-                molecules->at(i)->surfaces->at(j)->getshowlocalmax() &&
-                (molecules->at(i)->surfaces->at(j)->getshowextremasymbols() ||
-                 molecules->at(i)->surfaces->at(j)->getshowextremaindices() ||
-                 molecules->at(i)->surfaces->at(j)->getshowextremacoords() ||
-                 molecules->at(i)->surfaces->at(j)->getshowextremavalues())){
-            QFontMetrics fm(molecules->at(i)->surfaces->at(j)->getfont());
-            painter->setPen(molecules->at(i)->surfaces->at(j)->getfontcolor());
-            painter->setFont(molecules->at(i)->surfaces->at(j)->getfont());
-            for (int k = 0 ; k < molecules->at(i)->surfaces->at(j)->localextrema[0].length() ; k++){
-                if (molecules->at(i)->surfaces->at(j)->getextremhidden(0,k))
+    for (int j = 0 ; j < molecules->at(i)->surfaces.count() ; j++){
+        if (molecules->at(i)->surfaces.at(j)->getvisible() &&
+                molecules->at(i)->surfaces.at(j)->getshowlocalmax() &&
+                (molecules->at(i)->surfaces.at(j)->getshowextremasymbols() ||
+                 molecules->at(i)->surfaces.at(j)->getshowextremaindices() ||
+                 molecules->at(i)->surfaces.at(j)->getshowextremacoords() ||
+                 molecules->at(i)->surfaces.at(j)->getshowextremavalues())){
+            QFontMetrics fm(molecules->at(i)->surfaces.at(j)->getfont());
+            painter->setPen(molecules->at(i)->surfaces.at(j)->getfontcolor());
+            painter->setFont(molecules->at(i)->surfaces.at(j)->getfont());
+            for (int k = 0 ; k < molecules->at(i)->surfaces.at(j)->localextrema[0].length() ; k++){
+                if (molecules->at(i)->surfaces.at(j)->getextremhidden(0,k))
                     continue;
-                if (molecules->at(i)->surfaces->at(j)->getonlyextremactive() &&
-                        !molecules->at(i)->surfaces->at(j)->getextremactive(0,k))
+                if (molecules->at(i)->surfaces.at(j)->getonlyextremactive() &&
+                        !molecules->at(i)->surfaces.at(j)->getextremactive(0,k))
                     continue;
                 QVector4D vaux = mvp_list->at(i) *
-                        QVector4D(QVector3D(molecules->at(i)->surfaces->at(j)->localextrema[0].at(k)),1);
+                        QVector4D(QVector3D(molecules->at(i)->surfaces.at(j)->localextrema[0].at(k)),1);
                 vaux /= vaux.w();
                 vaux = vaux * 0.5f + QVector4D(0.5f, 0.5f, 0.5f, 0.5f);
                 vaux.setX(vaux.x()*viewport.width()+viewport.x());
@@ -1410,75 +1410,75 @@ void glWindow::drawextremalabels(QPainter *painter, QRect viewport, int i){
                     continue;
                 QString string = "";
                 QSize fmsize = fm.size( Qt::TextSingleLine, string );
-                if (molecules->at(i)->surfaces->at(j)->getshowextremasymbols()){
+                if (molecules->at(i)->surfaces.at(j)->getshowextremasymbols()){
                     string.append("M");
                     fmsize = fm.size( Qt::TextSingleLine, string );
                 }
-                if (molecules->at(i)->surfaces->at(j)->getshowextremaindices()){
+                if (molecules->at(i)->surfaces.at(j)->getshowextremaindices()){
                     string.append(QString("%1").arg(k+1));
                     fmsize = fm.size( Qt::TextSingleLine, string );
                 }
-                if (molecules->at(i)->surfaces->at(j)->getshowextremavalues()){
+                if (molecules->at(i)->surfaces.at(j)->getshowextremavalues()){
                     if (string.length() > 0){
                         string.append("\n ");
-                        string.append(QString::number( molecules->at(i)->surfaces->at(j)->localextrema[0].at(k).w(), 'g',
-                                molecules->at(i)->surfaces->at(j)->getvalueprecision())+" ");
+                        string.append(QString::number( molecules->at(i)->surfaces.at(j)->localextrema[0].at(k).w(), 'g',
+                                molecules->at(i)->surfaces.at(j)->getvalueprecision())+" ");
                         fmsize = fm.size( Qt::TextWordWrap, string );
                     }
                     else{
-                        string.append(QString::number( molecules->at(i)->surfaces->at(j)->localextrema[0].at(k).w(), 'g',
-                                molecules->at(i)->surfaces->at(j)->getvalueprecision()));
+                        string.append(QString::number( molecules->at(i)->surfaces.at(j)->localextrema[0].at(k).w(), 'g',
+                                molecules->at(i)->surfaces.at(j)->getvalueprecision()));
                         fmsize = fm.size( Qt::TextSingleLine, string );
                     }
                 }
-                if (molecules->at(i)->surfaces->at(j)->getshowextremacoords()){
+                if (molecules->at(i)->surfaces.at(j)->getshowextremacoords()){
                     if (string.length() > 0){
                         string.append("\n");
                         string.append(QString("(%1,%2,%3)")
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[0].at(k).x(), 'g',
-                                molecules->at(i)->surfaces->at(j)->getcoordprecision()))
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[0].at(k).y(), 'g',
-                                    molecules->at(i)->surfaces->at(j)->getcoordprecision()))
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[0].at(k).z(), 'g',
-                                        molecules->at(i)->surfaces->at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[0].at(k).x(), 'g',
+                                molecules->at(i)->surfaces.at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[0].at(k).y(), 'g',
+                                    molecules->at(i)->surfaces.at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[0].at(k).z(), 'g',
+                                        molecules->at(i)->surfaces.at(j)->getcoordprecision()))
                                 );
                         fmsize = fm.size( Qt::TextWordWrap, string );
                     }
                     else{
                         string.append(QString("(%1,%2,%3)")
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[0].at(k).x(), 'g',
-                                molecules->at(i)->surfaces->at(j)->getcoordprecision()))
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[0].at(k).y(), 'g',
-                                    molecules->at(i)->surfaces->at(j)->getcoordprecision()))
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[0].at(k).z(), 'g',
-                                        molecules->at(i)->surfaces->at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[0].at(k).x(), 'g',
+                                molecules->at(i)->surfaces.at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[0].at(k).y(), 'g',
+                                    molecules->at(i)->surfaces.at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[0].at(k).z(), 'g',
+                                        molecules->at(i)->surfaces.at(j)->getcoordprecision()))
                                 );
                         fmsize = fm.size( Qt::TextSingleLine, string );
                     }
                 }
                 QRect rect = QRect(win.x()-0.5f*fmsize.width(),
-                        viewport.height()-(win.y()+0.5f*fmsize.height())-molecules->at(i)->surfaces->at(j)->getvshift(),
+                        viewport.height()-(win.y()+0.5f*fmsize.height())-molecules->at(i)->surfaces.at(j)->getvshift(),
                         fmsize.width(), fmsize.height()) ;
                 painter->drawText(rect, Qt::AlignCenter, string);
             }
         }
-        if (molecules->at(i)->surfaces->at(j)->getvisible() &&
-                molecules->at(i)->surfaces->at(j)->getshowlocalmin() &&
-                (molecules->at(i)->surfaces->at(j)->getshowextremasymbols() ||
-                 molecules->at(i)->surfaces->at(j)->getshowextremaindices() ||
-                 molecules->at(i)->surfaces->at(j)->getshowextremacoords() ||
-                 molecules->at(i)->surfaces->at(j)->getshowextremavalues())){
-            QFontMetrics fm(molecules->at(i)->surfaces->at(j)->getfont());
-            painter->setPen(molecules->at(i)->surfaces->at(j)->getfontcolor());
-            painter->setFont(molecules->at(i)->surfaces->at(j)->getfont());
-            for (int k = 0 ; k < molecules->at(i)->surfaces->at(j)->localextrema[1].length() ; k++){
-                if (molecules->at(i)->surfaces->at(j)->getextremhidden(1,k))
+        if (molecules->at(i)->surfaces.at(j)->getvisible() &&
+                molecules->at(i)->surfaces.at(j)->getshowlocalmin() &&
+                (molecules->at(i)->surfaces.at(j)->getshowextremasymbols() ||
+                 molecules->at(i)->surfaces.at(j)->getshowextremaindices() ||
+                 molecules->at(i)->surfaces.at(j)->getshowextremacoords() ||
+                 molecules->at(i)->surfaces.at(j)->getshowextremavalues())){
+            QFontMetrics fm(molecules->at(i)->surfaces.at(j)->getfont());
+            painter->setPen(molecules->at(i)->surfaces.at(j)->getfontcolor());
+            painter->setFont(molecules->at(i)->surfaces.at(j)->getfont());
+            for (int k = 0 ; k < molecules->at(i)->surfaces.at(j)->localextrema[1].length() ; k++){
+                if (molecules->at(i)->surfaces.at(j)->getextremhidden(1,k))
                     continue;
-                if (molecules->at(i)->surfaces->at(j)->getonlyextremactive() &&
-                        !molecules->at(i)->surfaces->at(j)->getextremactive(1,k))
+                if (molecules->at(i)->surfaces.at(j)->getonlyextremactive() &&
+                        !molecules->at(i)->surfaces.at(j)->getextremactive(1,k))
                     continue;
                 QVector4D vaux = mvp_list->at(i) *
-                        QVector4D(QVector3D(molecules->at(i)->surfaces->at(j)->localextrema[1].at(k)),1);
+                        QVector4D(QVector3D(molecules->at(i)->surfaces.at(j)->localextrema[1].at(k)),1);
                 vaux /= vaux.w();
                 vaux = vaux * 0.5f + QVector4D(0.5f, 0.5f, 0.5f, 0.5f);
                 vaux.setX(vaux.x()*viewport.width()+viewport.x());
@@ -1488,54 +1488,54 @@ void glWindow::drawextremalabels(QPainter *painter, QRect viewport, int i){
                     continue;
                 QString string = "";
                 QSize fmsize = fm.size( Qt::TextSingleLine, string );
-                if (molecules->at(i)->surfaces->at(j)->getshowextremasymbols()){
+                if (molecules->at(i)->surfaces.at(j)->getshowextremasymbols()){
                     string.append("m");
                     fmsize = fm.size( Qt::TextSingleLine, string );
                 }
-                if (molecules->at(i)->surfaces->at(j)->getshowextremaindices()){
+                if (molecules->at(i)->surfaces.at(j)->getshowextremaindices()){
                     string.append(QString("%1").arg(k+1));
                     fmsize = fm.size( Qt::TextSingleLine, string );
                 }
-                if (molecules->at(i)->surfaces->at(j)->getshowextremavalues()){
+                if (molecules->at(i)->surfaces.at(j)->getshowextremavalues()){
                     if (string.length() > 0){
                         string.append("\n");
-                        string.append(QString::number( molecules->at(i)->surfaces->at(j)->localextrema[1].at(k).w(), 'g',
-                                molecules->at(i)->surfaces->at(j)->getvalueprecision())+" ");
+                        string.append(QString::number( molecules->at(i)->surfaces.at(j)->localextrema[1].at(k).w(), 'g',
+                                molecules->at(i)->surfaces.at(j)->getvalueprecision())+" ");
                         fmsize = fm.size( Qt::TextWordWrap, string );
                     }
                     else{
-                        string.append(QString::number( molecules->at(i)->surfaces->at(j)->localextrema[1].at(k).w(), 'g',
-                                molecules->at(i)->surfaces->at(j)->getvalueprecision()));
+                        string.append(QString::number( molecules->at(i)->surfaces.at(j)->localextrema[1].at(k).w(), 'g',
+                                molecules->at(i)->surfaces.at(j)->getvalueprecision()));
                         fmsize = fm.size( Qt::TextSingleLine, string );
                     }
                 }
-                if (molecules->at(i)->surfaces->at(j)->getshowextremacoords()){
+                if (molecules->at(i)->surfaces.at(j)->getshowextremacoords()){
                     if (string.length() > 0){
                         string.append("\n");
                         string.append(QString("(%1,%2,%3)")
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[1].at(k).x(), 'g',
-                                molecules->at(i)->surfaces->at(j)->getcoordprecision()))
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[1].at(k).y(), 'g',
-                                    molecules->at(i)->surfaces->at(j)->getcoordprecision()))
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[1].at(k).z(), 'g',
-                                        molecules->at(i)->surfaces->at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[1].at(k).x(), 'g',
+                                molecules->at(i)->surfaces.at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[1].at(k).y(), 'g',
+                                    molecules->at(i)->surfaces.at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[1].at(k).z(), 'g',
+                                        molecules->at(i)->surfaces.at(j)->getcoordprecision()))
                                 );
                         fmsize = fm.size( Qt::TextWordWrap, string );
                     }
                     else{
                         string.append(QString("(%1,%2,%3)")
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[1].at(k).x(), 'g',
-                                molecules->at(i)->surfaces->at(j)->getcoordprecision()))
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[1].at(k).y(), 'g',
-                                    molecules->at(i)->surfaces->at(j)->getcoordprecision()))
-                            .arg( QString::number(molecules->at(i)->surfaces->at(j)->localextrema[1].at(k).z(), 'g',
-                                        molecules->at(i)->surfaces->at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[1].at(k).x(), 'g',
+                                molecules->at(i)->surfaces.at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[1].at(k).y(), 'g',
+                                    molecules->at(i)->surfaces.at(j)->getcoordprecision()))
+                            .arg( QString::number(molecules->at(i)->surfaces.at(j)->localextrema[1].at(k).z(), 'g',
+                                        molecules->at(i)->surfaces.at(j)->getcoordprecision()))
                                 );
                         fmsize = fm.size( Qt::TextSingleLine, string );
                     }
                 }
                 QRect rect = QRect(win.x()-0.5f*fmsize.width(),
-                        viewport.height()-(win.y()+0.5f*fmsize.height())-molecules->at(i)->surfaces->at(j)->getvshift(),
+                        viewport.height()-(win.y()+0.5f*fmsize.height())-molecules->at(i)->surfaces.at(j)->getvshift(),
                         fmsize.width(), fmsize.height()) ;
                 painter->drawText(rect, Qt::AlignCenter, string);
             }
@@ -2153,14 +2153,14 @@ centerData glWindow::searchextrema(int x,int y){
     QRect viewport = QRect(vport[0],vport[1],vport[2],vport[3]);
     centerData center;
     for (int i = 0 ; i < molecules->count() ; i++){
-        if (!molecules->at(i)->surfaces || !molecules->at(i)->isvisible())
+        if (!molecules->at(i)->isvisible())
             continue;
-        for (int k = 0 ; k < molecules->at(i)->surfaces->count() ; k++){
+        for (int k = 0 ; k < molecules->at(i)->surfaces.count() ; k++){
             for (int type = 0 ; type < 2 ; type++){
-                int r2 = molecules->at(i)->surfaces->at(k)->getfont().pointSizeF() * 0.5;
+                int r2 = molecules->at(i)->surfaces.at(k)->getfont().pointSizeF() * 0.5;
                 r2 *= r2;
-                for (int j = 0; j < molecules->at(i)->surfaces->at(k)->localextrema[type].count() ; j++){
-                    QVector4D vaux = mvp_list->at(i) * QVector4D(molecules->at(i)->surfaces->at(k)->localextrema[type].at(j).toVector3D(),1);
+                for (int j = 0; j < molecules->at(i)->surfaces.at(k)->localextrema[type].count() ; j++){
+                    QVector4D vaux = mvp_list->at(i) * QVector4D(molecules->at(i)->surfaces.at(k)->localextrema[type].at(j).toVector3D(),1);
                     vaux /= vaux.w();
                     vaux = vaux * 0.5f + QVector4D(0.5f, 0.5f, 0.5f, 0.5f);
                     vaux.setX(vaux.x()*viewport.width()+viewport.x());
@@ -2173,7 +2173,7 @@ centerData glWindow::searchextrema(int x,int y){
                         center.symbol = extrematypes.at(type)+QString("%1").arg(j+1);
                         center.x = x;
                         center.y = y;
-                        center.xyz = molecules->at(i)->surfaces->at(k)->localextrema[type].at(j).toVector3D();
+                        center.xyz = molecules->at(i)->surfaces.at(k)->localextrema[type].at(j).toVector3D();
                         return center;
                     }
                 }
@@ -2335,22 +2335,22 @@ bool glWindow::selectmespextrema(int x,int y){
     glGetIntegerv (GL_VIEWPORT, vport);
     QRect viewport = QRect(vport[0],vport[1],vport[2],vport[3]);
     for (int i = 0 ; i < molecules->count() ; i++){
-        if (!(molecules->at(i)->surfaces) || !(molecules->at(i)->isvisible()))
+        if (!(molecules->at(i)->isvisible()))
             continue;
         if (isel >= 0)
             break;
-        for (int k = 0 ; k < molecules->at(i)->surfaces->count() ; k++){
-            if (!molecules->at(i)->surfaces->at(k)->getvisible())
+        for (int k = 0 ; k < molecules->at(i)->surfaces.count() ; k++){
+            if (!molecules->at(i)->surfaces.at(k)->getvisible())
                 continue;
             if (isel >= 0)
                 break;
             for (int type = 0 ; type < 2 ; type++){
                 if (isel >= 0)
                     break;
-                int r2 = molecules->at(i)->surfaces->at(k)->getfont().pointSizeF() * 0.5;
+                int r2 = molecules->at(i)->surfaces.at(k)->getfont().pointSizeF() * 0.5;
                 r2 *= r2;
-                for (int j = 0; j < molecules->at(i)->surfaces->at(k)->localextrema[type].count() ; j++){
-                    QVector4D vaux = mvp_list->at(i) * QVector4D(molecules->at(i)->surfaces->at(k)->localextrema[type].at(j).toVector3D(),1);
+                for (int j = 0; j < molecules->at(i)->surfaces.at(k)->localextrema[type].count() ; j++){
+                    QVector4D vaux = mvp_list->at(i) * QVector4D(molecules->at(i)->surfaces.at(k)->localextrema[type].at(j).toVector3D(),1);
                     vaux /= vaux.w();
                     vaux = vaux * 0.5f + QVector4D(0.5f, 0.5f, 0.5f, 0.5f);
                     vaux.setX(vaux.x()*viewport.width()+viewport.x());
@@ -2370,8 +2370,8 @@ bool glWindow::selectmespextrema(int x,int y){
         }
     }
     if (isel >= 0 && jsel >= 0 && ksel >= 0 && typesel >= 0){
-        molecules->at(isel)->surfaces->at(ksel)->setextremactive(typesel,jsel,
-                    !molecules->at(isel)->surfaces->at(ksel)->getextremactive(typesel,jsel));
+        molecules->at(isel)->surfaces.at(ksel)->setextremactive(typesel,jsel,
+                    !molecules->at(isel)->surfaces.at(ksel)->getextremactive(typesel,jsel));
         return true;
     }
     return false;
