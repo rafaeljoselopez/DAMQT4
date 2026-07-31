@@ -30,18 +30,12 @@
 #include <string>
 #include <algorithm>
 #include <ctime>
-#include <functional>
 #include <cctype>
 #include <locale>
 #include <vector>
 #include <sstream>
+
 using namespace std;
-
-#define abs(n) ((n>0) ? n : -n)
-#define minimum(n,m) ((n>m) ? m : n)
-
-string limpia(string);
-int min(int,int);
 
 const int MXCEN = 10000;            // Maximum number of centers
 const int MXSHELL = 20000;        // Maximum total number of contractions
@@ -88,6 +82,13 @@ bool pairCompare(const std::pair<int, double>& firstElem, const std::pair<int, d
 bool isFloatingPoint(const std::string& token);
 bool startsWithFloat(const std::string& line);
 std::string to_lower(const std::string& str);
+std::vector<double> parseFloatingPointValues(const std::string& line);
+bool parseState(const std::string& line,
+                int& stateNumber,
+                int& stateSymmetry);
+bool parseOrbitalLabel(const std::string& line,
+                       int& orbitalNumber,
+                       int& symmetryNumber);
 
 // Structures
 struct basesimstr{
@@ -146,21 +147,61 @@ int round(double a)
 }
 #endif
 
-// trim from start
-static inline std::string &ltrim(std::string &s) {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
-        return s;
+//// trim from start
+//static inline std::string &ltrim(std::string &s) {
+//        s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+//        return s;
+//}
+
+//// trim from end
+//static inline std::string &rtrim(std::string &s) {
+//        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+//        return s;
+//}
+
+//// trim from both ends
+//static inline std::string &trim(std::string &s) {
+//        return ltrim(rtrim(s));
+//}
+
+// Trim from start
+static inline std::string& ltrim(std::string& s)
+{
+    s.erase(
+        s.begin(),
+        std::find_if(
+            s.begin(),
+            s.end(),
+            [](unsigned char c) {
+                return !std::isspace(c);
+            }
+        )
+    );
+
+    return s;
 }
 
-// trim from end
-static inline std::string &rtrim(std::string &s) {
-        s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-        return s;
+// Trim from end
+static inline std::string& rtrim(std::string& s)
+{
+    s.erase(
+        std::find_if(
+            s.rbegin(),
+            s.rend(),
+            [](unsigned char c) {
+                return !std::isspace(c);
+            }
+        ).base(),
+        s.end()
+    );
+
+    return s;
 }
 
-// trim from both ends
-static inline std::string &trim(std::string &s) {
-        return ltrim(rtrim(s));
+// Trim from both ends
+static inline std::string& trim(std::string& s)
+{
+    return ltrim(rtrim(s));
 }
 
 int main(int argc,char *argv[])
@@ -312,6 +353,8 @@ int main(int argc,char *argv[])
     ggbsfile.close();
     bool existorbenera = false;
     bool existorbenerb = false;
+    bool lstartalfaorb = false;
+    string startalfaorb;
     double (*enerorba) = new double[nbasis];
     double (*enerorbb) = NULL;
     int (*norbair) = new int[numrepir];
@@ -327,7 +370,7 @@ int main(int argc,char *argv[])
     outimportfile << flush ;
     while(getline(inputfile,s)){
         transform(s.begin(), s.end(),s.begin(),::tolower);
-        if (!(s.find("geometry changed")==string::npos)){
+        if (s.find("geometry changed") != string::npos){
             ofstream ggbsfile(ggbsfilename.c_str(),ios::out);
             if (!ggbsfile) {
                 cerr << "In MOLPRO_out_interface: unable to open file " << ggbsfilename << endl ;
@@ -340,7 +383,7 @@ int main(int argc,char *argv[])
             writebasisset(&ggbsfile);
             ggbsfile.close();
         }
-        if (!(s.find("end of geometry optimization")==string::npos)){
+        if (s.find("end of geometry optimization") != string::npos){
             ofstream ggbsfile(ggbsfilename.c_str(),ios::out);
             if (!ggbsfile) {
                 cerr << "In MOLPRO_out_interface: unable to open file " << ggbsfilename << endl ;
@@ -353,8 +396,8 @@ int main(int argc,char *argv[])
             writebasisset(&ggbsfile);
             ggbsfile.close();
         }
-        if (!lorbenera && !(s.find("orbital energies")==string::npos)){
-            if( (s.find("orbital energies for positive spin")==string::npos) ) {
+        if (!lorbenera && (s.find("orbital energies") != string::npos)){
+            if( (s.find("orbital energies for positive spin") == string::npos) ) {
                 lorbenerb = true;
                 existorbenera = true;
             }
@@ -363,111 +406,220 @@ int main(int argc,char *argv[])
                 existorbenera = true;
                 existorbenerb = true;
             }
+
             int knt = 0;
             int kntorb = 0;
             int irant = 0;
-            while(!lorbenera){
-                getline(inputfile,s);
-                len = s.length();
-                char *tokenPrt=NULL, *ptr = new char [len+1], *tokenPrt2=NULL, *newtoken;
-                s.copy(ptr,len,0);
-                ptr[len] = 0;
-                tokenPrt = strtok_s(ptr," ",&newtoken);
-                if (tokenPrt == NULL) continue;     // Loops until a non-empty line is found
-                if (atof(tokenPrt) == 0.0){     // Checks that the line contains a number as first element
-                    norba = kntorb;
-                    if (norba == 0) existorbenera = false;
-                    lorbenera = true;
-                    break;
-                }
-                char *pospnt = strchr(tokenPrt,'.');
-                if (pospnt == NULL){
-                    cerr << "Error reading (alpha) orbital energies" << endl ;
-                    outimportfile << "Error reading (alpha) orbital energies" << endl ;
+
+            while (!lorbenera) {
+                if (!getline(inputfile, s)) {
+                    cerr << "Unexpected end of file while reading "
+                            "alpha orbital energies"
+                         << endl;
+
+                    outimportfile
+                        << "Unexpected end of file while reading "
+                           "alpha orbital energies"
+                        << endl;
+
                     existorbenera = false;
                     lorbenera = true;
                     break;
                 }
-                int ir = atoi(pospnt+1);
-                if (ir != irant){
-                    if (irant > 0) {
-                        norbair[irant-1] = knt;
-                    }
-                    irant++;
+
+                if (s.find_first_not_of(" \t\r\n") == std::string::npos)
+                        continue;
+
+                int orbitalNumber = 0;
+                int ir = 0;
+
+                // Las líneas vacías u otras líneas no etiquetadas marcan
+                // el final del bloque de energías.
+                if (!parseOrbitalLabel(s, orbitalNumber, ir)) {
+                    norba = kntorb;
+
+                    if (norba == 0)
+                        existorbenera = false;
+
+                    lorbenera = true;
+                    break;
+                }
+
+                if (ir != irant) {
+                    if (irant > 0)
+                        norbair[irant - 1] = knt;
+
+                    irant = ir;
                     knt = 0;
                 }
-                getline(inputfile,s);    // This should be a line with orbital energies
-                s.copy(ptr,len,0);
-                ptr[len] = 0;
-                tokenPrt = strtok_s(ptr," ",&newtoken);
-                if (tokenPrt == NULL || atof(tokenPrt) == 0.0){
-                    cerr << "Error reading (alpha) orbital energies" << endl ;
-                    outimportfile << "Error reading (alpha) orbital energies" << endl ;
-                    exit(1);
+
+                // La línea siguiente debe contener las energías.
+                if (!getline(inputfile, s)) {
+                    cerr << "Unexpected end of file while reading "
+                            "alpha orbital energies"
+                         << endl;
+
+                    outimportfile
+                        << "Unexpected end of file while reading "
+                           "alpha orbital energies"
+                        << endl;
+
+                    existorbenera = false;
+                    lorbenera = true;
+                    break;
                 }
-                while (tokenPrt != NULL){
-                    enerorba[kntorb] = atof(tokenPrt);
-                    kntorb++;
-                    knt++;
-                    tokenPrt = strtok_s(NULL," ",&newtoken);
+
+                const std::vector<double> energies =
+                    parseFloatingPointValues(s);
+
+                if (energies.empty()) {
+                    cerr << "Error reading alpha orbital energies"
+                         << endl;
+
+                    outimportfile
+                        << "Error reading alpha orbital energies"
+                        << endl;
+
+                    existorbenera = false;
+                    lorbenera = true;
+                    break;
+                }
+
+                for (const double energy : energies) {
+                    if (kntorb >= nbasis) {
+                        cerr << "Too many alpha orbital energies"
+                             << endl;
+
+                        outimportfile
+                            << "Too many alpha orbital energies"
+                            << endl;
+
+                        existorbenera = false;
+                        lorbenera = true;
+                        break;
+                    }
+                    enerorba[kntorb++] = energy;
+                    ++knt;
                 }
             }
-            if (existorbenera)
-                norbair[irant-1] = knt;
+
+            if (existorbenera && irant > 0)
+                norbair[irant - 1] = knt;
             else
                 norbair[0] = 0;
+
+//cerr << "energias orbitales, kntorb = " << kntorb << endl;
+//for (int jj = 0; jj < kntorb; jj++){
+//    cerr << enerorba[jj] << ", ";
+//    if ((jj+1)%10 == 0) cerr << endl;
+//}
+//cerr << endl;
+
+
             knt = 0;
             kntorb = 0;
             irant = 0;
-            while(!lorbenerb){
-                getline(inputfile,s);
-                len = s.length();
-                char *tokenPrt=NULL, *ptr = new char [len+1], *tokenPrt2=NULL, *newtoken;
-                s.copy(ptr,len,0);
-                ptr[len] = 0;
-                tokenPrt = strtok_s(ptr," ",&newtoken);
-                if (tokenPrt == NULL) continue;
-                if (atof(tokenPrt) == 0.0){
-                    norbb = kntorb;
-                    if (norbb == 0) existorbenerb = false;
+
+            while (!lorbenerb) {
+                if (!getline(inputfile, s)) {
+                    cerr << "Unexpected end of file while reading "
+                            "beta orbital energies"
+                         << endl;
+
+                    outimportfile
+                        << "Unexpected end of file while reading "
+                           "beta orbital energies"
+                        << endl;
+
+                    existorbenerb = false;
                     lorbenerb = true;
                     break;
                 }
-                char *pospnt = strchr(tokenPrt,'.');
-                if (pospnt == NULL){
-                    cerr << "Error reading (beta) orbital energies" << endl ;
-                    outimportfile << "Error reading (beta) orbital energies" << endl ;
-                    existorbenerb = false;
+
+                // Ignore blank lines, preserving the behavior of the old parser.
+                if (s.find_first_not_of(" \t\r\n") == std::string::npos)
+                    continue;
+
+                int orbitalNumber = 0;
+                int ir = 0;
+
+                if (!parseOrbitalLabel(s, orbitalNumber, ir)) {
+                    norbb = kntorb;
+
+                    if (norbb == 0)
+                        existorbenerb = false;
+
                     lorbenerb = true;
+                    break;
                 }
-                int ir = atoi(pospnt+1);
-                if (ir != irant){
-                    if (irant > 0) {
-                        norbbir[irant-1] = knt;
-                    }
-                    irant++;
+
+                if (ir != irant) {
+                    if (irant > 0)
+                        norbbir[irant - 1] = knt;
+
+                    irant = ir;
                     knt = 0;
                 }
-                getline(inputfile,s);    // This should be a line with orbital energies
-                s.copy(ptr,len,0);
-                ptr[len] = 0;
-                tokenPrt = strtok_s(ptr," ",&newtoken);
-                if (tokenPrt == NULL || atof(tokenPrt) == 0.0){
-                    cerr << "Error reading (beta) orbital energies" << endl ;
-                    outimportfile << "Error reading (beta) orbital energies" << endl ;
-                    exit(1);
+
+                if (!getline(inputfile, s)) {
+                    cerr << "Unexpected end of file while reading "
+                            "beta orbital energies"
+                         << endl;
+
+                    outimportfile
+                        << "Unexpected end of file while reading "
+                           "beta orbital energies"
+                        << endl;
+
+                    existorbenerb = false;
+                    lorbenerb = true;
+                    break;
                 }
-                while (tokenPrt != NULL){
-                    enerorbb[kntorb] = atof(tokenPrt);
-                    kntorb++;
-                    knt++;
-                    tokenPrt = strtok_s(NULL," ",&newtoken);
+
+                const std::vector<double> energies =
+                    parseFloatingPointValues(s);
+
+                if (energies.empty()) {
+                    cerr << "Error reading beta orbital energies"
+                         << endl;
+
+                    outimportfile
+                        << "Error reading beta orbital energies"
+                        << endl;
+
+                    existorbenerb = false;
+                    lorbenerb = true;
+                    break;
                 }
+
+                for (const double energy : energies) {
+                    if (kntorb >= nbasis) {
+                        cerr << "Too many beta orbital energies"
+                             << endl;
+
+                        outimportfile
+                            << "Too many beta orbital energies"
+                            << endl;
+
+                        existorbenerb = false;
+                        lorbenerb = true;
+                        break;
+                    }
+
+                    enerorbb[kntorb++] = energy;
+                    ++knt;
+                }
+
+                if (lorbenerb)
+                    break;
             }
-            if (existorbenerb)
-                norbbir[irant-1] = knt;
+
+            if (existorbenerb && irant > 0)
+                norbbir[irant - 1] = knt;
             else
                 norbbir[0] = 0;
+
+
         }
         int *iorbaord = new int[norba];
 
@@ -511,121 +663,171 @@ int main(int argc,char *argv[])
         }
 
 //    ORBITALS
-        if (!lorba && (!(to_lower(s).find("orbitals orb read from record")==string::npos))
-                ||  (!(to_lower(s).find("orbitals orba read from record")==string::npos))
-                ||  (!(to_lower(s).find("orbitals gaorba read from record")==string::npos))){
+        if (lstartalfaorb){
+            s = startalfaorb;
+            lstartalfaorb = false;
+        }
+        if (!lorba && ( to_lower(s).find("orbitals orb read from record") != string::npos )
+                   || ( to_lower(s).find("orbitals orba read from record") != string::npos )
+                   || ( to_lower(s).find("orbitals gaorba read from record") != string::npos)
+                ){
 /*        seeks for alpha or natural orbitals */
 //            outimportfile << "seeks for alpha or natural orbitals" << endl;
             double orbmet;
             int orbasim;
             OM = new double[nfun*nfun];
-            int icen, kntir, offset;
+            int kntir, offset;
             int kntorb = 0;
+
             ipos = s.find("state");
             s = s.substr(ipos);
-            ipos = s.find(".");
-            if (ipos > 0){
-                indstateaMO = atoi(s.substr(ipos-1,1).c_str());
-                orbasim = atoi(s.substr(ipos+1,1).c_str());
+
+            if (s.find("averaged") != string::npos) {
+                indstateaMO = 1;
+                orbasim = 1;
             }
-            else{
-                indstateaMO = -1;
-                orbasim = -1;
+            else {
+
+                if (!parseState(s, indstateaMO, orbasim)) {
+                    indstateaMO = -1;
+                    orbasim = -1;
+                }
             }
             for (i = 0 ; i < nfun*nfun ; i++){
                 OM[i] = 0.;
             }
             offset = 0;
+
             while (!lorba){
-                double (*orbsim) = NULL;
+
+                std::vector<double> orbsim;
                 int indrepirold = -1;
                 indrepir = 0;
+
                 while(getline(inputfile,s)){
-                    if (s.length() == 0) continue;
-                    if (!(s.find("***")==string::npos) || (!startsWithFloat(s) && !(to_lower(s).find("orbitals")==string::npos))){
-                        if (indrepir > 0 && !(to_lower(s).find("orbitals")==string::npos)) lorbbstart = true;
+
+                    if (s.empty())
+                        continue;
+
+                    if ( ( s.find("***") != string::npos )
+                            || (!startsWithFloat(s)
+                                && !(to_lower(s).find("orbitals")==string::npos))){
+
+                        if (indrepir > 0
+                                && !(to_lower(s).find("orbitals")==string::npos)) {
+                            lorbbstart = true;
+                        }
+
                         // Stores the block of the previous IR
                         if (kntir != kntrepirred[indrepir]*kntrepirred[indrepir]){
-                            cerr << "Error reading " << indrepir << " block of " << indstateaMO << "." << orbasim
-                                << " alpha MO matrix" << endl ;
+                            cerr << "Error reading " << indrepir
+                                 << " block of " << indstateaMO << "." << orbasim
+                                 << " alpha MO matrix" << endl ;
+
                             lorba = true;
                             outimportfile << "WARNING!!! desists reading alpha orbitals" << endl;
                             break;
                         }
-                        if (!(indrepir == numrepir-1)){
+
+                        if (indrepir != numrepir-1){
                             cerr << "Number of IR blocks read in alpha orbitals matrix " << indrepir+1 << " wrong, it should be " << numrepir << endl;
+
                             outimportfile << "Number of IR blocks read in alpha orbitals matrix " << indrepir+1 <<
                                     " wrong, it should be " << numrepir << endl;
+
                             lorba = true;
                             outimportfile << "WARNING!!! desists reading alpha orbitals" << endl;
                             break;
                         }
+
                         kntir = 0;
-                        for(i = offset ; i < offset+kntrepirred[indrepir] ; i++){
-                            for (j = offset ; j < offset+kntrepirred[indrepir] ; j++){
+                        for(i = offset ; i < offset+kntrepirred[indrepir] ; i++) {
+                            for (j = offset ; j < offset+kntrepirred[indrepir] ; j++) {
                                 orbmet = orbsim[kntir++] / sqrt((double) basesim[i].numcen);
+
                                 for(ii = 0 ; ii < basesim[i].numcen ; ii++){
                                     OM[(indbases[basesim[i].centers[ii]*MXSHELLAT+basesim[i].icontr]
-                                        + basesim[i].mval + basesim[i].lval)*nfun+j] += orbmet * basesim[i].sign[ii];
+                                        + basesim[i].mval + basesim[i].lval)*nfun+j]
+                                        += orbmet * basesim[i].sign[ii];
                                 }
                             }
                         }
+
                         offset += kntrepirred[indrepir];
                         lorba = true;
-//                        outimportfile << "alpha or natural orbitals found" << endl;
                         break;
                     }
-                    else if (!(s.find("SYMMETRY BLOCK")==string::npos)){
+                    else if ( s.find("SYMMETRY BLOCK") != string::npos ){
                         indrepirold = indrepir;
                         ipos = s.find(".");
                         indrepir = atoi(s.substr(ipos-1,1).c_str())-1;
+
                         // Stores the block of the previous IR
                         if (indrepir > 0){
                             if (kntir != kntrepirred[indrepirold]*kntrepirred[indrepirold]){
-                                cerr << "Error reading block no. " << indrepir << " of MO matrix of state " << indstateaMO << "." << orbasim
-                                    << endl ;
+                                cerr << "Error reading block no. " << indrepir
+                                     << " of MO matrix of state " << indstateaMO
+                                     << "." << orbasim
+                                     << endl ;
+
                                 lorba = true;
                                 outimportfile << "WARNING!!! desists reading alpha orbitals" << endl;
                                 break;
                             }
+
                             kntir = 0;
+
                             for(i = offset ; i < offset+kntrepirred[indrepirold] ; i++){
+
                                 for (j = offset ; j < offset+kntrepirred[indrepirold] ; j++){
+
                                     orbmet = orbsim[kntir++] / sqrt((double) basesim[i].numcen);
+
                                     for(ii = 0 ; ii < basesim[i].numcen ; ii++){
                                         OM[(indbases[basesim[i].centers[ii]*MXSHELLAT+basesim[i].icontr]
-                                            + basesim[i].mval + basesim[i].lval)*nfun+j] += orbmet * basesim[i].sign[ii];
+                                            + basesim[i].mval + basesim[i].lval)*nfun+j]
+                                            += orbmet * basesim[i].sign[ii];
                                     }
                                 }
                             }
+
                             offset += kntrepirred[indrepirold];
                         }
                         state = atoi(s.substr(ipos+1,1).c_str());
                         kntir = 0;
-                        if (!orbsim){
-                            delete orbsim;
-                            orbsim = NULL;
-                        }
-                        orbsim = new double[kntrepirred[indrepir]*kntrepirred[indrepir]];
+
+                        const std::size_t blockSize =
+                            static_cast<std::size_t>(kntrepirred[indrepir])
+                            * static_cast<std::size_t>(kntrepirred[indrepir]);
+
+                        orbsim.assign(blockSize, 0.0);
                     }
                     else if (rtrim(s).length() > 12){      // Reads the block of the current IR
-                        if (!startsWithFloat(s)) continue;
-                        len = s.length();
-                        char *tokenPrt, *ptr = new char [len+1], *newtoken;
-                        s.copy(ptr,len,0);
-                        ptr[len] = 0;
-                        tokenPrt = strtok_s(ptr," ",&newtoken);
-                        orbsim[kntir++] = atof(tokenPrt);
-                        while((tokenPrt = strtok_s(NULL," ",&newtoken)) != NULL){
-                            orbsim[kntir++] = atof(tokenPrt);
+
+                        const std::vector<double> values = parseFloatingPointValues(s);
+
+                        if (values.empty())
+                            continue;
+
+                        for (const double value : values) {
+                            if (static_cast<std::size_t>(kntir) >= orbsim.size()) {
+                                cerr << "Too many elements while reading orbital block "
+                                     << indrepir + 1 << endl;
+                                lorba = true;
+                                break;
+                            }
+
+                            orbsim[kntir++] = value;
                         }
-                        delete [] ptr;
+                        if (lorba)
+                           break;
                     }
                     else{
                         continue;
                     }
                 }
             }
+
             kntorb = offset;
             ofstream aorbfile;
             ss = outpath + newprojectname + ".GAorba";
@@ -668,7 +870,6 @@ int main(int argc,char *argv[])
             aorbfile.close();
         }
         if ((!lorbb && (!(to_lower(s).find("orbitals orbb read from record")==string::npos))
-                ||  (!(to_lower(s).find("orbitals orbb read from record")==string::npos))
                 ||  (!(to_lower(s).find("orbitals gaorbb read from record")==string::npos))) || lorbbstart){
 /*    seeks for beta orbitals */
             lorbbstart = false;
@@ -678,29 +879,38 @@ int main(int argc,char *argv[])
             OM = new double[nfun*nfun];
             int kntorb = 0;
             int icen, kntir, offset;
+
             ipos = s.find("state");
             s = s.substr(ipos);
-            ipos = s.find(".");
-            if (ipos > 0){
-                indstatebMO = atoi(s.substr(ipos-1,1).c_str());
-                orbbsim = atoi(s.substr(ipos+1,1).c_str());
+
+            if (s.find("averaged") != string::npos) {
+                indstatebMO = 1;
+                orbbsim = 1;
             }
-            else{
-                indstatebMO = -1;
-                orbbsim = -1;
+            else {
+                if (!parseState(s, indstatebMO, orbbsim)) {
+                    indstatebMO = -1;
+                    orbbsim = -1;
+                }
             }
+
             for (i = 0 ; i < nfun*nfun ; i++){
                 OM[i] = 0.;
             }
             offset = 0;
 
             while (!lorbb){
-                double (*orbsim) = NULL;
+
+                std::vector<double> orbsim;
                 int indrepirold = -1;
                 indrepir = 0;
+
                 while(getline(inputfile,s)){
-                    if (s.length() == 0) continue;
-                    if (!(s.find("***")==string::npos)){
+
+                    if (s.empty())
+                        continue;
+
+                    if ( s.find("***") != string::npos){
                         // Stores the block of the previous IR
                         if (kntir != kntrepirred[indrepir]*kntrepirred[indrepir]){
                             cerr << "Error reading " << indrepir << " block of " << indstatebMO << "." << orbbsim
@@ -709,7 +919,7 @@ int main(int argc,char *argv[])
                             outimportfile << "WARNING!!! desists reading beta orbitals" << endl;
                             break;
                         }
-                        if (!(indrepir == numrepir-1)){
+                        if ( indrepir != numrepir-1 ){
                             cerr << "Number of IR blocks read in alpha orbitals matrix " << indrepir+1 << " wrong, it should be " << numrepir << endl;
                             outimportfile << "Number of IR blocks read in alpha orbitals matrix " << indrepir+1 <<
                                     " wrong, it should be " << numrepir << endl;
@@ -717,7 +927,9 @@ int main(int argc,char *argv[])
                             outimportfile << "WARNING!!! desists reading beta orbitals" << endl;
                             break;
                         }
+
                         kntir = 0;
+
                         for(i = offset ; i < offset+kntrepirred[indrepir] ; i++){
                             for (j = offset ; j < offset+kntrepirred[indrepir] ; j++){
                                 orbmet = orbsim[kntir++] / sqrt((double) basesim[i].numcen);
@@ -732,7 +944,7 @@ int main(int argc,char *argv[])
 //                        outimportfile << "beta orbitals found" << endl;
                         break;
                     }
-                    else if (!(s.find("SYMMETRY BLOCK")==string::npos)){
+                    else if ( s.find("SYMMETRY BLOCK") != string::npos ){
                         indrepirold = indrepir;
                         ipos = s.find(".");
                         indrepir = atoi(s.substr(ipos-1,1).c_str())-1;
@@ -758,24 +970,32 @@ int main(int argc,char *argv[])
                             offset += kntrepirred[indrepirold];              }
                         state = atoi(s.substr(ipos+1,1).c_str());
                         kntir = 0;
-                        if (!orbsim){
-                            delete orbsim;
-                            orbsim = NULL;
-                        }
-                        orbsim = new double[kntrepirred[indrepir]*kntrepirred[indrepir]];
+
+                        const std::size_t blockSize =
+                            static_cast<std::size_t>(kntrepirred[indrepir])
+                            * static_cast<std::size_t>(kntrepirred[indrepir]);
+
+                        orbsim.assign(blockSize, 0.0);
                     }
                     else if (rtrim(s).length() > 12){      // Reads the block of the current IR
-                        if (!startsWithFloat(s)) continue;
-                        len = s.length();
-                        char *tokenPrt, *ptr = new char [len+1], *newtoken;
-                        s.copy(ptr,len,0);
-                        ptr[len] = 0;
-                        tokenPrt = strtok_s(ptr," ",&newtoken);
-                        orbsim[kntir++] = atof(tokenPrt);
-                        while((tokenPrt = strtok_s(NULL," ",&newtoken)) != NULL){
-                            orbsim[kntir++] = atof(tokenPrt);
+
+                        const std::vector<double> values = parseFloatingPointValues(s);
+
+                        if (values.empty())
+                            continue;
+
+                        for (const double value : values) {
+                            if (static_cast<std::size_t>(kntir) >= orbsim.size()) {
+                                cerr << "Too many elements while reading beta orbital block "
+                                     << indrepir + 1 << endl;
+                                lorbb = true;
+                                break;
+                            }
+
+                            orbsim[kntir++] = value;
                         }
-                        delete [] ptr;
+                        if (lorbb)
+                           break;
                     }
                     else{
                         continue;
@@ -825,7 +1045,7 @@ int main(int argc,char *argv[])
         }
 
 //    DENSITY MATRIX
-        if (!lden && (!(s.find("density")==string::npos)) && (!(s.find("read from record")==string::npos))){
+        if (!lden && (s.find("density") != string::npos) && (s.find("read from record") != string::npos)){
             string ssaux = s;
             getline(inputfile,s);
             getline(inputfile,s);
@@ -834,7 +1054,7 @@ int main(int argc,char *argv[])
 /*    seeks for the density matrix */
             double densimet;
             dmat = new double[nfun*nfun];
-            int icen, kntir, offset;
+            int kntir, offset;
             if (kntden < mden){
                 kntden++;
                 continue;
@@ -864,19 +1084,20 @@ int main(int argc,char *argv[])
             delete [] ptr;
             kntir = 0;
             while (!lden){
-                double (*dsim) = NULL;
+
+                std::vector<double> dsim;
                 int indrepirold = -1;
                 indrepir = 0;
                 while(getline(inputfile,s)){
                     if (rtrim(s).length() < 3) continue;
-                    if (!(s.find("***")==string::npos) || (!startsWithFloat(s) && (to_lower(s).find("block")==string::npos))){
+                    if ( s.find("***") != string::npos || (!startsWithFloat(s) && (to_lower(s).find("block")==string::npos))){
                         // Stores the block of the last IR
                         if (kntir != kntrepirred[indrepir]*kntrepirred[indrepir]){
                             cerr << "Error reading " << indrepir << " block of " << indstate << "." << statesim
                                 << " density matrix" << endl ;
                             exit(1);
                         }
-                        if (!(indrepir == numrepir-1)){
+                        if ( indrepir != numrepir-1){
                             cerr << "Number of IR blocks read in density matrix " << indrepir+1 << " wrong, it should be " << numrepir << endl;
                             outimportfile << "Number of IR blocks read in density matrix " << indrepir+1 << " wrong, it should be " << numrepir << endl;
                             exit(1);
@@ -899,7 +1120,7 @@ int main(int argc,char *argv[])
                         lden = true;
                         break;
                     }
-                    else if (!(s.find("SYMMETRY BLOCK")==string::npos)){
+                    else if ( s.find("SYMMETRY BLOCK") != string::npos){
                         indrepirold = indrepir;
                         ipos = s.find(".");
                         indrepir = atoi(s.substr(ipos-1,1).c_str())-1;
@@ -929,30 +1150,47 @@ int main(int argc,char *argv[])
                         }
                         state = atoi(s.substr(ipos+1,1).c_str());
                         kntir = 0;
-                        if (!dsim){
-                            delete dsim;
-                            dsim = NULL;
-                        }
-                        dsim = new double[kntrepirred[indrepir]*kntrepirred[indrepir]];
+
+                        const std::size_t blockSize =
+                            static_cast<std::size_t>(kntrepirred[indrepir])
+                            * static_cast<std::size_t>(kntrepirred[indrepir]);
+
+                        dsim.assign(blockSize, 0.0);
                     }
                     else if (rtrim(s).length() > 12){      // Reads the block of the current IR
-                        if (!startsWithFloat(s)) continue;
-                        len = s.length();
-                        char *tokenPrt, *ptr = new char [len+1], *newtoken;
-                        s.copy(ptr,len,0);
-                        ptr[len] = 0;
-                        tokenPrt = strtok_s(ptr," ",&newtoken);
-                        dsim[kntir++] = atof(tokenPrt);
-                        while((tokenPrt = strtok_s(NULL," ",&newtoken)) != NULL){
-                            dsim[kntir++] = atof(tokenPrt);
+
+                        const std::vector<double> values = parseFloatingPointValues(s);
+
+                        if (values.empty())
+                            continue;
+
+                        for (const double value : values) {
+                            if (static_cast<std::size_t>(kntir) >= dsim.size()) {
+                                cerr << "Too many elements while reading orbital block "
+                                     << indrepir + 1 << endl;
+                                lden = true;
+                                break;
+                            }
+
+                            dsim[kntir++] = value;
                         }
-                        delete [] ptr;
+                        if (lden)
+                           break;
+
                     }
                     else{
                         continue;
                     }
                 }
             }
+//   The following "if" is a caution for some cases in which the alpha orbital matrix directly follows to density
+//   without any '****' in between
+            if (to_lower(s).find("orbitals orba read from record") != string::npos){
+                lstartalfaorb = true;
+                startalfaorb = s;
+            }
+
+
             denfile << " " << nfun << endl;
             denfile << setprecision(15) ;
             denfile.setf(ios::scientific,ios::floatfield);
@@ -1118,11 +1356,11 @@ void readoptimizedgeometry(ifstream * inputfile, ofstream * outimportfile, ofstr
     while(getline(*inputfile,s) && !lcoord){
 
 /*    seek for atomic numbers and coordinates of the centers */
-        if( !(s.find("Current geometry")==string::npos) ) {
+        if( s.find("Current geometry") != string::npos ) {
             lcoord = true;
             ncen = 0;
             double xc=0., yc=0., zc=0., zntot=0.;
-            if (!(s.find("Angstrom")==string::npos)) unitsconversion = 1.88973;
+            if ( s.find("Angstrom") != string::npos ) unitsconversion = 1.88973;
             getline(*inputfile,s);  // Reads blank line
             getline(*inputfile,s);  // Reads number of centers
             getline(*inputfile,s);  // Reads comment
@@ -1237,7 +1475,7 @@ void readbasisset(ifstream * inputfile, ofstream * outimportfile, ofstream * ggb
             int (*vcen) = new int[ncen];
             int (*sgncen) = new int[ncen];
             int icen, knt, kntcen, kntprim, lvalue, mvalue, nfn;
-            bool nextfnt, lstore, lexist;
+            bool nextfnt, lexist;
             len = s.length();
             char *tokenPrt[MXCONTR+1], *ptr = new char [len+1], *newtoken;
             s.copy(ptr,posbasis[4]-2,0);
@@ -1257,7 +1495,6 @@ void readbasisset(ifstream * inputfile, ofstream * outimportfile, ofstream * ggb
                 kntprimit[i] = 0;
                 pntprimit[i*(MXSHELLAT+1)+0] = 0;
             }
-            lstore = false;
             bool last = false;
             while (!lbasis){
                 if (s.length() < 4 || !(s.substr(0,4).find("N")==string::npos)){
@@ -1277,9 +1514,7 @@ void readbasisset(ifstream * inputfile, ofstream * outimportfile, ofstream * ggb
                 }
                 vcen[kntcen] = icen-1;
                 lvalue = seekl(s.substr(posbasis[3],posbasis[4]-posbasis[3]));
-                if (!(s.substr(posbasis[3],posbasis[4]-posbasis[3]).find_first_of("sz0") == string::npos)){
-                    lstore = true;
-                }
+
                 if (lvalue < 0){
                     cerr << "Error in seekl: " << s.substr(posbasis[3],posbasis[4]-posbasis[3])
                         << " does not correspond to any allowable value of l" << endl ;
@@ -1366,9 +1601,7 @@ void readbasisset(ifstream * inputfile, ofstream * outimportfile, ofstream * ggb
                         if (icen > 0){
                             vcen[kntcen] = icen-1;
                             lvalue = seekl(s.substr(posbasis[3],posbasis[4]-posbasis[3]));
-                            if (!(s.substr(posbasis[3],posbasis[4]-posbasis[3]).find_first_of("sz0") == string::npos)){
-                                lstore = true;
-                            }
+
                             if (lvalue < 0){
                                 cerr << "Error in seekl: " << s.substr(posbasis[3],posbasis[4]-posbasis[3])
                                     << " does not correspond to any allowable value of l" << endl ;
@@ -1446,9 +1679,7 @@ void readbasisset(ifstream * inputfile, ofstream * outimportfile, ofstream * ggb
                         if (icen > 0){
                             vcen[kntcen] = icen-1;
                             lvalue = seekl(s.substr(posbasis[3],posbasis[4]-posbasis[3]));
-                            if (!(s.substr(posbasis[3],posbasis[4]-posbasis[3]).find_first_of("sz0") == string::npos)){
-                                lstore = true;
-                            }
+
                             if (lvalue < 0){
                                 cerr << "Error in seekl: " << s.substr(posbasis[3],posbasis[4]-posbasis[3])
                                     << " does not correspond to any allowable value of l" << endl ;
@@ -1574,7 +1805,7 @@ void readbasisset(ifstream * inputfile, ofstream * outimportfile, ofstream * ggb
                         exit(1);
                     }
                 }
-                lstore = false;
+
             }
             int kntbasis = 0;
             for (i = 0 ; i < ncen ; i++){
@@ -1704,3 +1935,88 @@ std::string to_lower(const std::string& str) {
     return lowered;
 }
 // End of function to_lower
+
+std::vector<double> parseFloatingPointValues(const std::string& line)
+{
+    std::vector<double> values;
+    const char* current = line.c_str();
+
+    while (*current != '\0') {
+        char* end = nullptr;
+        const double value = std::strtod(current, &end);
+
+        if (end == current) {
+            ++current;
+            continue;
+        }
+
+        values.push_back(value);
+        current = end;
+    }
+
+    return values;
+}
+
+bool parseState(const std::string& line,
+                int& stateNumber,
+                int& stateSymmetry)
+{
+    const std::size_t statePos = line.find("state");
+
+    if (statePos == std::string::npos)
+        return false;
+
+    const std::string stateText = line.substr(statePos);
+
+    if (stateText.find("averaged") != std::string::npos) {
+        stateNumber = 1;
+        stateSymmetry = 1;
+        return true;
+    }
+
+    const char* current = stateText.c_str() + 5;
+    char* end = nullptr;
+
+    const long first = std::strtol(current, &end, 10);
+
+    if (end == current || *end != '.')
+        return false;
+
+    current = end + 1;
+    const long second = std::strtol(current, &end, 10);
+
+    if (end == current)
+        return false;
+
+    stateNumber = static_cast<int>(first);
+    stateSymmetry = static_cast<int>(second);
+
+    return true;
+}
+
+bool parseOrbitalLabel(const std::string& line,
+                       int& orbitalNumber,
+                       int& symmetryNumber)
+{
+    std::istringstream lineStream(line);
+    std::string label;
+
+    if (!(lineStream >> label))
+        return false;
+
+    std::istringstream labelStream(label);
+    char separator = '\0';
+
+    if (!(labelStream >> orbitalNumber >> separator >> symmetryNumber))
+        return false;
+
+    if (separator != '.')
+        return false;
+
+    // No se admiten caracteres adicionales en la etiqueta.
+    char extra;
+    if (labelStream >> extra)
+        return false;
+
+    return orbitalNumber > 0 && symmetryNumber > 0;
+}
