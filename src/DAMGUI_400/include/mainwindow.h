@@ -238,21 +238,6 @@ private slots:      // Alphabetically sorted (including type in sort)
     void readTurbom();
     void readMOLEKEL();
 
-    void saveOptionsProject(string file, bool *printwarns, QString *warns);
-    void saveOptionsDam(string file, bool *printwarns, QString *warns);
-    void saveOptionsDamden(string file, bool *printwarns, QString *warns);
-    void saveOptionsDamdenGrad(string file, bool *printwarns, QString *warns);
-    void saveOptionsDamfield(string file, bool *printwarns, QString *warns);
-    void saveOptionsDamfrad(string file, bool *printwarns, QString *warns);
-    void saveOptionsDammultrot(string file, bool *printwarns, QString *warns);
-    void saveOptionsDampot(string file, bool *printwarns, QString *warns);
-    void saveOptionsDamforces(string file, bool *printwarns, QString *warns);
-    void saveOptionsOrbitals(string file, bool *printwarns, QString *warns);
-    void saveOptionsSGhole(string file, bool *printwarns, QString *warns);
-    void saveOptionsTopography(string file, bool *printwarns, QString *warns);
-    void saveOptionsZJDensity(string file, bool *printwarns, QString *warns);
-    void saveOptionsZJExpansion(string file, bool *printwarns, QString *warns);
-
     void setExecutionControlsEnabled(bool enabled);
 
     void showPerformanceSettings();
@@ -276,12 +261,16 @@ private slots:      // Alphabetically sorted (including type in sort)
     void updateOrbitalsPageState();
     void updatewindowsoverlay();
 
+    void showOutputText(const QString &text);
+
 //    void write_option(const char * a, const char * b, const QString c, const string file,
 //        bool * p, QString * w);
 
 
     QString get_execName(QString, QString);
     QString get_python();
+
+
     
 private:
     bool saveProjectToFile(const QString& fullFileName);
