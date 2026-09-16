@@ -194,14 +194,6 @@ private slots:      // Alphabetically sorted (including type in sort)
     void execImport();
     void execsgbs2sxyz(const QString &qstring);
     void execSxyzDen();
-//    bool executeprogram_new(bool runmpi,
-//                            const QString &outputprefix,
-//                            const QString &rootname,
-//                            const QString &stdinput,
-//                            QString stdoutput,
-//                            const QString &subdir,
-//                            int nprocs,
-//                            int executeindex);
     void Help();
 
     void importFile();
@@ -211,7 +203,6 @@ private slots:      // Alphabetically sorted (including type in sort)
     void menu_viewer3D();
     void moveviewertotop(int);
     void movewidgettotop(int);
-//    void MOLPRO_two_pass_case(QString);
 
     void newProject();
 
@@ -226,10 +217,7 @@ private slots:      // Alphabetically sorted (including type in sort)
 
     void PrintFile();
     void PrintFilePdf();
-
-//    void processError(QProcess::ProcessError error);
     void processStart();
-//    void processStop();
 
     void readFchk();
     void readMolpro();
@@ -263,17 +251,39 @@ private slots:      // Alphabetically sorted (including type in sort)
 
     void showOutputText(const QString &text);
 
-//    void write_option(const char * a, const char * b, const QString c, const string file,
-//        bool * p, QString * w);
-
 
     QString get_execName(QString, QString);
     QString get_python();
 
-
+    void showRecentProjectContextMenu(const QPoint& pos);
     
 private:
     bool saveProjectToFile(const QString& fullFileName);
+
+    template <typename Page, typename ExecSlot>
+    void connectExecutablePage(Page *page, ExecSlot execSlot)
+    {
+        executablePages_ << page;
+
+        connect(page, &Page::outputTextReady,
+                this, &MainWindow::showOutputText);
+
+        connect(page, &Page::showInputFileRequested,
+                this, &MainWindow::showOutputText);
+
+        connect(page, &Page::externalProcessStarted,
+                this, &MainWindow::onExternalProcessStarted);
+
+        connect(page, &Page::externalProcessFinished,
+                this, &MainWindow::onExternalProcessFinished);
+
+        connect(page, &Page::openOutputRequested,
+                this, &MainWindow::importOUT);
+
+        connect(page, &Page::execRequested,
+                this, execSlot);
+    }
+
     void initializeNames();
     void readMolproXml(const QString& importFile,
                        const QString& importFolder);
@@ -365,6 +375,7 @@ private:
     QList<glWidget*> widgets;
     QList<Viewer2D*> plots;
 
+    QList<IExecutablePage *> executablePages_;
     QList<IExecutablePage *> postDamPages_;
 
 //    Menus
@@ -373,6 +384,7 @@ private:
     QMenu *FileMenu = nullptr;
     QMenu *GraphicsMenu = nullptr;
     QMenu *HelpMenu = nullptr;
+    QMenu *RecentProjectsMenu = nullptr;
 
 //   Push Buttons
 
