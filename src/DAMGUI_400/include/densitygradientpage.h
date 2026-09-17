@@ -114,7 +114,7 @@ public:
     void setPlotTypeVisible(bool visible);
     void setProjectData(const QString &projectFolder,
                             const QString &projectName);
-    void setProjectFolder(const QString& value);
+    // void setProjectFolder(const QString& value);
     void setStopEnabled(bool enabled);
     void setStride(const QString& value);
     void setTabulation(bool checked);
