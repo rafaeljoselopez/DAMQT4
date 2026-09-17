@@ -368,8 +368,6 @@ void AtomicDensitiesPage::startDam(){
     request.subdir = subdir;
     request.nprocs = mpiProcessors();
 
-//    const QString suffix = request.runMpi ? "_mpi" : "";
-
     request.suffix = request.runMpi ? "_mpi" : "";
 
 
@@ -378,7 +376,6 @@ void AtomicDensitiesPage::startDam(){
             request.outputPrefix + "-" + request.rootName + request.suffix + ".out"
         );
 
-    setStopEnabled(true);
     runner_->setProjectFolder(projectFolder_);
 
     runner_->setMpiCommand(mpiCommand_);
@@ -729,10 +726,10 @@ void AtomicDensitiesPage::setPageEnabled(bool enabled)
     this->setEnabled(enabled);
 }
 
-void AtomicDensitiesPage::setProjectFolder(const QString& value)
-{
-    projectFolder_ = value;
-}
+// void AtomicDensitiesPage::setProjectFolder(const QString& value)
+// {
+//     projectFolder_ = value;
+// }
 
 void AtomicDensitiesPage::setProjectData(const QString &projectFolder,
                         const QString &projectName)
