@@ -63,7 +63,7 @@ public:
     void setPageEnabled(bool enabled);
     void setProjectData(const QString &projectFolder,
                             const QString &projectName);
-    void setProjectFolder(const QString& value);
+    // void setProjectFolder(const QString& value);
     void setStopEnabled(bool enabled);
     void setTopLmaxDisplayed(int value);
     void setTotalDensityChecked(bool checked);
