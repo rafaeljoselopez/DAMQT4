@@ -563,7 +563,7 @@ void FieldLinesPage::setPlaneOther(bool checked) { planeOtherRadio_->setChecked(
 void FieldLinesPage::setPlaneXY(bool checked) { planesButtonsGroup_->button(planeXY)->setChecked(checked); }
 void FieldLinesPage::setPlaneXZ(bool checked) { planesButtonsGroup_->button(planeXZ)->setChecked(checked);}
 void FieldLinesPage::setPlaneYZ(bool checked) { planesButtonsGroup_->button(planeYZ)->setChecked(checked); }
-void FieldLinesPage::setProjectFolder(const QString& value) { projectFolder_ = value;}
+// void FieldLinesPage::setProjectFolder(const QString& value) { projectFolder_ = value;}
 void FieldLinesPage::setStopEnabled(bool enabled) { stopButton_->setEnabled(enabled); }
 void FieldLinesPage::setStride(const QString &value) { strideEdit_->setText(value); }
 void FieldLinesPage::setTabulation(bool checked) { addPointsCheck_->setChecked(checked); }
