@@ -554,7 +554,7 @@ void DensityGradientPage::setPlaneOther(bool checked) { planeOtherRadio_->setChe
 void DensityGradientPage::setPlaneXY(bool checked) { planesButtonsGroup_->button(planeXY)->setChecked(checked); }
 void DensityGradientPage::setPlaneXZ(bool checked) { planesButtonsGroup_->button(planeXZ)->setChecked(checked);}
 void DensityGradientPage::setPlaneYZ(bool checked) { planesButtonsGroup_->button(planeYZ)->setChecked(checked); }
-void DensityGradientPage::setProjectFolder(const QString& value) { projectFolder_ = value;}
+// void DensityGradientPage::setProjectFolder(const QString& value) { projectFolder_ = value;}
 void DensityGradientPage::setStopEnabled(bool enabled) { stopButton_->setEnabled(enabled); }
 void DensityGradientPage::setStride(const QString &value) { strideEdit_->setText(value); }
 void DensityGradientPage::setTabulation(bool checked) { addPointsCheck_->setChecked(checked); }
