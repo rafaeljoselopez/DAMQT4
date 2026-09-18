@@ -176,7 +176,7 @@ public:
     void setPointsZ(int number);
     void setProjectData(const QString &projectFolder,
                         const QString &projectName);
-    void setProjectFolder(const QString& value);
+    // void setProjectFolder(const QString& value);
     void setResolutionVisible(bool visible);
     void setResolution2DVisible(bool visible);
     void setResolution3DVisible(bool visible);
