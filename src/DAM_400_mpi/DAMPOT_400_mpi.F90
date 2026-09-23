@@ -297,7 +297,7 @@
         CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
         CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
         tiempo = dtime(tarray)
-!        write(6,"(1x,'Timing in seconds of processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+!        write(6,"(1x,'Timing in seconds of processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
 !                myrank, tarray(1), tarray(2), tarray(1)+tarray(2)
         if (abortroot .gt. 0) then
                 call error(1,'Stop')
@@ -308,7 +308,7 @@
         if (ierr .eq. 0 .and. myrank .eq. 0) then
             write(6,"(/30x,'TIMING (in seconds)',/)")
             do i = 0, nprocs-1
-                write(6,"(1x,'Processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+                write(6,"(1x,'Processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
                     i, timeprocs(2*i+1), timeprocs(2*i+2), timeprocs(2*i+1)+timeprocs(2*i+2)
             enddo
             write(6,"(' ')")
@@ -456,7 +456,7 @@
         enddo
         tiempo = dtime(tarray)
         write(6,"(1x,'Timing in seconds of individual points tabulation in proc 0 (user, system, total):', &
-                        5x,'(',e12.5,',',e12.5,',',e12.5')')") tarray(1), tarray(2), tarray(1)+tarray(2)
+                        5x,'(',e12.5,',',e12.5,',',e12.5,')')") tarray(1), tarray(2), tarray(1)+tarray(2)
         if (allocated(zlma)) deallocate(zlma)
         if (allocated(zlmadx)) deallocate(zlmadx, zlmady, zlmadz)
         if (allocated(zlmadxx)) deallocate(zlmadxx, zlmadxy, zlmadxz, zlmadyy, zlmadyz, zlmadzz)

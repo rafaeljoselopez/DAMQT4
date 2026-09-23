@@ -631,7 +631,7 @@
     endif
 
     tiempo = dtime(tarray)
-    write(6,"(1x,'Timing in seconds (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") tarray(1), tarray(2), tiempo
+    write(6,"(1x,'Timing in seconds (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") tarray(1), tarray(2), tiempo
     stop
     end
 

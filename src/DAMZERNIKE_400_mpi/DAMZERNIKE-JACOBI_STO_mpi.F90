@@ -1219,7 +1219,7 @@
                 /5x, 'Total number of different distributions = ',i10, &
                 /5x, 'Total number of non-negligible different distributions = ',i10, 3x,'( ',f6.2,'% )', &
                 /5x, 'Timing in seconds for radial factors (user, system, total): ', &
-                /5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+                /5x,'(',e12.5,',',e12.5,',',e12.5,',)')") &
                 i, kntdstprocs(i+1), kntdstefprocs(i+1), aux, timeprocs(2*i+1),timeprocs(2*i+2),timeprocs(2*i+1)+timeprocs(2*i+2)
         enddo
 
@@ -1264,7 +1264,7 @@
         call multipoles
 
 !         tiemponw = dtime(tarraynw)
-!         write(6,"(1x,'Timing in seconds for projection (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+!         write(6,"(1x,'Timing in seconds for projection (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
 !             tarraynw(1), tarraynw(2), tarraynw(1)+tarraynw(2)
 !         write(6,"(1x,'Elapsed time = ', e12.5)") tiemponw
 
@@ -1311,7 +1311,7 @@
         enddo
         tiemponw = dtime(tarraynw)
         write(6,"(1x,//80('='),/'IMPORTANT !!! Computation of invariant fingerprints is not parallelized',/)")
-        write(6,"(1x,'Timing in seconds for invariant fingerprints (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+        write(6,"(1x,'Timing in seconds for invariant fingerprints (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
                 tarraynw(1), tarraynw(2), tarraynw(1)+tarraynw(2)
         write(6,"(1x,'Elapsed time = ', e12.5)") tiemponw
     endif

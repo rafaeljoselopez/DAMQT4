@@ -314,7 +314,7 @@
         if (ierr .eq. 0 .and. myrank .eq. 0) then
             write(6,"(/30x,'TIMING (in seconds)',/)")
             do i = 0, nprocs-1
-                write(6,"(1x,'Processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+                write(6,"(1x,'Processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
                     i, timeprocs(2*i+1), timeprocs(2*i+2), timeprocs(2*i+1)+timeprocs(2*i+2)
             enddo
             write(6,"(' ')")
@@ -389,7 +389,7 @@
         endif
         tiempo = dtime(tarray)
         write(6,"(1x,'Timing in seconds of individual points tabulation in proc 0 (user, system, total):', &
-                5x,'(',e12.5,',',e12.5,',',e12.5')')") tarray(1), tarray(2), tarray(1)+tarray(2)
+                5x,'(',e12.5,',',e12.5,',',e12.5,')')") tarray(1), tarray(2), tarray(1)+tarray(2)
     endif
     close(12)
     CALL MPI_REDUCE(nlineas,nlineastot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)

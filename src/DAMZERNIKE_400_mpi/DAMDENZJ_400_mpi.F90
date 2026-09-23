@@ -437,7 +437,7 @@
     if (allocated(zlm)) deallocate(zlm)
     if (allocated(zlmdx)) deallocate(zlmdx, zlmdy, zlmdz)
     tiempo = dtime(tarray)
-    write(6,"(1x,'Timing in seconds (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+    write(6,"(1x,'Timing in seconds (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
             tarray(1), tarray(2), tarray(1)+tarray(2)
     call MPI_FINALIZE(ierr)
     if (myrank .eq. 0) then

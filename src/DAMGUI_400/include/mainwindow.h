@@ -133,9 +133,6 @@ class MainWindow : public QMainWindow
 
 public:
     MainWindow(QWidget *parent = 0);
-    static void dmax(QVector<double> &v,double &max);
-    static void dmin(QVector<double> &v,double &min);
-    static void dminmax(QVector<double> &v,double &min,double &max);
     void finishsplash();
     
     
@@ -293,6 +290,10 @@ private:
     );
 
     void updateMpiControls();
+
+    void setOutputPrefixes(const QString& prefix);
+    void updateProjectAvailability();
+    void setFileDialogProjectFolders(const QString& folder);
 
     ProjectPage* projectPage_ = nullptr;
     AtomicDensitiesPage* atomicDensitiesPage_ = nullptr;
@@ -459,7 +460,6 @@ private:
 
     bool Open(const QString &fileName);
     bool compareIntegers(const QString& s1, const QString& s2);
-    bool createDir(QString &fullPathName);
     bool mustSave();
     bool existsinp(QString fullinputName,int def, bool pregunta);
     bool Save(const QString &fileName);
@@ -484,15 +484,12 @@ private:
     void onExternalProcessFinished();
     void onExternalProcessStarted();
     void saveOptions(const QString &fullFileName);
-//    void saveOptions(const QString &fullFileName,int clase);
     void readGeometry(int &natom,QVector<double> &x,QVector<double> &y,QVector<double> &z,QVector<int> &ncarga);
     void readOptions(const QString &fullFileName);
     void readSettings();
     void rename_density_cntfile();
     void rename_pot_cntfile();
-    void set_natom(int);
     void setAllDamPagesEnabled(bool enabled);
-//    void setAnalysisProcedures(bool enabled);
     void SetCurrentFile(const QString &fileName,bool usar,bool modificado);
     void SetDir(const QString &carpeta,const QString &nombre);
     void setPostDamPagesEnabled(bool enabled);
@@ -500,17 +497,12 @@ private:
 
     void writeSettings();
 
-    int get_natom();
     int read_natom(QString fileName);
 
     QByteArray ReadSectionOptions(const char *SectionName, QFile *FileName);
 
     QString FileWithoutExt(const QString &fullFileName);
-    QString FileWithoutPath(const QString &fullFileName);
-    QString Extension(const QString &fullFileName);
-    QString Path(const QString &fullFileName);
     QString planesuffix(int);
-    QString toQString(string v);
 
     QVector3D wu;
     QVector3D wv;

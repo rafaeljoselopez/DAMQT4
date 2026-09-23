@@ -88,7 +88,7 @@ public:
     void setPotentialRadioChecked(bool checked);
     void setProjectData(const QString &projectFolder,
                                 const QString &projectName);
-    void setProjectFolder(const QString& value);
+    // void setProjectFolder(const QString& value);
     void setStopEnabled(bool enabled);
     void setXYZEnabled(bool visible);
     void setXYZVisible(bool visible);

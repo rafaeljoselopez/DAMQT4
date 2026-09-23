@@ -402,7 +402,7 @@
         tiempo = dtime(tarray)
         CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
         CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
-!        write(6,"(1x,'Timing in seconds of processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+!        write(6,"(1x,'Timing in seconds of processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
 !                myrank, tarray(1), tarray(2), tarray(1)+tarray(2)
         if (abortroot .gt. 0) then
             call error(1,'Stop')
@@ -413,7 +413,7 @@
         if (ierr .eq. 0 .and. myrank .eq. 0) then
             write(6,"(/30x,'TIMING (in seconds)',/)")
             do i = 0, nprocs-1
-                write(6,"(1x,'Processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+                write(6,"(1x,'Processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
                     i, timeprocs(2*i+1), timeprocs(2*i+2), timeprocs(2*i+1)+timeprocs(2*i+2)
             enddo
             write(6,"(' ')")
@@ -584,7 +584,7 @@
         endif
         tiempo = dtime(tarray)
         write(6,"(1x,'Timing in seconds of individual points tabulation in proc 0 (user, system, total):', &
-                5x,'(',e12.5,',',e12.5,',',e12.5')')") tarray(1), tarray(2), tarray(1)+tarray(2)
+                5x,'(',e12.5,',',e12.5,',',e12.5,')')") tarray(1), tarray(2), tarray(1)+tarray(2)
     endif
     call MPI_FINALIZE(ierr)
     stop
@@ -1249,7 +1249,7 @@
     integer(KINT) :: i, ia, ierr, isel, iuni, ix, iy, iz, knt, mpireal, nx, ny, nz, nxyz, nxyzrank
     real(KREAL) :: b2a, denrep, dendrvx, dendrvy, dendrvz, denlplc, dxx, dxy, dxz, dyy, dyz, dzz, dV
     real(KREAL) :: qdeform, rx, ry, rz, x, y, z
-    character*4 :: strbux
+    character*4 :: strbux, strdux
     character*256 :: straux
     character*7 :: strcux
     real(KREAL), allocatable :: qdefpos(:), qdefneg(:), qdefposrank(:), qdefnegrank(:)
@@ -1346,6 +1346,10 @@
     if (myrank .eq. 0) then
         if (ldeform) then
             strcux="-deform"
+        else if (lminrep .gt. 0) then
+            write(strbux,'(i2.1)') lminrep
+            write(strdux,'(i2.1)') lmaxrep
+            strcux = trim("-l")//trim(adjustl(strbux))//trim("_")//trim(adjustl(strdux))
         else
             strcux=""
         endif

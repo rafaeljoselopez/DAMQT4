@@ -80,7 +80,7 @@ public:
     void setPageEnabled(bool enabled);
     void setProjectData(const QString &projectFolder,
                                 const QString &projectName);
-    void setProjectFolder(const QString& value);
+    // void setProjectFolder(const QString& value);
     void setQuadratureLength(int value);
     void setQuadratureMaximum(int value);
     void setQuadratureMinimum(int value);

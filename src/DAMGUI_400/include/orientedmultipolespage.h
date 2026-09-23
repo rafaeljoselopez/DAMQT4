@@ -53,7 +53,7 @@ public:
     void setPageEnabled(bool enabled);
     void setProjectData(const QString &projectFolder,
                         const QString &projectName);
-    void setProjectFolder(const QString& value);
+    // void setProjectFolder(const QString& value);
     void setRightSpinMax(int nmax);
     void setRightSpinValue(int nmax);
     void setStopEnabled(bool enabled);

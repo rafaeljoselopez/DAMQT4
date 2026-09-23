@@ -451,7 +451,7 @@ write(9876,*) molecules(nmols)%bs(i)
     tiempo = dtime(tarray)
     write(iout,*)""
     write(iout,"(1x,'Timing in seconds of processor ',' (user, system, total):',/5x,'(', &
-          &e12.5,',',e12.5,',',e12.5')')") &
+          &e12.5,',',e12.5,',',e12.5,')')") &
           &tarray(1), tarray(2), tarray(1)+tarray(2)
     write(iout,*)""
     close(iden)

@@ -46,6 +46,7 @@
 #include <QStandardPaths>
 #include <QMessageBox>
 
+#include <algorithm>
 #include "filedialogutils.h"
 #include "mainwindow.h"
 #include "GlobalInfo.h"
@@ -171,11 +172,7 @@ MainWindow::MainWindow(QWidget *parent)
     );
 
     connect(fchkImporter_, &FchkImporter::outputTextReady,
-        this,
-        [this](const QString& text) {
-            textEdit->setFont(QFont("Courier", 10));
-            textEdit->setPlainText(text);
-        });
+            this, &MainWindow::showOutputText);
 
     connect(fchkImporter_, &FchkImporter::outputFileError,
         this,
@@ -195,11 +192,7 @@ MainWindow::MainWindow(QWidget *parent)
         this, &MainWindow::onMolproImportFinished);
 
     connect(molproImporter_, &MolproImporter::outputTextReady,
-        this,
-        [this](const QString& text) {
-            textEdit->setFont(QFont("Courier", 10));
-            textEdit->setPlainText(text);
-        });
+            this, &MainWindow::showOutputText);
 
     connect(molproImporter_, &MolproImporter::outputFileError,
         this,
@@ -224,14 +217,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(singlePassImporter_, &SinglePassImporter::importFailed,
         this, &MainWindow::onSinglePassImportFailed);
 
-    connect(
-        singlePassImporter_,
-        &SinglePassImporter::outputTextReady,
-        this,
-        [this](const QString& text) {
-            textEdit->setFont(QFont("Courier", 10));
-            textEdit->setPlainText(text);
-        });
+    connect(singlePassImporter_, &SinglePassImporter::outputTextReady,
+            this, &MainWindow::showOutputText);
 
     connect(
         singlePassImporter_,
@@ -375,13 +362,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
     QDLwidget3D = nullpointer;
 }
 
-/* Changes a string to a qstring */
-QString MainWindow::toQString(string v)
-{
-    QString qv=QString(v.c_str());
-    return qv;
-}
-
 /* Changes a qstring to a string */
 string MainWindow::toString(QString qv)
 {
@@ -403,9 +383,15 @@ void MainWindow::update_textedit(QString a){
     }
     else{
         QTextStream in(&file);
-        textEdit->setFont(QFont("Courier",10));
-        textEdit->setPlainText(in.readAll());
+        showOutputText(in.readAll());
     }
+}
+
+
+void MainWindow::showOutputText(const QString &text)
+{
+    textEdit->setFont(QFont("Courier", 10));
+    textEdit->setPlainText(text);
 }
 
 /*****************************************************************************************************/
@@ -597,19 +583,31 @@ bool MainWindow::Open(const QString &fileName)
             return false;
     }
 // Checks whether _2016.damqt, .ggbs or .sgbs, .xyz and .den files exist
-    QString path = Path(fileName);
+    QString path = QFileInfo(fileName).path();
     if (path.at(path.length()-1) != '/') path.append('/');
-    QString damqtfilename = path + FileWithoutExt(fileName)+"_2016.damqt";
-    QString ggbsfilename  = path + FileWithoutExt(fileName)+".ggbs";
-    QString sgbsfilename  = path + FileWithoutExt(fileName)+".sgbs";
-    QString sgbsgzfilename  = path + FileWithoutExt(fileName)+".sgbs.gz";
-    QString sgbsdenfilename  = path + FileWithoutExt(fileName)+".sgbsden";
-    QString sgbsdengzfilename  = path + FileWithoutExt(fileName)+".sgbsden.gz";
-    QString xyzfilename   = path + FileWithoutExt(fileName)+".xyz";
-    QString denfilename   = path + FileWithoutExt(fileName)+".den";
-    QString dengzfilename   = path + FileWithoutExt(fileName)+".den.gz";
-    QString densprsbinfilename   = path + FileWithoutExt(fileName)+".densprsbin";
-    if (((QFile::exists(ggbsfilename) || QFile::exists(sgbsfilename) || QFile::exists(sgbsgzfilename)) &&
+
+    QString fileBaseName = QFileInfo(fileName).completeBaseName();
+    QString fileSuffix = QFileInfo(fileName).suffix().toLower();
+
+    if (fileSuffix == QStringLiteral("gz")) {
+        const QFileInfo compressedBase(fileBaseName);
+        fileSuffix = compressedBase.suffix().toLower();
+        fileBaseName = compressedBase.completeBaseName();
+    }
+
+    QString damqtfilename = path + fileBaseName+"_2016.damqt";
+    QString ggbsfilename  = path + fileBaseName+".ggbs";
+    QString ggbsgzfilename = path + fileBaseName+".ggbs.gz";
+    QString sgbsfilename  = path + fileBaseName+".sgbs";
+    QString sgbsgzfilename  = path + fileBaseName+".sgbs.gz";
+    QString sgbsdenfilename  = path + fileBaseName+".sgbsden";
+    QString sgbsdengzfilename  = path + fileBaseName+".sgbsden.gz";
+    QString xyzfilename   = path + fileBaseName+".xyz";
+    QString denfilename   = path + fileBaseName+".den";
+    QString dengzfilename   = path + fileBaseName+".den.gz";
+    QString densprsbinfilename   = path + fileBaseName+".densprsbin";
+    if (((QFile::exists(ggbsfilename) || QFile::exists(ggbsgzfilename)
+            || QFile::exists(sgbsfilename) || QFile::exists(sgbsgzfilename)) &&
                     (QFile::exists(denfilename) || QFile::exists(dengzfilename) || QFile::exists(densprsbinfilename)))
             || QFile::exists(sgbsdenfilename) || QFile::exists(sgbsdengzfilename) ){
         QApplication::setOverrideCursor(Qt::WaitCursor);
@@ -625,22 +623,25 @@ bool MainWindow::Open(const QString &fileName)
         atomicDensitiesPage_->setlslater(lslater);
         potentialPage_->setExactPotential(false);
         projectPage_->setImportFile(fileName);
-        ImportFile = FileWithoutPath(projectPage_->importFile());
+        ImportFile = QFileInfo(projectPage_->importFile()).fileName();
         ImportFolder = path;
         projectPage_->setProjectFolder(path);
-        projectPage_->setProjectName(FileWithoutExt(fileName));
+        projectPage_->setProjectName(fileBaseName);
         if (lslater){
-            QString sxyzfilename = path + FileWithoutExt(fileName)+".sxyz";
+            QString sxyzfilename = path + fileBaseName+".sxyz";
             if (!(QFile::exists(sxyzfilename))){
                 execsgbs2sxyz(sxyzfilename);
             }
-            set_natom(read_natom(sxyzfilename));
+            natom = read_natom(sxyzfilename);
         }
         else{
-            set_natom(read_natom(ggbsfilename));
+            natom = read_natom(ggbsfilename);
         }
-        if(Extension(fileName)!="sgbs" && Extension(fileName)!="ggbs" && Extension(FileWithoutExt(fileName))!="sgbs"
-                && Extension(fileName)!="sgbsden" && Extension(FileWithoutExt(fileName))!="sgbsden"){
+        // if(QFileInfo(fileName).suffix()!="sgbs" && QFileInfo(fileName).suffix()!="ggbs" && QFileInfo(FileWithoutExt(fileName)).suffix()!="sgbs"
+        //         && QFileInfo(fileName).suffix()!="sgbsden" && QFileInfo(FileWithoutExt(fileName)).suffix()!="sgbsden"){
+        if (fileSuffix != QStringLiteral("sgbs")
+            && fileSuffix != QStringLiteral("ggbs")
+            && fileSuffix != QStringLiteral("sgbsden")) {
             loadDefault(0);
             readOptions(fileName);
         }
@@ -652,9 +653,9 @@ bool MainWindow::Open(const QString &fileName)
         }else{
             setPostDamPagesEnabled(false);
         }
-        QStringList filenames(QString(FileWithoutExt(fileName) +".GAorb*"));
-        filenames << QString(FileWithoutExt(fileName) +".SLorb*");
-        filenames << QString(FileWithoutExt(fileName) +".orb*");
+        QStringList filenames(QString(fileBaseName +".GAorb*"));
+        filenames << QString(fileBaseName +".SLorb*");
+        filenames << QString(fileBaseName +".orb*");
         QStringList files;
         files = QDir(ProjectFolder).entryList(QStringList(filenames),QDir::Files);
         if (!files.isEmpty()) 
@@ -682,8 +683,9 @@ bool MainWindow::Open(const QString &fileName)
         return true;
     }
     else{
-        QMessageBox::warning(this,tr("DAMQT"),tr("Files %1 and/or %2 not found").arg(FileWithoutPath(ggbsfilename))
-                .arg(FileWithoutPath(denfilename)));
+        QMessageBox::warning(this,tr("DAMQT"),tr("Files %1 and/or %2 not found")
+                    .arg(QFileInfo(ggbsfilename).fileName())
+                    .arg(QFileInfo(denfilename).fileName()));
         atomicDensitiesPage_->setEnabled(false);
         orbitalsPage_->setEnabled(false);
         setPostDamPagesEnabled(false);
@@ -694,76 +696,63 @@ bool MainWindow::Open(const QString &fileName)
 }
 
 /* Action: Open a recent file */
+
 void MainWindow::openRecentProjects()
 {
-    QAction *action=qobject_cast<QAction *>(sender());
-    if (action){
-        QString filezdo = ProjectFolder + "zdo";
+    QAction *action = qobject_cast<QAction *>(sender());
 
-        if (QFileInfo::exists(filezdo)){
-            lzdo = true;
-        }
-        else{
-            lzdo = false;
-        }
-        QString filevalence = ProjectFolder + "valence";
-
-        if (QFileInfo::exists(filevalence)){
-            lvalence = true;
-        }
-        else{
-            lvalence = false;
-        }
-        bool res=Open(action->data().toString());
-        QStringList filenames(QString(ProjectName +".GAorb*"));
-        filenames << QString(ProjectName +".SLorb*");
-        filenames << QString(ProjectName +".orb*");
-        QStringList files;
-        files = QDir(ProjectFolder).entryList(QStringList(filenames),QDir::Files);
-        if ((QFile::exists(QString(ProjectFolder+ProjectName+".ggbs")) ||
-             QFile::exists(QString(ProjectFolder+ProjectName+".ggbs.gz")) ||
-             QFile::exists(QString(ProjectFolder+ProjectName+".sgbs")) ||
-                QFile::exists(QString(ProjectFolder+ProjectName+".sgbs.gz")))
-                && (QFile::exists(QString(ProjectFolder+ProjectName+".den")) ||
-                    QFile::exists(QString(ProjectFolder+ProjectName+".den.gz") ))){
-            atomicDensitiesPage_->setEnabled(true);
-            if (res){
-                QMessageBox::information(this,tr("DAMQT"),tr("Project %1 open").arg(ProjectName), QMessageBox::Ok, 0);
-                if (QFile::exists(QString(ProjectFolder+ProjectName+"_2016.damqt"))){
-                    setPostDamPagesEnabled(true);
-                    readOptions(QString(ProjectFolder+ProjectName+".damproj"));
-                }
-            }
-            if (!files.isEmpty())
-                orbitalsPage_->setEnabled(true);
-            else
-                orbitalsPage_->setEnabled(false);
-        }
-        else{
-            QMessageBox::information(this,tr("DAMQT"),tr("Project %1 cannot be opened").arg(ProjectName), QMessageBox::Ok, 0);
-            disable_pages();
-        }
-    }
-    else
+    if (!action)
         return;
+
+    const QString filePath = action->data().toString();
+
+    if (!Open(filePath)) {
+        ArchivosRecientes.removeAll(filePath);
+        UpdateRecentFiles();
+    }
 }
 
 /* Action: Update recent files */
+
 void MainWindow::UpdateRecentFiles()
 {
     QMutableStringListIterator i(ArchivosRecientes);
     while (i.hasNext()) {
-        if (!QFile::exists(i.next())){
+        if (!QFile::exists(i.next())) {
             i.remove();
         }
     }
+
     for (int j = 0; j < MAX_ARCHIVOS_RECIENTES; ++j) {
         if (j < ArchivosRecientes.count()) {
-            QString text = tr("&%1 %2").arg(j+1).arg(FileWithoutPath(ArchivosRecientes[j]));
+
+            const QFileInfo fileInfo(ArchivosRecientes[j]);
+            const QString fileName = fileInfo.fileName();
+
+            bool duplicatedName = false;
+
+            for (int k = 0; k < ArchivosRecientes.count(); ++k) {
+                if (k != j &&
+                    QFileInfo(ArchivosRecientes[k]).fileName() == fileName) {
+                    duplicatedName = true;
+                    break;
+                }
+            }
+
+            QString displayName = fileName;
+
+            if (duplicatedName) {
+                displayName += tr(" — %1")
+                                   .arg(fileInfo.dir().dirName());
+            }
+
+            const QString text =
+                tr("&%1 %2").arg(j + 1).arg(displayName);
+
             AccRecentFiles[j]->setText(text);
             AccRecentFiles[j]->setData(ArchivosRecientes[j]);
             AccRecentFiles[j]->setVisible(true);
-        } 
+        }
         else {
             AccRecentFiles[j]->setVisible(false);
         }
@@ -1092,10 +1081,24 @@ void MainWindow::CreateMenus()
     FileMenu->addAction(AccPrint);
     FileMenu->addAction(AccPdf);
     FileMenu->addAction(AccExternal);
-    if(MAX_ARCHIVOS_RECIENTES>0){
+    // if(MAX_ARCHIVOS_RECIENTES>0){
+    //     FileMenu->addSeparator();
+    //     for (int i = 0; i < MAX_ARCHIVOS_RECIENTES; ++i){
+    //         FileMenu->addAction(AccRecentFiles[i]);
+    //     }
+    // }
+    if (MAX_ARCHIVOS_RECIENTES > 0) {
         FileMenu->addSeparator();
-        for (int i = 0; i < MAX_ARCHIVOS_RECIENTES; ++i){
-            FileMenu->addAction(AccRecentFiles[i]);
+
+        RecentProjectsMenu = FileMenu->addMenu(tr("Recent Projects"));
+
+        RecentProjectsMenu->setContextMenuPolicy(Qt::CustomContextMenu);
+
+        connect(RecentProjectsMenu, &QMenu::customContextMenuRequested,
+                this, &MainWindow::showRecentProjectContextMenu);
+
+        for (int i = 0; i < MAX_ARCHIVOS_RECIENTES; ++i) {
+            RecentProjectsMenu->addAction(AccRecentFiles[i]);
         }
     }
     FileMenu->addSeparator();
@@ -1112,6 +1115,32 @@ void MainWindow::CreateMenus()
     HelpMenu->addAction(AccAbout);
     HelpMenu->addAction(AccPerformance);
     HelpMenu->addAction(AccAboutQt);
+}
+
+void MainWindow::showRecentProjectContextMenu(const QPoint& pos)
+{
+    QAction *recentAction = RecentProjectsMenu->actionAt(pos);
+
+    if (!recentAction)
+        return;
+
+    const QString filePath = recentAction->data().toString();
+
+    if (filePath.isEmpty())
+        return;
+
+    QMenu contextMenu(this);
+
+    QAction *removeAction =
+        contextMenu.addAction(tr("Remove from Recent Projects"));
+
+    QAction *selectedAction =
+        contextMenu.exec(RecentProjectsMenu->mapToGlobal(pos));
+
+    if (selectedAction == removeAction) {
+        ArchivosRecientes.removeAll(filePath);
+        UpdateRecentFiles();
+    }
 }
 
 /***************************************************************************/
@@ -1267,10 +1296,7 @@ void MainWindow::CreateLeftMenu()
             this, &MainWindow::atdenslmaxexp_changed);
 
     connect(atomicDensitiesPage_, &AtomicDensitiesPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
+            this, &MainWindow::showOutputText);
 
     connect(atomicDensitiesPage_, &AtomicDensitiesPage::statusMessageRequested,
             this, [this](const QString &message) {
@@ -1278,10 +1304,7 @@ void MainWindow::CreateLeftMenu()
             });
 
     connect(atomicDensitiesPage_, &AtomicDensitiesPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
+            this, &MainWindow::showOutputText);
 
     connect(atomicDensitiesPage_, &AtomicDensitiesPage::execPagesEnabledChanged,
             this, [this](bool enabled) {
@@ -1309,29 +1332,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << densityPage_;
 
-    connect(densityPage_, &DensityPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(densityPage_, &DensityPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(densityPage_, &DensityPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(densityPage_, &DensityPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(densityPage_, &DensityPage::execRequested,
-            this, &MainWindow::execDamden);
-
-    connect(densityPage_, &DensityPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(densityPage_, &MainWindow::execDamden);
 
     toolBox->addItem(densityPage_, QIcon(":/images/icon.png"), tr("Density"));
 
@@ -1342,29 +1343,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << potentialPage_;
 
-    connect(potentialPage_, &PotentialPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(potentialPage_, &PotentialPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(potentialPage_, &PotentialPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(potentialPage_, &PotentialPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(potentialPage_, &PotentialPage::execRequested,
-            this, &MainWindow::execDampot);
-
-    connect(potentialPage_, &PotentialPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(potentialPage_, &MainWindow::execDampot);
 
     toolBox->addItem(potentialPage_,QIcon(":/images/icon.png"),tr("Electrostatic potential"));
 
@@ -1373,29 +1352,7 @@ void MainWindow::CreateLeftMenu()
     orbitalsPage_ = new OrbitalsPage(mpi, toolBox);
     orbitalsPage_->setEnabled(false);
 
-    connect(orbitalsPage_, &OrbitalsPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(orbitalsPage_, &OrbitalsPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(orbitalsPage_, &OrbitalsPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(orbitalsPage_, &OrbitalsPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(orbitalsPage_, &OrbitalsPage::execRequested,
-            this, &MainWindow::execDamorb);
-
-    connect(orbitalsPage_, &OrbitalsPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(orbitalsPage_, &MainWindow::execDamorb);
 
     toolBox->addItem(orbitalsPage_, QIcon(":/images/icon.png"), tr("Molecular orbitals"));
 
@@ -1406,29 +1363,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << topographyPage_;
 
-    connect(topographyPage_, &TopographyPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(topographyPage_, &TopographyPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(topographyPage_, &TopographyPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(topographyPage_, &TopographyPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(topographyPage_, &TopographyPage::execRequested,
-            this, &MainWindow::execDamTopography);
-
-    connect(topographyPage_, &TopographyPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(topographyPage_, &MainWindow::execDamTopography);
 
     toolBox->addItem(topographyPage_, QIcon(":/images/icon.png"), tr("Molecular topography"));
 
@@ -1439,29 +1374,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << sigmaHolePage_;
 
-    connect(sigmaHolePage_, &SigmaHolePage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(sigmaHolePage_, &SigmaHolePage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(sigmaHolePage_, &SigmaHolePage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(sigmaHolePage_, &SigmaHolePage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(sigmaHolePage_, &SigmaHolePage::execRequested,
-            this, &MainWindow::execDamSGhole);
-
-    connect(sigmaHolePage_, &SigmaHolePage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(sigmaHolePage_, &MainWindow::execDamSGhole);
 
     toolBox->addItem(sigmaHolePage_, QIcon(":/images/icon.png"), tr("Surface potential"));
 
@@ -1472,30 +1385,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << fieldLinesPage_;
 
-
-    connect(fieldLinesPage_, &FieldLinesPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(fieldLinesPage_, &FieldLinesPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(fieldLinesPage_, &FieldLinesPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(fieldLinesPage_, &FieldLinesPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(fieldLinesPage_, &FieldLinesPage::execRequested,
-            this, &MainWindow::execDamfield);
-
-    connect(fieldLinesPage_, &FieldLinesPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(fieldLinesPage_, &MainWindow::execDamfield);
 
     toolBox->addItem(fieldLinesPage_, QIcon(":/images/icon.png"), tr("Electric field"));
 
@@ -1506,30 +1396,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << densityGradientPage_;
 
-    connect(densityGradientPage_, &DensityGradientPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(densityGradientPage_, &DensityGradientPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(densityGradientPage_, &DensityGradientPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(densityGradientPage_, &DensityGradientPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-
-    connect(densityGradientPage_, &DensityGradientPage::execRequested,
-            this, &MainWindow::execDamdengrad);
-
-    connect(densityGradientPage_, &DensityGradientPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(densityGradientPage_, &MainWindow::execDamdengrad);
 
     toolBox->addItem(densityGradientPage_, QIcon(":/images/icon.png"), tr("Density gradient"));
 
@@ -1540,29 +1407,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << hfForcesPage_;
 
-    connect(hfForcesPage_, &HFForcesPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(hfForcesPage_, &HFForcesPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(hfForcesPage_, &HFForcesPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(hfForcesPage_, &HFForcesPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(hfForcesPage_, &HFForcesPage::execRequested,
-            this, &MainWindow::execDamforces);
-
-    connect(hfForcesPage_, &HFForcesPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(hfForcesPage_, &MainWindow::execDamforces);
 
     toolBox->addItem(hfForcesPage_, QIcon(":/images/icon.png"), tr("Hellmann-Feynman forces on nuclei"));
 
@@ -1573,29 +1418,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << radialFactorsPage_;
 
-    connect(radialFactorsPage_, &RadialFactorsPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(radialFactorsPage_, &RadialFactorsPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(radialFactorsPage_, &RadialFactorsPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(radialFactorsPage_, &RadialFactorsPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(radialFactorsPage_, &RadialFactorsPage::execRequested,
-            this, &MainWindow::execDamfrad);
-
-    connect(radialFactorsPage_, &RadialFactorsPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(radialFactorsPage_, &MainWindow::execDamfrad);
 
     toolBox->addItem(radialFactorsPage_, QIcon(":/images/icon.png"), tr("Radial factors"));
 
@@ -1606,29 +1429,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << orientedMultipolesPage_;
 
-    connect(orientedMultipolesPage_, &OrientedMultipolesPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(orientedMultipolesPage_, &OrientedMultipolesPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(orientedMultipolesPage_, &OrientedMultipolesPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(orientedMultipolesPage_, &OrientedMultipolesPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(orientedMultipolesPage_, &OrientedMultipolesPage::execRequested,
-            this, &MainWindow::execDammultrot);
-
-    connect(orientedMultipolesPage_, &OrientedMultipolesPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(orientedMultipolesPage_, &MainWindow::execDammultrot);
 
     toolBox->addItem(orientedMultipolesPage_, QIcon(":/images/icon.png"), tr("Oriented multipoles"));
 
@@ -1639,29 +1440,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << zjExpansionPage_;
 
-    connect(zjExpansionPage_, &ZJExpansionPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(zjExpansionPage_, &ZJExpansionPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(zjExpansionPage_, &ZJExpansionPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(zjExpansionPage_, &ZJExpansionPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(zjExpansionPage_, &ZJExpansionPage::execRequested,
-            this, &MainWindow::execDamZJ);
-
-    connect(zjExpansionPage_, &ZJExpansionPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(zjExpansionPage_, &MainWindow::execDamZJ);
 
     toolBox->addItem(zjExpansionPage_, QIcon(":/images/icon.png"), tr("Zernike-Jacobi density expansion"));
     
@@ -1672,29 +1451,7 @@ void MainWindow::CreateLeftMenu()
 
     postDamPages_ << zjDensityPage_;
 
-    connect(zjDensityPage_, &ZJDensityPage::outputTextReady,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-            });
-
-    connect(zjDensityPage_, &ZJDensityPage::showInputFileRequested,
-            this, [this](const QString &text) {
-                textEdit->setFont(QFont("Courier", 10));
-                textEdit->setPlainText(text);
-                });
-
-    connect(zjDensityPage_, &ZJDensityPage::externalProcessStarted,
-            this, &MainWindow::onExternalProcessStarted);
-
-    connect(zjDensityPage_, &ZJDensityPage::externalProcessFinished,
-            this, &MainWindow::onExternalProcessFinished);
-
-    connect(zjDensityPage_, &ZJDensityPage::execRequested,
-            this, &MainWindow::execDamdenZJ);
-
-    connect(zjDensityPage_, &ZJDensityPage::openOutputRequested,
-            this, &MainWindow::importOUT);
+    connectExecutablePage(zjDensityPage_, &MainWindow::execDamdenZJ);
 
     toolBox->addItem(zjDensityPage_, QIcon(":/images/icon.png"), tr("Zernike-Jacobi density tabulation"));
 
@@ -1878,7 +1635,7 @@ void MainWindow::execImport()
     if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
     ImportFile = QFileInfo(DirNombreImport).fileName();
 
-    QString suffix=Extension(DirNombreImport);
+    QString suffix = QFileInfo(DirNombreImport).suffix();
     bool isgzipped = false;
     if (suffix =="gz"){
         const int ios = QProcess::execute(QStringLiteral("gunzip"),QStringList{DirNombreImport});
@@ -1886,7 +1643,8 @@ void MainWindow::execImport()
             return;
         }
         DirNombreImport = DirNombreImport.remove(-3,3);
-        suffix=Extension(DirNombreImport);
+        suffix = QFileInfo(DirNombreImport).suffix();
+        ImportFile = QFileInfo(DirNombreImport).fileName();
         isgzipped = true;
     }
     if (suffix=="ggbs"){
@@ -1923,8 +1681,35 @@ void MainWindow::execImport()
     }
     potentialPage_->setExactPotential(false);
 
-    if (isgzipped){
-        QProcess::execute(QStringLiteral("gzip"),QStringList{DirNombreImport});
+    // if (isgzipped){
+    //     QProcess::execute(QStringLiteral("gzip"),QStringList{DirNombreImport});
+    // }
+
+    if (isgzipped) {
+        const int ios = QProcess::execute(
+            QStringLiteral("gzip"),
+            QStringList{DirNombreImport}
+            );
+
+        qDebug() << "gzip file:" << DirNombreImport;
+        qDebug() << "gzip exit code:" << ios;
+    }
+
+    if (isgzipped && (suffix == QStringLiteral("sgbs") ||
+                      suffix == QStringLiteral("ggbs"))) {
+
+        const QString projectImport =
+            QDir(ProjectFolder).filePath(
+                ProjectName + QStringLiteral(".") + suffix
+                );
+
+        const int ios = QProcess::execute(
+            QStringLiteral("gzip"),
+            QStringList{projectImport}
+            );
+
+        qDebug() << "gzip project file:" << projectImport;
+        qDebug() << "gzip project exit code:" << ios;
     }
 }
 
@@ -1958,11 +1743,11 @@ void MainWindow::importFile()
 
     fileDialog.setNameFilters({
         tr("Import data from") +
-            " (*.ggbs *.sgbs *.sgbsden *.sgbsden.gz *.fchk *.coord "
+            " (*.ggbs *.ggbs.gz *.sgbs *.sgbs.gz *.sgbsden *.sgbsden.gz *.fchk *.coord "
             "*.basis *.mos *.mkl *.out *.xml *.aux *.nwcout)",
 
         tr("Geometry and basis set files") +
-            " (*.ggbs *.sgbs *.sgbsden *.sgbsden.gz *.coord *.basis)",
+            " (*.ggbs *.ggbs.gz *.sgbs *.sgbs.gz *.sgbsden *.sgbsden.gz *.coord *.basis)",
 
         tr("fchk files") + " (*.fchk)",
 
@@ -2013,9 +1798,21 @@ void MainWindow::importFile()
         ProjectFolder + QStringLiteral("valence")
     );
 
-    projectPage_->setProjectName(
-        fileInfo.completeBaseName()
-    );
+    // projectPage_->setProjectName(
+    //     fileInfo.completeBaseName()
+    // );
+
+    QString projectName = fileInfo.completeBaseName();
+
+    if (fileInfo.suffix().compare(
+            QStringLiteral("gz"), Qt::CaseInsensitive) == 0) {
+        projectName = QFileInfo(projectName).completeBaseName();
+    }
+
+    projectPage_->setProjectName(projectName);
+
+    ProjectName =
+        projectPage_->projectName();
 
     ProjectName =
         projectPage_->projectName();
@@ -2023,9 +1820,15 @@ void MainWindow::importFile()
     const QString suffix =
         fileInfo.suffix().toLower();
 
+    const QString baseSuffix =
+        QFileInfo(fileInfo.completeBaseName()).suffix().toLower();
+
     if (suffix == QStringLiteral("ggbs") ||
         suffix == QStringLiteral("sgbs") ||
-        suffix == QStringLiteral("sgbsden")) {
+        suffix == QStringLiteral("sgbsden") ||
+        (suffix == QStringLiteral("gz") &&
+         (baseSuffix == QStringLiteral("sgbs") ||
+          baseSuffix == QStringLiteral("sgbsden")))) {
 
         const bool opened = Open(fileName);
 
@@ -2099,8 +1902,8 @@ void MainWindow::TXTImport_changed()
     if(projectPage_->importFile().isEmpty()){
         projectPage_->setExecEnabled(false);
     }else{
-        ImportFile = FileWithoutPath(projectPage_->importFile());
-        ImportFolder = Path(projectPage_->importFile());
+        ImportFile = QFileInfo(projectPage_->importFile()).fileName();
+        ImportFolder = QFileInfo(projectPage_->importFile()).path();
         if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
         projectPage_->setExecEnabled(true);
         projectPage_->setProjectFolderEnabled(true);
@@ -2116,41 +1919,30 @@ void MainWindow::TXTImport_changed()
 void MainWindow::TXTProjectFolder_changed(const QString &cad)
 {
     ProjectFolder = cad;
-    if (cad.mid(cad.length()-1,1) != "/"){
-            ProjectFolder.append("/");
-    }
-    atomicDensitiesPage_->setProjectFolder(ProjectFolder);
-    orbitalsPage_->setProjectFolder(ProjectFolder);
-    topographyPage_->setProjectFolder(ProjectFolder);
-    sigmaHolePage_->setProjectFolder(ProjectFolder);
-    fieldLinesPage_->setProjectFolder(ProjectFolder);
-    zjDensityPage_->setProjectFolder(ProjectFolder);
+
+    if (!ProjectFolder.isEmpty() && !ProjectFolder.endsWith('/'))
+        ProjectFolder.append('/');
+
+    setFileDialogProjectFolders(ProjectFolder);
+    updateProjectAvailability();
 }
 
 /* Textbox with project name */
 
 void MainWindow::TXTProjectName_changed(const QString& name)
 {
-    if (projectPage_->projectName().isEmpty()) {
-        projectPage_->setExecEnabled(false);
-    } else if (!projectPage_->importFile().isEmpty()) {
-        projectPage_->setExecEnabled(true);
-    }
-
     ProjectName = name;
+
+    projectPage_->setExecEnabled(
+        !ProjectName.isEmpty() &&
+        !projectPage_->importFile().isEmpty()
+        );
 
     SetCurrentFile(QString(), false, true);
 
-    densityPage_->setOutputPrefix(ProjectName);
-    potentialPage_->setOutputPrefix(ProjectName);
-    hfForcesPage_->setOutputPrefix(ProjectName);
-    fieldLinesPage_->setOutputPrefix(ProjectName);
-    sigmaHolePage_->setOutputPrefix(ProjectName);
-    topographyPage_->setOutputPrefix(ProjectName);
-    radialFactorsPage_->setOutputPrefix(ProjectName);
-    orientedMultipolesPage_->setOutputPrefix(ProjectName);
-    orbitalsPage_->setOutputPrefix(ProjectName);
-    zjDensityPage_->setOutputPrefix(ProjectName);
+    setOutputPrefixes(ProjectName);
+
+    updateProjectAvailability();
 }
 
 
@@ -2187,7 +1979,7 @@ void MainWindow::execGgbsDen()
         if (msgBox.exec() != QMessageBox::Yes)
             return;
 
-        createDir(ProjectFolder);
+        QDir().mkpath(ProjectFolder);
 
         projectDir.setPath(ProjectFolder);
 
@@ -2290,6 +2082,34 @@ void MainWindow::execGgbsDen()
         return;
     }
 
+    const QStringList auxiliarySuffixes = {
+        QStringLiteral("_2016.dmqtv"),
+        QStringLiteral(".GAorba"),
+        QStringLiteral(".GAorbb"),
+        QStringLiteral(".SLorba")
+    };
+
+    for (const QString &suffix : auxiliarySuffixes) {
+        const QString sourceFile =
+            importDir.filePath(importBaseName + suffix);
+
+        if (!QFileInfo::exists(sourceFile))
+            continue;
+
+        const QString targetFile =
+            outputDir.filePath(ProjectName + suffix);
+
+        if (!copyReplacing(sourceFile, targetFile)) {
+            QMessageBox::warning(
+                this,
+                tr("DAMQT"),
+                tr("Cannot copy auxiliary file %1 to %2.")
+                    .arg(sourceFile, targetFile)
+                );
+            return;
+        }
+    }
+
     defineRanges();
 
     atomicDensitiesPage_->setEnabled(true);
@@ -2326,7 +2146,7 @@ void MainWindow::execSxyzDen()
         if (msgBox.exec() != QMessageBox::Yes)
             return;
 
-        createDir(ProjectFolder);
+        QDir().mkpath(ProjectFolder);
 
         projectDir.setPath(ProjectFolder);
 
@@ -2361,12 +2181,38 @@ void MainWindow::execSxyzDen()
     const QString sourceImport =
         importDir.filePath(ImportFile);
 
+    // const QFileInfo importInfo(ImportFile);
+    // const QString importSuffix =
+    //     importInfo.suffix().toLower();
+
+    // const QString importBaseName =
+    //     importInfo.completeBaseName();
+
+    // QString targetExtension;
+
+    // if (importSuffix == QStringLiteral("sgbs")) {
+    //     targetExtension = QStringLiteral(".sgbs");
+    // }
+    // else if (importSuffix == QStringLiteral("sgbsden")) {
+    //     targetExtension = QStringLiteral(".sgbsden");
+    // }
     const QFileInfo importInfo(ImportFile);
-    const QString importSuffix =
+
+    QString importSuffix =
         importInfo.suffix().toLower();
 
-    const QString importBaseName =
+    QString importBaseName =
         importInfo.completeBaseName();
+
+    bool importIsGzipped = false;
+
+    if (importSuffix == QStringLiteral("gz")) {
+        importIsGzipped = true;
+
+        const QFileInfo compressedBase(importBaseName);
+        importSuffix = compressedBase.suffix().toLower();
+        importBaseName = compressedBase.completeBaseName();
+    }
 
     QString targetExtension;
 
@@ -2385,6 +2231,9 @@ void MainWindow::execSxyzDen()
         );
         return;
     }
+
+    if (importIsGzipped)
+        targetExtension += QStringLiteral(".gz");
 
     const QString targetImport =
         outputDir.filePath(
@@ -2476,7 +2325,7 @@ void MainWindow::readFchk()
     QString DirNombreImport = ImportFolder+ImportFile;
 //    QFile file(DirNombreImport);
     QDir path(ProjectFolder);
-    QString filepath=ProjectFolder + FileWithoutPath(DirNombreImport); // + ".fchk";
+    QString filepath=ProjectFolder + QFileInfo(DirNombreImport).fileName(); // + ".fchk";
     if (!path.exists(ProjectFolder)) {
         QMessageBox msgBox;
         msgBox.setInformativeText(QString(tr("Project %1 not found")).arg(ProjectFolder)+"\n"+tr("Do you wish to create?"));
@@ -2488,7 +2337,7 @@ void MainWindow::readFchk()
         msgBox.setIcon(QMessageBox::Warning);
         int ret = msgBox.exec();
         if (ret == QMessageBox::Yes){
-            createDir(ProjectFolder);
+            QDir().mkpath(ProjectFolder);
             statusBar()->showMessage(tr("Project succesfully created"), 2000);
             setPostDamPagesEnabled(false);
         }else{
@@ -2513,12 +2362,20 @@ void MainWindow::readFchk()
 }
 
 void MainWindow::create_damproj(int exitCode, QProcess::ExitStatus exitStatus){
-    if(exitStatus == QProcess::NormalExit && exitCode == 0){
-        QString damprojFile = ProjectFolder+ProjectName+".damproj";
-        if (!QFile::exists(damprojFile))  {
+
+    if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+        const QString damprojFile =
+            QDir(ProjectFolder).filePath(
+                ProjectName + QStringLiteral(".damproj")
+                );
+
+        if (!QFile::exists(damprojFile)) {
             loadDefault(1);
             saveOptions(damprojFile);
         }
+
+        SetCurrentFile(damprojFile, true, false);
+        updateProjectAvailability();
     }
 }
 
@@ -2538,7 +2395,7 @@ void MainWindow::readMOLEKEL()
         msgBox.setIcon(QMessageBox::Warning);
         int ret = msgBox.exec();
         if (ret == QMessageBox::Yes){
-            createDir(ProjectFolder);
+            QDir().mkpath(ProjectFolder);
             statusBar()->showMessage(tr("Project succesfully created"), 2000);
             setPostDamPagesEnabled(false);
         }else{
@@ -2582,10 +2439,10 @@ void MainWindow::readMolpro()
 {
     if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
     QString DirNombreImport = ImportFolder+ImportFile;
-    QString suffix=Extension(DirNombreImport);
+    QString suffix = QFileInfo(DirNombreImport).suffix();
     QFile file(DirNombreImport);
     QDir path(ProjectFolder);
-    QString filepath=ProjectFolder + FileWithoutPath(DirNombreImport);
+    QString filepath=ProjectFolder + QFileInfo(DirNombreImport).fileName();
     QStringList Parameters;
     if (suffix=="out"){
         if (!path.exists(ProjectFolder)) {
@@ -2599,7 +2456,7 @@ void MainWindow::readMolpro()
             msgBox.setIcon(QMessageBox::Warning);
             const int ret = msgBox.exec();
             if (ret == QMessageBox::Yes){
-                createDir(ProjectFolder);
+                QDir().mkpath(ProjectFolder);
                 statusBar()->showMessage(tr("Project succesfully created"), 2000);
                 setPostDamPagesEnabled(false);
             }else{
@@ -2645,7 +2502,7 @@ void MainWindow::readMopac()
     QString DirNombreImport = ImportFolder+ImportFile;
 //    QFile file(DirNombreImport);
     QDir path(ProjectFolder);
-    QString filepath=ProjectFolder + FileWithoutPath(DirNombreImport);
+    QString filepath=ProjectFolder + QFileInfo(DirNombreImport).fileName();
     QStringList Parameters;
     QString strprocess;
     if (!path.exists(ProjectFolder)) {
@@ -2659,7 +2516,7 @@ void MainWindow::readMopac()
         msgBox.setIcon(QMessageBox::Warning);
         int ret = msgBox.exec();
         if (ret == QMessageBox::Yes){
-            createDir(ProjectFolder);
+            QDir().mkpath(ProjectFolder);
             statusBar()->showMessage(tr("Project succesfully created"), 2000);
             setPostDamPagesEnabled(false);
         }else{
@@ -2719,7 +2576,7 @@ void MainWindow::readTurbom()
         msgBox.setIcon(QMessageBox::Warning);
         int ret = msgBox.exec();
         if (ret == QMessageBox::Yes){
-            createDir(ProjectFolder);
+            QDir().mkpath(ProjectFolder);
             statusBar()->showMessage(tr("Project succesfully created"), 2000);
             setPostDamPagesEnabled(false);
         }else{
@@ -2778,7 +2635,7 @@ void MainWindow::readNWChem()
         msgBox.setIcon(QMessageBox::Warning);
         int ret = msgBox.exec();
         if (ret == QMessageBox::Yes){
-            createDir(ProjectFolder);
+            QDir().mkpath(ProjectFolder);
             statusBar()->showMessage(tr("Project succesfully created"), 2000);
             setPostDamPagesEnabled(false);
         }else{
@@ -2830,34 +2687,15 @@ void MainWindow::loadDefault(int all)
 {
     if (all==0){      
         projectPage_->loadDefault();    // projectPage_: Project
-        set_natom(0);
+        natom = 0;
     }
     if (!projectPage_->projectName().isEmpty()){
-        densityPage_->setOutputPrefix(projectPage_->projectName());
-        potentialPage_->setOutputPrefix(projectPage_->projectName());
-        sigmaHolePage_->setOutputPrefix(projectPage_->projectName());
-        topographyPage_->setOutputPrefix(projectPage_->projectName());
-        hfForcesPage_->setOutputPrefix(projectPage_->projectName());
-        fieldLinesPage_->setOutputPrefix(projectPage_->projectName());
-        densityGradientPage_->setOutputPrefix(projectPage_->projectName());
-        radialFactorsPage_->setOutputPrefix(projectPage_->projectName());
-        orientedMultipolesPage_->setOutputPrefix(projectPage_->projectName());
-        orbitalsPage_->setOutputPrefix(projectPage_->projectName());
-        zjDensityPage_->setOutputPrefix(projectPage_->projectName());
+        setOutputPrefixes(projectPage_->projectName());
     }
     else{
-        densityPage_->setOutputPrefix("");
-        potentialPage_->setOutputPrefix("");
-        sigmaHolePage_->setOutputPrefix("");
-        topographyPage_->setOutputPrefix("");
-        hfForcesPage_->setOutputPrefix("");
-        fieldLinesPage_->setOutputPrefix("");
-        densityGradientPage_->setOutputPrefix("");
-        radialFactorsPage_->setOutputPrefix("");
-        orientedMultipolesPage_->setOutputPrefix("");
-        orbitalsPage_->setOutputPrefix("");
-        zjDensityPage_->setOutputPrefix("");
+        setOutputPrefixes(QString());
     }
+
     atomicDensitiesPage_->loadDefault();
     densityPage_->loadDefault();
     potentialPage_->loadDefault();
@@ -2868,7 +2706,7 @@ void MainWindow::loadDefault(int all)
     densityGradientPage_->loadDefault();
     radialFactorsPage_->loadDefault();
     orientedMultipolesPage_->loadDefault();
-    orientedMultipolesPage_->setNumAtoms(get_natom());
+    orientedMultipolesPage_->setNumAtoms(natom);
     orbitalsPage_->loadDefault();
     zjExpansionPage_->loadDefault();
     zjDensityPage_->loadDefault();
@@ -2900,7 +2738,7 @@ void MainWindow::readOptions(const QString &fullFileName)
 
     string v = CIniFile::GetValue("ImportFolder","PROJECTSECT",file);
     ImportFolder = QString(v.c_str());
-    if (ImportFolder.isEmpty()) ImportFolder = Path(fullFileName);
+    if (ImportFolder.isEmpty()) ImportFolder = QFileInfo(fullFileName).path();
 
     projectPage_->readFromFile(file, ImportFolder); //    projectPage_: Project
     initializeNames();
@@ -2946,14 +2784,8 @@ void MainWindow::readOptions(const QString &fullFileName)
 void MainWindow::initializeNames()
 {
     //    Default names are project name. Will be overwritten below if an alternative name has been given
-    densityPage_->setOutputPrefix(projectPage_->projectName());
-    hfForcesPage_->setOutputPrefix(projectPage_->projectName());
-    fieldLinesPage_->setOutputPrefix(projectPage_->projectName());
-    potentialPage_->setOutputPrefix(projectPage_->projectName());
-    topographyPage_->setOutputPrefix(projectPage_->projectName());
-    radialFactorsPage_->setOutputPrefix(projectPage_->projectName());
-    orientedMultipolesPage_->setOutputPrefix(projectPage_->projectName());
-    orbitalsPage_->setOutputPrefix(projectPage_->projectName());
+
+    setOutputPrefixes(projectPage_->projectName());
 
     QString sgbsfile =      ProjectFolder+"/"+projectPage_->projectName()+".sgbs";
     QString sgbsgzfile =    ProjectFolder+"/"+projectPage_->projectName()+".sgbs.gz";
@@ -2974,15 +2806,17 @@ void MainWindow::initializeNames()
     potentialPage_->setExactPotential(false);
     if (lslater){
         QString fileaux = FileWithoutExt(projectPage_->importFile());
-        if (Extension(fileaux) == "sgbs" || Extension(fileaux) == "sgbsden" ) fileaux = FileWithoutExt(fileaux);
+        if (QFileInfo(fileaux).suffix() == "sgbs" ||
+            QFileInfo(fileaux).suffix() == "sgbsden")
+            fileaux = FileWithoutExt(fileaux);
         QString sxyzfilename = ProjectFolder+"/"+ProjectName+".sxyz";
         if (!(QFile::exists(sxyzfilename))){
             execsgbs2sxyz(sxyzfilename);
         }
-        set_natom(read_natom(sxyzfilename));
+        natom = read_natom(sxyzfilename);
     }
     else{
-        set_natom(read_natom(ggbsfile));
+        natom = read_natom(ggbsfile);
     }
 }
 
@@ -3013,189 +2847,70 @@ QByteArray MainWindow::ReadSectionOptions(const char *SectionName, QFile *FileNa
 void MainWindow::saveOptions(const QString &fullFileName)
 {
     QString filezdo = ProjectFolder + "zdo";
-//    if (QFileInfo(filezdo).exists()){
-    if (QFileInfo::exists(filezdo)){
-        lzdo = true;
-    }
-    else{
-        lzdo = false;
-    }
-    QString filevalence = ProjectFolder + "valence";
-//    if (QFileInfo(filevalence).exists()){
-    if (QFileInfo::exists(filevalence)){
-        lvalence = true;
-    }
-    else{
-        lvalence = false;
-    }
-    string file = toString(fullFileName);
-    bool *printwarns = new bool;
 
-    QString *warns = new QString(tr("Warning: failed saving the following options") + ":\n");
+    lzdo = QFileInfo::exists(ProjectFolder + "zdo");
+    lvalence = QFileInfo::exists(ProjectFolder + "valence");
+    string file = toString(fullFileName);
+    bool printwarns = false;
+
+    QString warns = tr("Warning: failed saving the following options") + ":\n";
+
     QFile files(fullFileName);
     if (!files.isOpen()){
         files.open(QFile::Append | QFile::WriteOnly);
     }
-    *printwarns = false;
 
-    saveOptionsProject(file, printwarns, warns);
-    saveOptionsDam(file, printwarns, warns);
-    saveOptionsDamden(file, printwarns, warns);
-    saveOptionsDampot(file, printwarns, warns);
-    saveOptionsDamforces(file, printwarns, warns);
-    saveOptionsDamfield(file, printwarns, warns);
-    saveOptionsDamfrad(file, printwarns, warns);
-    saveOptionsDammultrot(file, printwarns, warns);
-    saveOptionsOrbitals(file, printwarns, warns);
-    saveOptionsTopography(file, printwarns, warns);
-    saveOptionsZJExpansion(file, printwarns, warns);
-    saveOptionsZJDensity(file, printwarns, warns);
-    saveOptionsDamdenGrad(file, printwarns, warns);
-    saveOptionsSGhole(file, printwarns, warns);
+    projectPage_->writeToFile(
+        file, iswindows, &printwarns, &warns);
 
-    if (*printwarns) {
+    atomicDensitiesPage_->writeToFile(
+        file, iswindows, &printwarns, &warns);
+
+    densityPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    potentialPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    hfForcesPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    fieldLinesPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    radialFactorsPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    orientedMultipolesPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    orbitalsPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    topographyPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    zjExpansionPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    zjDensityPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    densityGradientPage_->writeToFile(
+        file, &printwarns, &warns);
+
+    sigmaHolePage_->writeToFile(
+        file, &printwarns, &warns);
+
+    if (printwarns) {
         QMessageBox::warning(
             this,
             tr("Error saving options"),
-            *warns
+            warns
         );
     }
 
     files.close();
-}
-
-//    Saves options only clase 0: Project
-void MainWindow::saveOptionsProject(string file, bool *printwarns, QString *warns)
-{
-    projectPage_->writeToFile(
-        file,
-        iswindows,
-        printwarns,
-        warns);
-}
-
-//    Saves options clase 0 || clase 1: Project || G-DAM || DAM
-void MainWindow::saveOptionsDam(string file, bool *printwarns, QString *warns){
-    atomicDensitiesPage_->writeToFile(
-        file,
-        iswindows,
-        printwarns,
-        warns);
-}
-
-//    Saves options clase 0 || clase 2: Project || DAMDEN
-
-void MainWindow::saveOptionsDamden(std::string file, bool* printwarns, QString* warns)
-{
-    densityPage_->writeToFile(
-        file,
-        printwarns,
-        warns
-    );
-}
-
-//    Saves options clase 0 || clase 3: Project || DAMPOT
-void MainWindow::saveOptionsDampot(string file, bool *printwarns, QString *warns)
-{
-    potentialPage_->writeToFile(
-        file,
-        printwarns,
-        warns
-    );
-}
-
-//    Saves options clase 0 || clase 8: Project || DAMORB
-void MainWindow::saveOptionsOrbitals(string file, bool *printwarns, QString *warns)
-{
-    orbitalsPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-//    Saves options clase 0 || clase 9: Project || DAMTOPO
-void MainWindow::saveOptionsTopography(string file, bool *printwarns, QString *warns)
-{
-    topographyPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-
-//    Saves options clase 0 || clase 13: Project || DAMSGHOLE
-void MainWindow::saveOptionsSGhole(string file, bool *printwarns, QString *warns)
-{
-    sigmaHolePage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-
-//    Saves options clase 0 || clase 5: Project || DAMFIELD
-void MainWindow::saveOptionsDamfield(string file, bool *printwarns, QString *warns)
-{
-    fieldLinesPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-//    Saves options clase 0 || clase 12: Project || DAMDENGRAD
-
-void MainWindow::saveOptionsDamdenGrad(string file, bool *printwarns, QString *warns)
-{
-    densityGradientPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-//    Saves options clase 0 || clase 4: Project || DAMFORCES
-void MainWindow::saveOptionsDamforces(string file, bool *printwarns, QString *warns)
-{
-    hfForcesPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-
-//    Saves options clase 0 || clase 6: Project || DAMFRAD
-void MainWindow::saveOptionsDamfrad(string file, bool *printwarns, QString *warns)
-{
-    radialFactorsPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-//    Saves options clase 0 || clase 7: Project || DAMMULTROT
-void MainWindow::saveOptionsDammultrot(string file, bool *printwarns, QString *warns)
-{
-    orientedMultipolesPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-//    Saves options clase 0 || clase 10: Project || DAMZJ
-void MainWindow::saveOptionsZJExpansion(string file, bool *printwarns, QString *warns)
-{
-    zjExpansionPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
-}
-
-//    Saves options clase 0 || clase 11: Project || DAMDENZJ
-void MainWindow::saveOptionsZJDensity(string file, bool *printwarns, QString *warns)
-{
-    zjDensityPage_->writeToFile(
-        file,
-        printwarns,
-        warns);
 }
 
 /*******************************************************************************************************/
@@ -3657,16 +3372,6 @@ void MainWindow::external_package(){
 
 
 //    Creates a folder. Returns whether it has succeded or not
-bool MainWindow::createDir(QString &fullPathName)
-{
-    QDir dir(fullPathName);
-    if(!dir.exists(fullPathName)){
-        dir.mkpath(fullPathName);
-        return true;
-    }else{
-        return false;
-    }
-}
 
 //    Sets plot ranges
 void MainWindow::defineRanges()
@@ -3676,25 +3381,30 @@ void MainWindow::defineRanges()
     QVector<double> z;
     QVector<int> ncarga;
     int nat;
-    double min;
-    double max;
-    QString qv;
+
     readGeometry(nat,x,y,z,ncarga);
     if (nat == 0) return;
-    set_natom(nat);
-    dminmax(x,min,max);
-    xmax = qRound(max);
-    xmin = qRound(min);
-    dminmax(y,min,max);
-    ymax = qRound(max);
-    ymin = qRound(min);
-    dminmax(z,min,max);
-    zmax = qRound(max);
-    zmin = qRound(min);
-    double xyztop;
+    natom = nat;
+
+    const auto xRange = std::minmax_element(x.cbegin(), x.cend());
+    xmin = qRound(*xRange.first);
+    xmax = qRound(*xRange.second);
+
+    const auto yRange = std::minmax_element(y.cbegin(), y.cend());
+    ymin = qRound(*yRange.first);
+    ymax = qRound(*yRange.second);
+
+    const auto zRange = std::minmax_element(z.cbegin(), z.cend());
+    zmin = qRound(*zRange.first);
+    zmax = qRound(*zRange.second);
+
+    // double xyztop;
     QVector<double> vaux;
     vaux << xmax << ymax << zmax << std::abs(xmin) << std::abs(ymin) << std::abs(zmin);
-    dmax(vaux,xyztop);
+
+    const double xyztop =
+        *std::max_element(vaux.cbegin(), vaux.cend());
+
     xmin = -xyztop;
     ymin = -xyztop;
     zmin = -xyztop;
@@ -3702,51 +3412,61 @@ void MainWindow::defineRanges()
     ymax =  xyztop;
     zmax =  xyztop;
 
-    densityPage_->setUmin(qv.setNum(xmin-5,'g',3));
-    densityPage_->setUmax(qv.setNum(xmax+5,'g',3));
-    densityPage_->setVmin(qv.setNum(zmin-5,'g',3));
-    densityPage_->setVmax(qv.setNum(zmax+5,'g',3));
-    densityPage_->setXmin(qv.setNum(xmin-5,'g',3));
-    densityPage_->setXmax(qv.setNum(xmax+5,'g',3));
-    densityPage_->setYmin(qv.setNum(ymin-5,'g',3));
-    densityPage_->setYmax(qv.setNum(ymax+5,'g',3));
-    densityPage_->setZmin(qv.setNum(zmin-5,'g',3));
-    densityPage_->setZmax(qv.setNum(zmax+5,'g',3));
+    const QString minRange =
+        QString::number(xmin - 5, 'g', 3);
+    const QString maxRange =
+        QString::number(xmax + 5, 'g', 3);
 
-    potentialPage_->setUmin(qv.setNum(2.0*(xmin-5),'g',3));
-    potentialPage_->setUmax(qv.setNum(2.0*(xmax+5),'g',3));
-    potentialPage_->setVmin(qv.setNum(2.0*(zmin-5),'g',3));
-    potentialPage_->setVmax(qv.setNum(2.0*(zmax+5),'g',3));
-    potentialPage_->setXmin(qv.setNum(2.0*(xmin-5),'g',3));
-    potentialPage_->setXmax(qv.setNum(2.0*(xmax+5),'g',3));
-    potentialPage_->setYmin(qv.setNum(2.0*(ymin-5),'g',3));
-    potentialPage_->setYmax(qv.setNum(2.0*(ymax+5),'g',3));
-    potentialPage_->setZmin(qv.setNum(2.0*(zmin-5),'g',3));
-    potentialPage_->setZmax(qv.setNum(2.0*(zmax+5),'g',3));
+    const QString extendedMinRange =
+        QString::number(2.0 * (xmin - 5), 'g', 3);
+    const QString extendedMaxRange =
+        QString::number(2.0 * (xmax + 5), 'g', 3);
 
-    orbitalsPage_->setUmin(qv.setNum(2.0*(xmin-5),'g',3));
-    orbitalsPage_->setUmax(qv.setNum(2.0*(xmax+5),'g',3));
-    orbitalsPage_->setVmin(qv.setNum(2.0*(zmin-5),'g',3));
-    orbitalsPage_->setVmax(qv.setNum(2.0*(zmax+5),'g',3));
-    orbitalsPage_->setXmin(qv.setNum(2.0*(xmin-5),'g',3));
-    orbitalsPage_->setXmax(qv.setNum(2.0*(xmax+5),'g',3));
-    orbitalsPage_->setYmin(qv.setNum(2.0*(ymin-5),'g',3));
-    orbitalsPage_->setYmax(qv.setNum(2.0*(ymax+5),'g',3));
-    orbitalsPage_->setZmin(qv.setNum(2.0*(zmin-5),'g',3));
-    orbitalsPage_->setZmax(qv.setNum(2.0*(zmax+5),'g',3));
+    densityPage_->setUmin(minRange);
+    densityPage_->setUmax(maxRange);
+    densityPage_->setVmin(minRange);
+    densityPage_->setVmax(maxRange);
+    densityPage_->setXmin(minRange);
+    densityPage_->setXmax(maxRange);
+    densityPage_->setYmin(minRange);
+    densityPage_->setYmax(maxRange);
+    densityPage_->setZmin(minRange);
+    densityPage_->setZmax(maxRange);
 
-    fieldLinesPage_->setUmin(qv.setNum(2.0*(xmin-5),'g',3));
-    fieldLinesPage_->setUmax(qv.setNum(2.0*(xmax+5),'g',3));
-    fieldLinesPage_->setVmin(qv.setNum(2.0*(zmin-5),'g',3));
-    fieldLinesPage_->setVmax(qv.setNum(2.0*(zmax+5),'g',3));
-    fieldLinesPage_->setXmin(qv.setNum(2.0*(xmin-5),'g',3));
-    fieldLinesPage_->setXmax(qv.setNum(2.0*(xmax+5),'g',3));
-    fieldLinesPage_->setYmin(qv.setNum(2.0*(ymin-5),'g',3));
-    fieldLinesPage_->setYmax(qv.setNum(2.0*(ymax+5),'g',3));
-    fieldLinesPage_->setZmin(qv.setNum(2.0*(zmin-5),'g',3));
-    fieldLinesPage_->setZmax(qv.setNum(2.0*(zmax+5),'g',3));
+    potentialPage_->setUmin(extendedMinRange);
+    potentialPage_->setUmax(extendedMaxRange);
+    potentialPage_->setVmin(extendedMinRange);
+    potentialPage_->setVmax(extendedMaxRange);
+    potentialPage_->setXmin(extendedMinRange);
+    potentialPage_->setXmax(extendedMaxRange);
+    potentialPage_->setYmin(extendedMinRange);
+    potentialPage_->setYmax(extendedMaxRange);
+    potentialPage_->setZmin(extendedMinRange);
+    potentialPage_->setZmax(extendedMaxRange);
 
-    orientedMultipolesPage_->setNumAtoms(get_natom());
+    orbitalsPage_->setUmin(extendedMinRange);
+    orbitalsPage_->setUmax(extendedMaxRange);
+    orbitalsPage_->setVmin(extendedMinRange);
+    orbitalsPage_->setVmax(extendedMaxRange);
+    orbitalsPage_->setXmin(extendedMinRange);
+    orbitalsPage_->setXmax(extendedMaxRange);
+    orbitalsPage_->setYmin(extendedMinRange);
+    orbitalsPage_->setYmax(extendedMaxRange);
+    orbitalsPage_->setZmin(extendedMinRange);
+    orbitalsPage_->setZmax(extendedMaxRange);
+
+    fieldLinesPage_->setUmin(extendedMinRange);
+    fieldLinesPage_->setUmax(extendedMaxRange);
+    fieldLinesPage_->setVmin(extendedMinRange);
+    fieldLinesPage_->setVmax(extendedMaxRange);
+    fieldLinesPage_->setXmin(extendedMinRange);
+    fieldLinesPage_->setXmax(extendedMaxRange);
+    fieldLinesPage_->setYmin(extendedMinRange);
+    fieldLinesPage_->setYmax(extendedMaxRange);
+    fieldLinesPage_->setZmin(extendedMinRange);
+    fieldLinesPage_->setZmax(extendedMaxRange);
+
+    orientedMultipolesPage_->setNumAtoms(natom);
 }
 
 
@@ -3754,35 +3474,6 @@ void MainWindow::disable_pages(){
     atomicDensitiesPage_->setEnabled(false);
     orbitalsPage_->setEnabled(false);
     setPostDamPagesEnabled(false);
-}
-
-// Determines the highest value in an array
-void MainWindow::dmax(QVector<double> &v,double &max)
-{
-    max=v[0];
-    for (int i=0;i<v.size();i++){
-        if (v[i]>max) max=v[i];
-    }
-}
-
-// Determines the lowest value in an array
-void MainWindow::dmin(QVector<double> &v,double &min)
-{
-    min=v[0];
-    for (int i=0;i<v.size();i++){
-        if (v[i]<min) min=v[i];
-    }
-}
-
-// Determines the highest and the lowest values in an array
-void MainWindow::dminmax(QVector<double> &v,double &min,double &max)
-{
-    min=v[0];
-    max=v[0];
-    for (int i=0;i<v.size();i++){
-        if (v[i]<min) min=v[i];
-        if (v[i]>max) max=v[i];
-    }    
 }
 
 //    Checks whether a project file (.damproj) exist or not
@@ -3818,13 +3509,8 @@ bool MainWindow::existsinp(QString fullinputName, int def, bool pregunta)
     }else{
         saveOptions(fullinputName);
     }
+    SetCurrentFile(fullinputName, true, false);
     return true;
-}
-
-//    gets content of variable natom
-int MainWindow::get_natom()
-{
-    return MainWindow::natom;
 }
 
 QString MainWindow::planesuffix(int planecase){
@@ -3896,8 +3582,7 @@ void MainWindow::importOUT()
 
     QTextStream input(&file);
 
-    textEdit->setFont(QFont(QStringLiteral("Courier"), 10));
-    textEdit->setPlainText(input.readAll());
+    showOutputText(input.readAll());
 }
 
 
@@ -3912,11 +3597,28 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
         if (!(QFile::exists(sxyzfilename))){
             execsgbs2sxyz(sxyzfilename);
         }
-        set_natom(read_natom(sxyzfilename));
+        natom = read_natom(sxyzfilename);
     }
     else
         suffix = ".ggbs";
     QString filename=ProjectFolder+ProjectName+suffix;
+    bool geometryWasGzipped = false;
+
+    if (!lslater && !QFile::exists(filename)) {
+        const QString gzFilename = filename + QStringLiteral(".gz");
+
+        if (QFile::exists(gzFilename)) {
+            const int ios = QProcess::execute(
+                QStringLiteral("gunzip"),
+                QStringList{gzFilename}
+                );
+
+            if (ios == 0)
+                geometryWasGzipped = true;
+        }
+    }
+
+
     QFile file(filename);
 
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
@@ -3971,6 +3673,16 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
         z[i] = z[i] - zC;
     }
     rmax = sqrt(rmax);
+
+    file.close();
+
+    if (geometryWasGzipped) {
+        QProcess::execute(
+            QStringLiteral("gzip"),
+            QStringList{filename}
+            );
+    }
+
     if (x.size() == 0 || y.size() == 0 || z.size() == 0 ){
         QMessageBox::warning(this, tr("DAMQT"),tr("Error reading geometry in file %1")
                              .arg(ProjectName+suffix));
@@ -3979,28 +3691,78 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
 }
 
 //    Reads the number of atoms from file fileName
+// int MainWindow::read_natom(QString fileName)
+// {
+//     QFile file(fileName);
+//     if (!file.open(QFile::ReadOnly | QFile::Text)) {
+//         QMessageBox::warning(this, tr("read_natom"),tr("File %1 cannot be read").arg(fileName) +
+//                         QString(":\n%1.").arg(file.errorString()));
+//         return 0;
+//     }
+//     QTextStream in(&file);
+//     QString line = in.readLine();
+//     if (line.size()==0){
+//         return 0;
+//     }
+//     else{
+//         return line.toInt();
+//     }
+// }
+
 int MainWindow::read_natom(QString fileName)
 {
-    QFile file(fileName);
-    if (!file.open(QFile::ReadOnly | QFile::Text)) {
-        QMessageBox::warning(this, tr("read_natom"),tr("File %1 cannot be read").arg(fileName) +
-                        QString(":\n%1.").arg(file.errorString()));
-        return 0;
-    }
-    QTextStream in(&file);
-    QString line = in.readLine();
-    if (line.size()==0){
-        return 0;
-    }
-    else{
-        return line.toInt();
-    }
-}
+    bool wasGzipped = false;
 
-//    sets variable natom
-void MainWindow::set_natom(int i)
-{
-    MainWindow::natom = i;
+    if (!QFile::exists(fileName)) {
+        const QString gzFileName = fileName + QStringLiteral(".gz");
+
+        if (QFile::exists(gzFileName)) {
+            const int ios = QProcess::execute(
+                QStringLiteral("gunzip"),
+                QStringList{gzFileName}
+                );
+
+            if (ios == 0)
+                wasGzipped = true;
+        }
+    }
+
+    QFile file(fileName);
+
+    if (!file.open(QFile::ReadOnly | QFile::Text)) {
+        QMessageBox::warning(
+            this,
+            tr("read_natom"),
+            tr("File %1 cannot be read").arg(fileName) +
+                QString(":\n%1.").arg(file.errorString())
+            );
+
+        if (wasGzipped) {
+            QProcess::execute(
+                QStringLiteral("gzip"),
+                QStringList{fileName}
+                );
+        }
+
+        return 0;
+    }
+
+    QTextStream in(&file);
+    const QString line = in.readLine();
+
+    file.close();
+
+    if (wasGzipped) {
+        QProcess::execute(
+            QStringLiteral("gzip"),
+            QStringList{fileName}
+            );
+    }
+
+    if (line.isEmpty())
+        return 0;
+
+    return line.toInt();
 }
 
 void MainWindow::start(){
@@ -4012,30 +3774,10 @@ FRMlanguage->close();
 /******************************** FILE NAME, PATH AND EXTENSION HANDLING *******************************/
 /*******************************************************************************************************/
 
-
-/* Returns the file extension */
-QString MainWindow::Extension(const QString &fullFileName)
-{
-    return QFileInfo(fullFileName).suffix();
-}
-
 /* Returns the file name without any extension */
 QString MainWindow::FileWithoutExt(const QString &fullFileName)
 {
     return QFileInfo(fullFileName).completeBaseName();
-}
-
-/* Returns the file name without path */
-QString MainWindow::FileWithoutPath(const QString &fullFileName)
-{
-
-    return QFileInfo(fullFileName).fileName();
-}
-
-/* Returns the path of a file */
-QString MainWindow::Path(const QString &fullFileName)
-{
-    return QFileInfo(fullFileName).path();
 }
 
 void MainWindow::onExternalDamFinished(bool enabled)
@@ -4637,6 +4379,8 @@ void MainWindow::onSinglePassImportFinished(
     Q_UNUSED(outputFilePath);
 
     setExecutionControlsEnabled(true);
+    atomicDensitiesPage_->setEnabled(true);
+
     statusBar()->showMessage(tr("End of calculation"));
     updateOrbitalsPageState();
 }
@@ -4666,19 +4410,12 @@ void MainWindow::processStart()
 void MainWindow::setExecutionControlsEnabled(bool enabled)
 {
     projectPage_->setExecEnabled(enabled);
-    atomicDensitiesPage_->setExecEnabled(enabled);
-    densityPage_->setExecEnabled(enabled);
-    potentialPage_->setExecEnabled(enabled);
-    hfForcesPage_->setExecEnabled(enabled);
-    fieldLinesPage_->setExecEnabled(enabled);
-    densityGradientPage_->setExecEnabled(enabled);
-    radialFactorsPage_->setExecEnabled(enabled);
-    orientedMultipolesPage_->setExecEnabled(enabled);
-    orbitalsPage_->setExecEnabled(enabled);
-    topographyPage_->setExecEnabled(enabled);
-    zjExpansionPage_->setExecEnabled(enabled);
-    zjDensityPage_->setExecEnabled(enabled);
-    sigmaHolePage_->setExecEnabled(enabled);
+
+    for (IExecutablePage *page : executablePages_) {
+        if (page) {
+            page->setExecEnabled(enabled);
+        }
+    }
 }
 
 void MainWindow::updateOrbitalsPageState()
@@ -4721,7 +4458,7 @@ void MainWindow::readMolproXml(const QString& importFile,
             return;
         }
 
-        createDir(ProjectFolder);
+        QDir().mkpath(ProjectFolder);
         statusBar()->showMessage(
             tr("Project successfully created"),
             2000
@@ -4940,8 +4677,7 @@ void MainWindow::onMolproXmlFinished(
 
     QTextStream input(&file);
 
-    textEdit->setFont(QFont(QStringLiteral("Courier"), 10));
-    textEdit->setPlainText(input.readAll());
+    showOutputText(input.readAll());
 
     atomicDensitiesPage_->setEnabled(true);
     orbitalsPage_->setEnabled(true);
@@ -4995,4 +4731,49 @@ void MainWindow::updateMpiControls()
 
     zjDensityPage_->setMpiVisible(zjDensityMpi);
     zjDensityPage_->setMpiControlsEnabled(zjDensityMpi);
+}
+
+void MainWindow::setOutputPrefixes(const QString& prefix)
+{
+    densityPage_->setOutputPrefix(prefix);
+    potentialPage_->setOutputPrefix(prefix);
+    hfForcesPage_->setOutputPrefix(prefix);
+    fieldLinesPage_->setOutputPrefix(prefix);
+    sigmaHolePage_->setOutputPrefix(prefix);
+    topographyPage_->setOutputPrefix(prefix);
+    densityGradientPage_->setOutputPrefix(prefix);
+    radialFactorsPage_->setOutputPrefix(prefix);
+    orientedMultipolesPage_->setOutputPrefix(prefix);
+    orbitalsPage_->setOutputPrefix(prefix);
+    zjDensityPage_->setOutputPrefix(prefix);
+}
+
+void MainWindow::updateProjectAvailability()
+{
+    if (ProjectFolder.isEmpty() || ProjectName.isEmpty()) {
+        atomicDensitiesPage_->setEnabled(false);
+        setPostDamPagesEnabled(false);
+        return;
+    }
+
+    const QDir projectDir(ProjectFolder);
+
+    const QString projectFile =
+        projectDir.filePath(ProjectName + QStringLiteral(".damproj"));
+
+    const QString damqtFile =
+        projectDir.filePath(ProjectName + QStringLiteral("_2016.damqt"));
+
+    const bool projectExists = QFileInfo::exists(projectFile);
+    const bool damqtExists = QFileInfo::exists(damqtFile);
+
+    atomicDensitiesPage_->setEnabled(projectExists);
+    setPostDamPagesEnabled(projectExists && damqtExists);
+}
+
+void MainWindow::setFileDialogProjectFolders(const QString& folder)
+{
+    sigmaHolePage_->setProjectFolder(folder);
+    orbitalsPage_->setProjectFolder(folder);
+    zjDensityPage_->setProjectFolder(folder);
 }

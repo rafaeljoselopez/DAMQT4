@@ -522,10 +522,10 @@ void ZJExpansionPage::setProjectData(const QString &projectFolder,
     projectName_ = projectName;
 }
 
-void ZJExpansionPage::setProjectFolder(const QString& value)
-{
-    projectFolder_ = value;
-}
+// void ZJExpansionPage::setProjectFolder(const QString& value)
+// {
+//     projectFolder_ = value;
+// }
 
 void ZJExpansionPage::setSlater(bool slater)
 {

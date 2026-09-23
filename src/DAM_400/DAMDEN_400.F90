@@ -459,7 +459,7 @@
         if (allocated(zlmadxx)) deallocate(zlmadxx, zlmadxy, zlmadxz, zlmadyy, zlmadyz, zlmadzz)
     endif
     tiempo = dtime(tarray)
-    write(6,"(1x,'Timing in seconds (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+    write(6,"(1x,'Timing in seconds (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
             tarray(1), tarray(2), tarray(1)+tarray(2)
     stop
     end
@@ -1162,7 +1162,7 @@
     integer(KINT) :: i, ia, ierr, isel, iuni, ix, iy, iz, nx, ny, nz
     real(KREAL) :: b2a, den, dendrvx, dendrvy, dendrvz, denlplc, dxx, dxy, dxz, dyy, dyz, dzz, dV
     real(KREAL) :: qdeform, rx, ry, rz, x, y, z
-    character*4 :: strbux
+    character*4 :: strbux, strdux
     character*256 :: straux
     character*7 :: strcux
 
@@ -1216,6 +1216,10 @@
     if (ierr .ne. 0) call error(1,'Memory error when allocating arraysp in gridrep. Stop')
     if (ldeform) then
         strcux="-deform"
+    else if (lminrep .gt. 0) then
+        write(strbux,'(i2.1)') lminrep
+        write(strdux,'(i2.1)') lmaxrep
+        strcux = trim("-l")//trim(adjustl(strbux))//trim("_")//trim(adjustl(strdux))
     else
         strcux=""
     endif
@@ -1664,7 +1668,7 @@
     implicit none
     integer(KINT) :: i, ia, isel, iuni, iu, iv, nu, nv
     real(KREAL) :: b2a, den, dendrvx, dendrvy, dendrvz, denlplc, dxx, dxy, dxz, dyy, dyz, dzz, ru, rv, u, v, x, y, z
-    character*4 :: strbux
+    character*4 :: strbux, strdux
     character*256 :: straux
     character*7 :: strcux
     real(KREAL), allocatable :: array(:), arrayacc(:), arrayaccdx(:), arrayaccdy(:), arrayaccdz(:)
@@ -1713,9 +1717,14 @@
     if (ierr .ne. 0) call error(1,'Memory error when allocating arraysp in gridrep. Stop')
     if (ldeform) then
         strcux="-deform"
+    else if (lminrep .gt. 0) then
+        write(strbux,'(i2.1)') lminrep
+        write(strdux,'(i2.1)') lmaxrep
+        strcux = trim("-l")//trim(adjustl(strbux))//trim("_")//trim(adjustl(strdux))
     else
         strcux=""
     endif
+
     if (lmolec) then
         allocate(array(nu), stat = ierr)
         if (ierr .ne. 0) call error(1,'Memory error when allocating array in gridrep. Stop')

@@ -732,10 +732,10 @@ void TopographyPage::setProjectData(const QString &projectFolder,
     projectName_ = projectName;
 }
 
-void TopographyPage::setProjectFolder(const QString& value)
-{
-    projectFolder_ = value;
-}
+// void TopographyPage::setProjectFolder(const QString& value)
+// {
+//     projectFolder_ = value;
+// }
 
 void TopographyPage::stopCurrentProcess()
 {

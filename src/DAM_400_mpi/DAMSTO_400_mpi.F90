@@ -477,14 +477,14 @@
     endif
     call MPI_BARRIER(MPI_COMM_WORLD, ierr)
     tiempo = dtime(tarray)
-!    write(6,"(1x,'Timing in seconds of processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+!    write(6,"(1x,'Timing in seconds of processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
 !            myrank, tarray(1), tarray(2), tarray(1)+tarray(2)
     if (ltimeprocs) then
         CALL MPI_GATHER(tarray, 2, mpi_real4, timeprocs, 2, mpi_real4, 0, MPI_COMM_WORLD, ierr)
         if (ierr .eq. 0 .and. myrank .eq. 0) then
             write(6,"(/30x,'TIMING (in seconds)',/)")
             do i = 0, nprocs-1
-                write(6,"(1x,'Processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+                write(6,"(1x,'Processor ', i2, ' (user, system, total):',5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
                     i, timeprocs(2*i+1), timeprocs(2*i+2), timeprocs(2*i+1)+timeprocs(2*i+2)
             enddo
             write(6,"(' ')")

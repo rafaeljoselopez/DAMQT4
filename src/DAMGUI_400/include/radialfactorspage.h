@@ -68,7 +68,7 @@ public:
     void setPageEnabled(bool enabled);
     void setProjectData(const QString &projectFolder,
                         const QString &projectName);
-    void setProjectFolder(const QString& value);
+    // void setProjectFolder(const QString& value);
     void setRadiiTableEnabled(bool enabled);
     void setRadiiTableVisible(bool visible);
     void setSecondDerivatives(bool checked);

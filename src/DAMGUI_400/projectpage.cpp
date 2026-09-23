@@ -9,6 +9,8 @@
 #include <QToolButton>
 #include <QVBoxLayout>
 
+#include <QtDebug>
+
 ProjectPage::ProjectPage(bool mpiAvailable,
                          const QString& mpiCommand,
                          QWidget* parent)
@@ -114,8 +116,20 @@ void ProjectPage::connectSignals()
     connect(projectFolderEdit_, &QLineEdit::textChanged,
             this, &ProjectPage::projectFolderChanged);
 
+    // connect(projectNameEdit_, &QLineEdit::textChanged,
+    //         this, &ProjectPage::projectNameChanged);
+
+    // connect(projectNameEdit_, &QLineEdit::textChanged,
+    //         this,
+    //         [this](const QString& text) {
+    //             qDebug() << "projectNameEdit_ changed:" << text;
+    //             emit projectNameChanged(text);
+    //         });
+
     connect(projectNameEdit_, &QLineEdit::textChanged,
-            this, &ProjectPage::projectNameChanged);
+            this, [this](const QString& text) {
+                emit projectNameChanged(text);
+            });
 
     connect(importBrowseButton_, &QToolButton::clicked,
             this, &ProjectPage::browseImportRequested);
@@ -191,7 +205,7 @@ void ProjectPage::setProjectName(const QString& value)
 
 void ProjectPage::setProjectNameEnabled(bool enabled)
 {
-    projectFolderEdit_->setEnabled(enabled);
+    projectNameEdit_->setEnabled(enabled);
 }
 
 void ProjectPage::setExecEnabled(bool enabled)

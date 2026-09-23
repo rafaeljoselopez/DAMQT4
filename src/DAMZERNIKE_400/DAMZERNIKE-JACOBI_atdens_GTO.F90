@@ -151,7 +151,7 @@ END MODULE
 !    Computes the total molecular multipolar moments from the Zernike expansion
 
     tiempo = dtime(tarray)
-    write(6,"(1x,//80('='),/'Timing in seconds for fingerprints (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+    write(6,"(1x,//80('='),/'Timing in seconds for fingerprints (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
             tarray(1), tarray(2), tarray(1)+tarray(2)
     write(6,"(1x,'Elapsed time = ', e12.5)") tiempo
     stop
@@ -723,7 +723,7 @@ END MODULE
         endif  
     enddo    ! End of Do over centers (ia)
     tiempo = dtime(tarray)
-    write(6,"(1x,//80('='),/'Timing in seconds for radial factors (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+    write(6,"(1x,//80('='),/'Timing in seconds for radial factors (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
             tarray(1), tarray(2), tarray(1)+tarray(2)
     write(6,"(1x,'Elapsed time = ', e12.5)") tiempo
     tiemponw = dtime(tarraynw)
@@ -760,7 +760,7 @@ END MODULE
     call multipoles
 
     tiemponw = dtime(tarraynw)
-    write(6,"(1x,//80('='),/'Timing in seconds for projection (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+    write(6,"(1x,//80('='),/'Timing in seconds for projection (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
             tarraynw(1), tarraynw(2), tarraynw(1)+tarraynw(2)
     write(6,"(1x,'Elapsed time = ', e12.5)") tiemponw
 

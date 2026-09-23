@@ -364,7 +364,7 @@
     if (allocated(zlmdx)) deallocate(zlmdx, zlmdy, zlmdz)
     write(6,*) '******* END OF DAMDENZJ_400 ******'
     tiempo = dtime(tarray)
-    write(6,"(1x,'Timing in seconds (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5')')") &
+    write(6,"(1x,'Timing in seconds (user, system, total):',/5x,'(',e12.5,',',e12.5,',',e12.5,')')") &
             tarray(1), tarray(2), tarray(1)+tarray(2)
     stop
     end
