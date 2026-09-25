@@ -37,7 +37,7 @@
     real(KREAL) :: aux, x, xmax, xmin, xyzmax, xyzmin, y, ymax, ymin, z, zmax, zmin
     integer(KINT) :: i, ierr, knt, norbs
     logical :: existe
-    logical :: lsgbs, lsgbsden, lsgbsgz, lsgbsdengz
+    logical :: lggbs, lggbsgz, lsgbs, lsgbsden, lsgbsgz, lsgbsdengz
     logical :: lnamelist(6), ltimeprocs
     integer(KINT) :: inamelist(1)
     real(KREAL) :: rnamelist(9)
@@ -77,8 +77,13 @@
     dltv = uno
     filename = ""			! root file name for .plt and .pltd files
     fileMOname = ""		! file with Molecular orbitals coefficients
+    lggbs = .false.
+    lggbsgz = .false.
+    lsgbs = .false.
     lsgbsgz = .false.
+    lden = .false.
     ldengz = .false.
+    lsgbsden = .false.
     lsgbsdengz = .false.
 !	End of namelist defaults
 
@@ -145,20 +150,26 @@
                     lsgbsgz = .true.
             endif
         endif
-        lden = .false.
-        ldengz = .false.
+        inquire(file=trim(projectname)//".ggbs", exist=lggbs, iostat=ierr)
+        if (ierr .ne. 0 .or. .not. lggbs) then
+            inquire(file=trim(projectname)//".ggbs.gz", exist=lggbs, iostat=ierr)
+            if (ierr .eq. 0 .and. lggbs) then
+                call system ("gunzip "//trim(projectname)//".ggbs.gz")
+                lggbsgz = .true.
+            endif
+        endif
+
         if (lsgbs) then
             inquire(file=trim(projectname)//".den", exist=lden, iostat=ierr)
             if (ierr .ne. 0 .or. .not. lden) then
                 inquire(file=trim(projectname)//".den.gz", exist=lden, iostat=ierr)
                 if (ierr .eq. 0 .and. lden) then
-                    if(myrank .eq. 0) call system ("gunzip "//trim(projectname)//".den.gz")
+                    call system ("gunzip "//trim(projectname)//".den.gz")
                     ldengz = .true.
                 endif
             endif
         endif
-        lsgbsden = .false.
-        lsgbsdengz = .false.
+
         inquire(file=trim(projectname)//".sgbsden", exist=lsgbsden, iostat=ierr)
         if (ierr .ne. 0 .or. .not. lsgbsden) then
             inquire(file=trim(projectname)//".sgbsden.gz", exist=lsgbsden, iostat=ierr)
@@ -274,9 +285,15 @@
             call leedatgauss
         endif
     endif
+
+    CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
+
     if (myrank .eq. 0) then
         if (ldengz) then    ! restores files back to their original gzipped status
             call system ("gzip "//trim(projectname)//".den")
+        endif
+        if (lggbsgz) then
+            call system ("gzip "//trim(projectname)//".ggbs")
         endif
         if (lsgbsgz) then
             call system ("gzip "//trim(projectname)//".sgbs")
@@ -312,12 +329,12 @@
         zmin = cero
         zmax = cero
         do i = 1, ncen
-            if (rcen(1,i) .lt. xmin) xmin = rcen(1,i)
-            if (rcen(1,i) .gt. xmax) xmax = rcen(1,i)
-            if (rcen(2,i) .lt. ymin) ymin = rcen(2,i)
-            if (rcen(2,i) .gt. ymax) ymax = rcen(2,i)
-            if (rcen(3,i) .lt. zmin) zmin = rcen(3,i)
-            if (rcen(3,i) .gt. zmax) zmax = rcen(3,i)
+            xmin = min(xmin, rcen(1,i))
+            xmax = max(xmax, rcen(1,i))
+            ymin = min(ymin, rcen(2,i))
+            ymax = max(ymax, rcen(2,i))
+            zmin = min(zmin, rcen(3,i))
+            zmax = max(zmax, rcen(3,i))
         enddo
         xyzmin = min(xmin, ymin, zmin)
         xyzmax = max(xmax, ymax, zmax)
@@ -353,20 +370,20 @@
         aux = xsup
         xsup = xinf
         xinf = aux
-        dltx = abs(dltx)
     endif
+    dltx = abs(dltx)
     if (yinf .gt. ysup) then
         aux = ysup
         ysup = yinf
         yinf = aux
-        dlty = abs(dlty)
     endif
+    dlty = abs(dlty)
     if (zinf .gt. zsup) then
         aux = zsup
         zsup = zinf
         zinf = aux
-        dltz = abs(dltz)
     endif
+    dltz = abs(dltz)
 
 !	reads orbitals and generates grids with orbitals
     if (lsto) then
@@ -1644,10 +1661,11 @@ write(6,*) 'en leedatSTOgen, lsgbsden = ', lsgbsden
     real(KREAL) :: aux, bux
     real(KREAL) :: xaux(mxprimit), cfaux(mxprimit)
 !	Reads the number of centers
-    open(15,file=trim(projectname)//".ggbs",form='formatted', iostat=ierr)
+    open(15,file=trim(projectname)//".ggbs",form='formatted', status='old', iostat=ierr)
     if (ierr .ne. 0) then
         write(6,"('Cannot open file ', a, '.ggbs in processor ',i3)") trim(projectname), myrank
         abort = 1
+        return
     endif
     read(15,*) ncen
 
