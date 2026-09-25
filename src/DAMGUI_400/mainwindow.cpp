@@ -2805,10 +2805,6 @@ void MainWindow::initializeNames()
     atomicDensitiesPage_->setlslater(lslater);
     potentialPage_->setExactPotential(false);
     if (lslater){
-        QString fileaux = FileWithoutExt(projectPage_->importFile());
-        if (QFileInfo(fileaux).suffix() == "sgbs" ||
-            QFileInfo(fileaux).suffix() == "sgbsden")
-            fileaux = FileWithoutExt(fileaux);
         QString sxyzfilename = ProjectFolder+"/"+ProjectName+".sxyz";
         if (!(QFile::exists(sxyzfilename))){
             execsgbs2sxyz(sxyzfilename);
@@ -3593,7 +3589,7 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
     QString suffix;
     if (lslater){
         suffix = ".sxyz";
-        QString sxyzfilename = ProjectFolder + FileWithoutExt(ProjectName)+".sxyz";
+        QString sxyzfilename = ProjectFolder + ProjectName + ".sxyz";
         if (!(QFile::exists(sxyzfilename))){
             execsgbs2sxyz(sxyzfilename);
         }
