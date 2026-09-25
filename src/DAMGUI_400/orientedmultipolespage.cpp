@@ -219,7 +219,6 @@ void OrientedMultipolesPage::setLmin(int lmin) { lMinSpin_->setValue(lmin); }
 void OrientedMultipolesPage::setLminTop(int ltop) { lMinSpin_->setRange(0,ltop); }
 void OrientedMultipolesPage::setMiddleSpinMax(int nmax) { middleSpin_->setMaximum(nmax); }
 void OrientedMultipolesPage::setMiddleSpinValue(int value) { middleSpin_->setValue(value); }
-void OrientedMultipolesPage::setNumAtoms(int value) { numatoms_ = value; }
 void OrientedMultipolesPage::setOutputPrefix(const QString& value) { outputPrefixEdit_->setText(value); }
 void OrientedMultipolesPage::setPageEnabled(bool enabled){this->setEnabled(enabled);}
 void OrientedMultipolesPage::setRightSpinMax(int nmax) { rightSpin_->setMaximum(nmax); }
@@ -651,6 +650,17 @@ void OrientedMultipolesPage::writeToFile(const std::string& file,
                       QString::number(list[k]));
         }
         writeText("ncntab", QString("%1").arg(ncntab));
+    }
+}
+
+void OrientedMultipolesPage::setNumAtoms(int value)
+{
+    numatoms_ = value;
+
+    if (numatoms_ > 0) {
+        leftSpin_->setRange(1, numatoms_);
+        middleSpin_->setRange(1, numatoms_);
+        rightSpin_->setRange(1, numatoms_);
     }
 }
 
