@@ -1052,7 +1052,7 @@ END MODULE
         if (ldebug) then
             write(1234,"(/'Number of starting regions with possible local maxima = ', i3)") kntgroupmax
             do i = 1, kntgroupmax
-                write(1234,"('Number triangles in starting region ', i3 '  = ', i7)") i, numlocalmax(i)
+                write(1234,"('Number triangles in starting region ', i3, '  = ', i7)") i, numlocalmax(i)
                 write(1234,"(/'Maximum no. ', i3, ' vertices = ', 3(' ',e12.5), ' vtot = ', e22.15)") &
                     i, vertices(:,indicesmax(i)),  vtot(indicesmax(i))
                 write(1234,"('Number of linked vertices = ', i3)") kntindiceslinks(indicesmax(i))
@@ -1144,7 +1144,7 @@ END MODULE
         if (ldebug) then
             write(1234,"(/111('-'),/'Number of starting regions with possible local minima = ', i3)") kntgroupmin
             do i = 1, kntgroupmin
-                write(1234,"('Number triangles in region ', i3 '  = ', i7)") i, numlocalmin(i)
+                write(1234,"('Number triangles in region ', i3, '  = ', i7)") i, numlocalmin(i)
                 write(1234,"(/'Minimum no. ', i3, ' vertices = ', 3(' ',e12.5), ' vtot = ', e22.15)") &
                     i, vertices(:,indicesmin(i)),  vtot(indicesmin(i))
                 write(1234,"('Number of linked vertices = ', i3)") kntindiceslinks(indicesmin(i))
