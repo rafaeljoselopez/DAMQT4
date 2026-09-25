@@ -216,7 +216,7 @@
 
     if (topograph) call topo
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
             call error(1,'Stop')
     endif
@@ -491,7 +491,7 @@
         end if
     end if
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -501,7 +501,7 @@
     CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
     CALL OPTDRIVER
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif

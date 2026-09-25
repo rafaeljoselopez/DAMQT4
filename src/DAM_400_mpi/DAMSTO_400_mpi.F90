@@ -78,7 +78,7 @@
     if (myrank .eq. 0) write(6,"('number of processors = ', i8)") nprocs
     tiempo = dtime(tarray)
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
             call error(1,'Stop')
     endif
@@ -191,7 +191,7 @@
         endif
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -210,7 +210,7 @@
         abort = 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -253,7 +253,7 @@
         endif
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -277,7 +277,7 @@
     endif
 
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -288,7 +288,7 @@
         call readsgbs        ! Reads geometry and basis set from .sgbs file
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -301,7 +301,7 @@
         abort = 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -325,7 +325,7 @@
         endif
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -378,7 +378,7 @@
         deallocate(dmat)
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -386,7 +386,7 @@
 !    Piecewise fitting of the radial factors
     call ajusta
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -399,7 +399,7 @@
         endif
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -409,7 +409,7 @@
         abort = 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif

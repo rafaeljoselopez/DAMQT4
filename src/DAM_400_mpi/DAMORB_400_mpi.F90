@@ -129,7 +129,7 @@
         endif
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -169,7 +169,7 @@
         endif
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -180,7 +180,7 @@
 
     call consta
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -202,7 +202,7 @@
         endif
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -243,7 +243,7 @@
         lnamelist = (/ langstrom, lgradient, lsto, ltimeprocs, lm2c, lsgbsden /)
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
             call error(1,'Stop')
     endif
@@ -286,7 +286,7 @@
         endif
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -299,7 +299,7 @@
         abort = 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
@@ -381,7 +381,7 @@
         call pltorbGTO(norbs)
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-    CALL MPI_BCAST(abortroot,1,MPI_LOGICAL,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
     if (abortroot .gt. 0) then
         call error(1,'Stop')
     endif
