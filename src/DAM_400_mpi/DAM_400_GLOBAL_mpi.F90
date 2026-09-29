@@ -117,7 +117,8 @@ MODULE DAM_400_DATA_D
     integer(KINT) :: ioptaj, lmaxbase, lmaxexp, lmtop, lmultmx, mxltot, mxtpw, nbas, ncaps, ncen, nfitpar, nintstd, numdvec
     character(2), allocatable :: atmnam(:)
     character(300) :: projectname
-    logical :: lgbsgz, lden, ldengz, ldensprsbin, lm2c, longoutput, lsto, lvalence, lzdo, lgencontract
+    logical :: lgbsgz, lden, ldengz, ldensprsbin, lm2c, longoutput, lsto, lvalence, lzdo, lgencontract, lchargesbyl
+logical :: lmulliken
     real(KREAL) :: roblk(-mxl:mxl,-mxl:mxl)
     logical, allocatable :: lblock(:,:), lblockproc(:)
     logical*1, allocatable :: lsdisf(:,:)
@@ -138,7 +139,7 @@ MODULE DAM_400_DATA_D
     real(KREAL), allocatable :: Qgpart(:), qppart(:), rintr1(:), rintr2l2(:), vaux1c(:,:), ymat1(:,:), ymat2(:,:)
     real(KREAL), allocatable :: dosxcheb(:), fkvec0(:), rmultipmod(:), tchvec0(:), tchvec0a(:), tchvec1(:), xcheb(:)
     real(KREAL), allocatable, target, dimension(:) :: cfajust, cfrint1, cfrint2l2, cfajustrank, cfrint1rank, cfrint2l2rank
-    real(KREAL), allocatable, target, dimension(:,:) :: rmultip, rmultipfr
+    real(KREAL), allocatable, target, dimension(:,:) :: rmultip, rmultiprank, rmultipfr, rmultipfrank
     integer(KINT), allocatable, dimension(:) :: indintrv
     integer(KINT), allocatable, dimension(:) :: icfpos, icfposrank
     integer(KINT) :: ipmax, lencfparank, lenexpaj, natomtype, lenxajust
@@ -149,8 +150,7 @@ MODULE DAM_400_DATA_D
     integer(KINT) :: ilow, iupp
 !        auxiliary arrays for multipolar moments of STO distributions
     real(KREAL), allocatable :: bkmat(:,:), qlm2c(:), qlmdst(:), qlmasint(:), powu(:,:), pow1mu(:,:)
-!real(KREAL), allocatable :: qlm2cmullikb(:)
-real(KREAL) qmullikab
+    real(KREAL) qmullikab, qtotal
     real(KREAL) :: auxu(0:mxn+mxl), cina(0:mxn), cinb(0:mxn), pow2(0:mxldst), scomp(0:mxn+2*mxl)
 !        auxiliary arrays for multipolar moments of CGTO distributions
     real(KREAL), allocatable :: besselint(:,:)
@@ -666,10 +666,8 @@ MODULE PARALELO
     integer(KINT) :: nprocs, myrank, istart, iend
     integer(KINT), allocatable :: nbasesac(:), istav(:), iendv(:), ilenv(:), idispv(:)
     integer(KINT) :: abort, abortroot
-real(KREAL) :: qtotal
     character(256) :: fname, fnamerank
     logical lwrtcab
-logical lchargesbyl
 END MODULE
 !
 !                 END OF MODULE PARALELO

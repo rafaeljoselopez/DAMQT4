@@ -115,7 +115,8 @@ MODULE DAM_400_DATA_D
      integer(KINT) :: ioptaj, lmaxbase, lmaxexp, lmtop, lmultmx, mxltot, mxtpw, nbas, ncaps, ncen, nfitpar, nintstd, numdvec
      character(2), allocatable :: atmnam(:)
      character(300) :: projectname
-     logical :: lgbsgz, lden, ldengz, ldensprsbin, lm2c, longoutput, lsto, lvalence, lzdo, lgencontract
+     logical :: lgbsgz, lden, ldengz, ldensprsbin, lm2c, longoutput, lsto, lvalence, lzdo, lgencontract, lchargesbyl
+     logical :: lmulliken
      real(KREAL) :: roblk(-mxl:mxl,-mxl:mxl)
      logical*1, allocatable :: lsdisf(:,:)
      real(KREAL), allocatable :: dmat(:,:), dmataux(:,:), dvec(:), rcen(:,:), rnor(:), xx(:), zn(:)
@@ -147,7 +148,7 @@ MODULE DAM_400_DATA_D
      integer(KINT) :: ilow, iupp
 !    auxiliary arrays for multipolar moments of STO distributions
      real(KREAL), allocatable :: bkmat(:,:), qlm2c(:), qlmdst(:), qlmasint(:), powu(:,:), pow1mu(:,:)
-real(KREAL) qmullikab
+     real(KREAL) qmullikab, qtotal
      real(KREAL) :: auxu(0:mxn+mxl), cina(0:mxn), cinb(0:mxn), pow2(0:mxldst), scomp(0:mxn+2*mxl)
 !    auxiliary arrays for multipolar moments of CGTO distributions
      real(KREAL), allocatable :: besselint(:,:)

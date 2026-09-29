@@ -31,6 +31,7 @@ public:
     bool isInputOnly() const;
     bool isMpiChecked() const;
     bool isMpiEnabled() const;
+    bool isMullikenPartitionChecked() const;
     bool isOneCenterChecked() const;
     bool isTotalDensityChecked() const;
     bool isTwoCenterChecked() const;
@@ -42,6 +43,7 @@ public:
     void loadDefault();
     void readFromFile(const std::string& file);
     void setCutoffThreshold(int value);
+    void setDamPartitionChecked(bool checked);
     void setExecEnabled(bool enabled);
     void setFitThreshold(int value);
     void setIsWindows(bool windows);
@@ -58,6 +60,7 @@ public:
     void setMpiVisible(bool visible);
     void setMpiSettings(const QString &mpiCommand,
                         const QString &mpiFlags);
+    void setMullikenPartitionChecked(bool checked);
     void set_natom(int);
     void setOneCenterChecked(bool checked);
     void setPageEnabled(bool enabled);
@@ -139,6 +142,10 @@ private:
 
     QGroupBox* lmaxDisplayedGroup_ = nullptr;
     QSpinBox* lmaxDisplayedSpin_ = nullptr;
+
+    QGroupBox* densityPartitionGroup_ = nullptr;
+    QRadioButton* damPartitionRadio_ = nullptr;
+    QRadioButton* mullikenPartitionRadio_ = nullptr;
 
     QGroupBox* fittingTypeGroup_ = nullptr;
     QRadioButton* totalDensityRadio_ = nullptr;

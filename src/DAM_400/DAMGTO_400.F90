@@ -86,7 +86,7 @@ END MODULE
     real(KREAL) :: aux, qe, qn, qt, rant
     real(KREAL4) :: tarray(2), tiempo, dtime
     real(KREAL) :: qlm((mxmult+1)**2), qlmnuc((mxmult+1)**2)
-    namelist / options / ioptaj, iswindows, lmaxexp, lmultmx, longoutput, lvalence, lzdo, umbral, umbralres
+    namelist / options / ioptaj, iswindows, lmaxexp, lmultmx, longoutput, lvalence, lzdo, umbral, umbralres, lmulliken, lchargesbyl
     tiempo = dtime(tarray)
 !	Defaults for the NAMELIST OPTIONS
     longoutput = .false.	! If .true. a more detailed output is given
@@ -105,6 +105,8 @@ END MODULE
     lden = .false.
     ldengz = .false.
     ldensprsbin = .false.
+    lchargesbyl = .true.    ! If .true. computes two-center Contributions to atom charges by shells
+    lmulliken = .false.      ! If .true. uses Mulliken partition of the density otherwise uses DAM partition
 
 !	Reads the namelist OPTIONS
     read(5,OPTIONS)
@@ -122,6 +124,12 @@ END MODULE
         dirsep = "/"
         i = index(projectname,dirsep,.true.)	! Checks position of last directory name separator
     end if
+
+    if (lmulliken) then
+        write(6,"(/,'MULLIKEN PARTITION OF DENSITY',/)")
+    else
+        write(6,"(/,'DEFORMED ATOMS (DAM) PARTITION OF DENSITY',/)")
+    endif
 
     if (lzdo) then
         write(6,"(/'IMPORTANT: ZDO approximation used, fits one-center part of density',/)")
@@ -670,14 +678,12 @@ END MODULE
     integer(KINT) :: n, na, nb, nfa, nfb, nga1, nga2, ngb1, ngb2
     real(KREAL) :: aux, bux, cosal, cosbet, cosga, cux, den, dosx, exa, exb, expajust, fabs, factor, fmax
     real(KREAL) :: rab, rabinv, rdif, res, rn, rna, rnab, rnb, rp2, sinal, sinbet, singa, suma, tchb0, tchb1
-real(KREAL) :: qatom, qtotal, qtotalmull
+    real(KREAL) :: qatom, qtotalmull
     real(KREAL) :: x, x12inv, xa, xab, xb, xinv, xy, ya, yab, yb, za, zab, zb, umbraux, umbralres2
     logical :: lf0, lprint, lmultmod
     real(KREAL), allocatable :: cf12(:), faux(:), fbux(:), fk0(:), r2l2(:), r2v(:), x12(:)
     real(KREAL) :: roaux(-mxl:mxl,-mxl:mxl), bvec(0:mxlenpol-1), qlm1c(0:mxldst)
-real(KREAL), allocatable :: atomchargesbyl(:,:), mullikenchargesbyl(:,:)
-
-!write(6,"(//'enters ajusta',//)")
+    real(KREAL), allocatable :: atomchargesbyl(:,:), mullikenchargesbyl(:,:)
 
     lrotar = max(lmaxbase,lmaxexp)
     umbralres2 = umbralres * umbralres
@@ -840,10 +846,10 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     write(6,"(/3x,'  atom        la    ma  ', 13x, 'value',14x,'from radial factors' &
                 ,/3x,11('-'),2x,4('-'),2x,4('-'),4x,24('-'),3x,24('-'))")
 
-atomchargesbyl = cero
-mullikenchargesbyl = cero
-qtotal = cero
-qtotalmull = cero
+    atomchargesbyl = cero
+    mullikenchargesbyl = cero
+    qtotal = cero
+    qtotalmull = cero
 
     do ia = 1, ncen	! Do over centers (ia)
         if (ngini(ia) .le. 0) cycle	! If center without associated basis set, cycles
@@ -910,12 +916,12 @@ qtotalmull = cero
                                 rmultip(lml1l2(j),ia) = rmultip(lml1l2(j),ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
                                         * dosl1i(llm(lml1l2(j)))
                                 fa(1:npntaj,lml1l2(j)) = fa(1:npntaj,lml1l2(j)) + bux * vaux1c(1:npntaj,npl1l2(j))
-if (lml1l2(j) .eq. 1) then
-    atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
-        * dosl1i(llm(lml1l2(j)))
-    mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
-        * dosl1i(llm(lml1l2(j)))
-endif
+                                if (lml1l2(j) .eq. 1) then
+                                    atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
+                                        * dosl1i(llm(lml1l2(j)))
+                                    mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
+                                        * dosl1i(llm(lml1l2(j)))
+                                endif
                             enddo
                         enddo doma
                     enddo
@@ -1018,14 +1024,23 @@ endif
 !	Computes the multipolar moments in the lined-up axis system:
 !		multfrg2cgauss: translation method (Bessel I expansion)
 !		multfrg2cgaussnw: shift operators method (overlap between generalized Gaussians)
-                        call multfrg2cgauss(i1, i2, rab)
-atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + qmullikab
-mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + umed * qmullikab
-mullikenchargesbyl(lb,ib) = mullikenchargesbyl(lb,ib) + umed * qmullikab
-! 			call multfrg2cgaussnw(i1, i2, rab)
+
+                        if (.not. lmulliken) then
+                            call multfrg2cgauss(i1, i2, rab)
+                            atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + qmullikab
+                        ! 			call multfrg2cgaussnw(i1, i2, rab)
+                        else
+                            call multfrg2cgaussmulliken(i1, i2, rab)
+                            mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + umed * qmullikab
+                            mullikenchargesbyl(lb,ib) = mullikenchargesbyl(lb,ib) + umed * qmullikab
+                        endif
 !	Tabulation of A fragment
                         lf0 = .true.	! null f0 -> lf0 = .false.  (set in frgsiggauss)
-                        call frgsiggauss(lf0, i1, i2, rab)	! Sigma part
+                        if (.not. lmulliken) then
+                            call frgsiggauss(lf0, i1, i2, rab)	! DAM Sigma part
+                        else
+                            call frgmulliken(lf0, i1, i2, rab)	! Mulliken's Sigma part
+                        endif
                         if (lf0) then
                            call dsczazbnew(la, lb, rab)   ! Factors for La,Ma,Lb,Mb
                         endif
@@ -1201,41 +1216,45 @@ mullikenchargesbyl(lb,ib) = mullikenchargesbyl(lb,ib) + umed * qmullikab
 
 !   Prints DAM charges per shell to file
 
-open(20,file=trim(projectname)//".chargesbyl",form='formatted', iostat=ierr)
-write(20,"('DAM atomic charges by l',/)")
-do ia = 1, ncen
-write(20,"('atom # ', i4)") ia
-qatom = cero
-do l = 0, lmaxbase
-    if (abs(atomchargesbyl(l,ia)) .lt. 1.d-5) cycle
-    write(20,"('l = ', i2, ' charge = ', f12.5)") l, atomchargesbyl(l,ia)
-    qatom = qatom + atomchargesbyl(l,ia)
-enddo
-write(20,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
-qtotal = qtotal + qatom
-enddo
-write(20,"(/'total electron charge = ', e12.5)") -qtotal
-deallocate(atomchargesbyl)
-close(20)
+    if (.not. lmulliken .and. lchargesbyl) then
+        open(20,file=trim(projectname)//".chargesDAMbyl",form='formatted', iostat=ierr)
+        write(20,"('DAM atomic charges by l',/)")
+        do ia = 1, ncen
+        write(20,"('atom # ', i4)") ia
+        qatom = cero
+        do l = 0, lmaxbase
+            if (abs(atomchargesbyl(l,ia)) .lt. 1.d-5) cycle
+            write(20,"('l = ', i2, ' charge = ', f12.5)") l, atomchargesbyl(l,ia)
+            qatom = qatom + atomchargesbyl(l,ia)
+        enddo
+        write(20,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
+        qtotal = qtotal + qatom
+        enddo
+        write(20,"(/'total electron charge = ', e12.5)") -qtotal
+        deallocate(atomchargesbyl)
+        close(20)
+    endif
 
 !   Prints Mulliken charges per shell to file
 
-open(20,file=trim(projectname)//".mullikenchargesbyl",form='formatted', iostat=ierr)
-write(20,"('Mulliken atomic charges by l',/)")
-do ia = 1, ncen
-write(20,"('atom # ', i4)") ia
-qatom = cero
-do l = 0, lmaxbase
-    if (abs(mullikenchargesbyl(l,ia)) .lt. 1.d-5) cycle
-    write(20,"('l = ', i2, ' charge = ', f12.5)") l, mullikenchargesbyl(l,ia)
-    qatom = qatom + mullikenchargesbyl(l,ia)
-enddo
-write(20,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
-qtotalmull = qtotalmull + qatom
-enddo
-write(20,"(/'total electron charge = ', e12.5)") -qtotalmull
-deallocate(mullikenchargesbyl)
-close(20)
+    if (lmulliken .and. lchargesbyl) then
+        open(21,file=trim(projectname)//".mullikenchargesbyl",form='formatted', iostat=ierr)
+        write(21,"('Mulliken atomic charges by l',/)")
+        do ia = 1, ncen
+            write(21,"('atom # ', i4)") ia
+            qatom = cero
+            do l = 0, lmaxbase
+                if (abs(mullikenchargesbyl(l,ia)) .lt. 1.d-5) cycle
+                write(21,"('l = ', i2, ' charge = ', f12.5)") l, mullikenchargesbyl(l,ia)
+                qatom = qatom + mullikenchargesbyl(l,ia)
+            enddo
+            write(21,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
+            qtotalmull = qtotalmull + qatom
+        enddo
+        write(21,"(/'total electron charge = ', e12.5)") -qtotalmull
+        deallocate(mullikenchargesbyl)
+        close(21)
+    endif
 
     close(10)
     close(11)
@@ -1263,13 +1282,13 @@ close(20)
     integer(KINT) :: l, la, lb, lenpol, lk, lm, lma, lmax, lmb, lmin, lrotar, m, ma, mb
     integer(KINT) :: n, na, nb, nfa, nfb, nga1, nga2, ngb1, ngb2
     real(KREAL) :: aux, bux, cosal, cosbet, cosga, cux, den, dosx, exa, exb, expajust, fabs, factor, fmax
-real(KREAL) :: qatom, qtotal, qtotalmull
+    real(KREAL) :: qatom, qtotalmull
     real(KREAL) :: rab, rabinv, rdif, res, rn, rna, rnab, rnb, rp2, sinal, sinbet, singa, suma, tchb0, tchb1
     real(KREAL) :: x, x12inv, xa, xab, xb, xinv, xy, ya, yab, yb, za, zab, zb, umbraux, umbralres2
     logical :: lf0, lprint, lmultmod
     real(KREAL), allocatable :: cf12(:), faux(:), fbux(:), fk0(:), r2l2(:), r2v(:), x12(:)
     real(KREAL) :: roaux(-mxl:mxl,-mxl:mxl), bvec(0:mxlenpol-1), qlm1c(0:mxldst)
-real(KREAL), allocatable :: atomchargesbyl(:,:), mullikenchargesbyl(:,:)
+    real(KREAL), allocatable :: atomchargesbyl(:,:), mullikenchargesbyl(:,:)
 
 !write(6,"(//'enters ajustagencontract',//)")
 
@@ -1291,8 +1310,8 @@ real(KREAL), allocatable :: atomchargesbyl(:,:), mullikenchargesbyl(:,:)
     if (ierr .ne. 0) call error(1,'Memory error when allocating xajust. Stop')
     if (longoutput) write(6,"('Size of xajust    = ', i15, ' bytes')") size(xajust)
 
-allocate(atomchargesbyl(0:lmaxbase,ncen), mullikenchargesbyl(0:lmaxbase,ncen), stat = ierr)
-if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and mullikenchargesbyl. Stop')
+    allocate(atomchargesbyl(0:lmaxbase,ncen), mullikenchargesbyl(0:lmaxbase,ncen), stat = ierr)
+    if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and mullikenchargesbyl. Stop')
 
 !   Allocates memory for Hypergeometrics 2F1 and overlap integrals between generalized gaussians < g(n,L,M)| g(0,L',M') >
     allocate(h2f1(-mxl:(lmaxexp+mxl)/2,0:lmaxexp+mxl+(lmaxexp+mxl)/2,-(lmaxexp+mxl)/2:0), stat = ierr)
@@ -1388,6 +1407,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
 #endif
     write(6,"('file 10 = ', a)") trim(projectname)//"_2016.damqt"
     write(6,"('file 11 = ', a)") trim(projectname)//"_2016.dmqtv"
+
 !   writes basis set to 'projectname'_2016.damqt
     call escribebase
 
@@ -1403,7 +1423,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     do i = 1, nintervaj
         rpntaj((i-1)*npntintr+1:i*npntintr) = (rinterv(i) - rinterv(i-1)) * umed * (uno + xcheb) + rinterv(i-1)
     enddo
-! write(6,"('rpntaj = ', 7(1x,e17.10))") rpntaj(1:npntintr)
+
     rpow(1:npntaj,0) = uno
     do j = 1, 2*mxl
         rpow(1:npntaj,j) = rpow(1:npntaj,j-1) * rpntaj
@@ -1434,10 +1454,10 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     write(6,"(/3x,'  atom        la    ma  ', 13x, 'value',14x,'from radial factors' &
             ,/3x,11('-'),2x,4('-'),2x,4('-'),4x,24('-'),3x,24('-'))")
 
-atomchargesbyl = cero
-mullikenchargesbyl = cero
-qtotal = cero
-qtotalmull = cero
+    atomchargesbyl = cero
+    mullikenchargesbyl = cero
+    qtotal = cero
+    qtotalmull = cero
 
     do ia = 1, ncen   ! Do over centers (ia)
         if (ngini(ia) .le. 0) cycle   ! If center without associated basis set, cycles
@@ -1503,12 +1523,12 @@ qtotalmull = cero
                                 bux = ccl1l2(j) * aux
                                 rmultip(lml1l2(j),ia) = rmultip(lml1l2(j),ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
                                         * dosl1i(llm(lml1l2(j)))
-if (lml1l2(j) .eq. 1) then
-    atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
-        * dosl1i(llm(lml1l2(j)))
-    mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
-            * dosl1i(llm(lml1l2(j)))
-endif
+                                if (lml1l2(j) .eq. 1) then
+                                    atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
+                                        * dosl1i(llm(lml1l2(j)))
+                                    mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
+                                            * dosl1i(llm(lml1l2(j)))
+                                endif
                                 fa(1:npntaj,lml1l2(j)) = fa(1:npntaj,lml1l2(j)) + bux * vaux1c(1:npntaj,npl1l2(j))
                             enddo
                         enddo doma
@@ -1539,7 +1559,11 @@ endif
                     call error(1,' Stop')
                 endif
 
-                call bivsub(ia, ib, rab)
+                if (.not. lmulliken) then
+                                call bivsub(ia, ib, rab)
+                else
+                call bivmullikensub(ia, ib, rab)
+                endif
 
                 if (xy .gt. 1.d-10) then
                     sinal = yab / xy
@@ -1620,17 +1644,24 @@ endif
 !   Computes the multipolar moments in the lined-up axis system:
 !      multfrg2cgauss: translation method (Bessel I expansion)
 !      multfrg2cgaussnw: shift operators method (overlap between generalized Gaussians)
-                        call multfrg2cgauss(i1, i2, rab)
-atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + qmullikab
-mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + umed * qmullikab
-mullikenchargesbyl(lb,ib) = mullikenchargesbyl(lb,ib) + umed * qmullikab
-!write(7,"(/'ia = ', i3, ' ib = ', i3, ' la = ', i3, ' lb = ', i3, ' contrib to mulliken charge = ', e17.10)") &
-!ia, ib, la, lb, umed * qmullikab
-!
-!                   call multfrg2cgaussnw(i1, i2, rab)
+
+                        if (.not. lmulliken) then
+                            call multfrg2cgauss(i1, i2, rab)
+                            atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + qmullikab
+                        ! 			call multfrg2cgaussnw(i1, i2, rab)
+                        else
+                            call multfrg2cgaussmulliken(i1, i2, rab)
+                            mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + umed * qmullikab
+                            mullikenchargesbyl(lb,ib) = mullikenchargesbyl(lb,ib) + umed * qmullikab
+                        endif
+
 !   Tabulation of A fragment
                         lf0 = .true.
-                        call frgsiggencontr(lf0, ia, ib, i1, i2, rab)   ! Sigma part
+                        if (.not. lmulliken) then
+                            call frgsiggencontr(lf0, ia, ib, i1, i2, rab)   ! DAM Sigma part
+                        else
+                            call frgmullikencontr(lf0, ia, ib, i1, i2, rab)	! Mulliken's Sigma part
+                        endif
                         if (lf0) then
                            call dsczazbnew(la, lb, rab)   ! Factors for La,Ma,Lb,Mb
                         endif
@@ -1805,41 +1836,45 @@ mullikenchargesbyl(lb,ib) = mullikenchargesbyl(lb,ib) + umed * qmullikab
 
 !   Prints DAM charges per shell to file
 
-open(20,file=trim(projectname)//".chargesbyl",form='formatted', iostat=ierr)
-write(20,"('DAM atomic charges by l',/)")
-do ia = 1, ncen
-write(20,"('atom # ', i4)") ia
-qatom = cero
-do l = 0, lmaxbase
-    if (abs(atomchargesbyl(l,ia)) .lt. 1.d-5) cycle
-    write(20,"('l = ', i2, ' charge = ', f12.5)") l, atomchargesbyl(l,ia)
-    qatom = qatom + atomchargesbyl(l,ia)
-enddo
-write(20,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
-qtotal = qtotal + qatom
-enddo
-write(20,"(/'total electron charge = ', e12.5)") -qtotal
-deallocate(atomchargesbyl)
-close(20)
+    if (.not. lmulliken .and. lchargesbyl) then
+        open(20,file=trim(projectname)//".chargesDAMbyl",form='formatted', iostat=ierr)
+        write(20,"('DAM atomic charges by l',/)")
+        do ia = 1, ncen
+            write(20,"('atom # ', i4)") ia
+            qatom = cero
+            do l = 0, lmaxbase
+                if (abs(atomchargesbyl(l,ia)) .lt. 1.d-5) cycle
+                write(20,"('l = ', i2, ' charge = ', f12.5)") l, atomchargesbyl(l,ia)
+                qatom = qatom + atomchargesbyl(l,ia)
+            enddo
+            write(20,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
+            qtotal = qtotal + qatom
+        enddo
+        write(20,"(/'total electron charge = ', e12.5)") -qtotal
+        deallocate(atomchargesbyl)
+        close(20)
+    endif
 
 !   Prints Mulliken charges per shell to file
 
-open(20,file=trim(projectname)//".mullikenchargesbyl",form='formatted', iostat=ierr)
-write(20,"('Mulliken atomic charges by l',/)")
-do ia = 1, ncen
-write(20,"('atom # ', i4)") ia
-qatom = cero
-do l = 0, lmaxbase
-    if (abs(mullikenchargesbyl(l,ia)) .lt. 1.d-5) cycle
-    write(20,"('l = ', i2, ' charge = ', f12.5)") l, mullikenchargesbyl(l,ia)
-    qatom = qatom + mullikenchargesbyl(l,ia)
-enddo
-write(20,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
-qtotalmull = qtotalmull + qatom
-enddo
-write(20,"(/'total electron charge = ', e12.5)") -qtotalmull
-deallocate(mullikenchargesbyl)
-close(20)
+    if (lmulliken .and. lchargesbyl) then
+        open(21,file=trim(projectname)//".mullikenchargesbyl",form='formatted', iostat=ierr)
+        write(21,"('Mulliken atomic charges by l',/)")
+        do ia = 1, ncen
+        write(21,"('atom # ', i4)") ia
+        qatom = cero
+        do l = 0, lmaxbase
+            if (abs(mullikenchargesbyl(l,ia)) .lt. 1.d-5) cycle
+            write(21,"('l = ', i2, ' charge = ', f12.5)") l, mullikenchargesbyl(l,ia)
+            qatom = qatom + mullikenchargesbyl(l,ia)
+        enddo
+        write(21,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
+        qtotalmull = qtotalmull + qatom
+        enddo
+        write(21,"(/'total electron charge = ', e12.5)") -qtotalmull
+        deallocate(mullikenchargesbyl)
+        close(21)
+    endif
 
     close(10)
     close(11)
@@ -2084,6 +2119,100 @@ close(20)
     return
     end
 
+
+!   ***************************************************************
+
+  subroutine frgmulliken(lf0, i1, i2, rab)
+    USE DAM_400_D
+    USE DAM_400_CONST_D
+    USE DAM_400_DATA_D
+    USE GAUSS
+    implicit none
+    integer(KINT) :: i, ii, i1, i1ini, i1fin, i2, i2ini, i2fin, icarga, ipunt, j, jj, k, kmax
+    integer(KINT) :: l, lsup, lsup2, lsupbi, nprimi, nprimj
+    real(KREAL) :: argcorte, argi, arginv, aux, bux, expaux, r, r2, rab, rinv, sum0, sum1
+    logical :: lf0
+    real(KREAL) :: vaux(mxprimit), vbux(0:mxltot), bi(0:mxltot)
+    lsup = lmaxexp + ll(i1) + ll(i2)
+    lsupbi = max(lsup,5)
+    lsup2 = lsupbi+lsupbi
+    nprimi = nprimit(i1)
+    nprimj = nprimit(i2)
+    i1ini = ipntprim(i1)
+    i2ini = ipntprim(i2)
+    i1fin = ipntprim(i1)+nprimi-1
+    i2fin = ipntprim(i2)+nprimj-1
+    lf0 = .true.
+    do ipunt = 1, npntaj
+!	Loads vaux with the values of the primitives of A in the tabulation point
+        r = rpntaj(ipunt)
+        r2 = r*r
+        k = 0
+        do i = i1ini, i1fin
+            k = k + 1
+            vaux(k) = cfcontr(i) * exp(-xxg(i)*r2)
+        enddo
+!	Loads zeroes in the array of partial sums
+        do i = 0, lsup
+            vbux(i) = 0.d0
+        enddo
+!    Computes Bessel I functions of argument 2*r*rab*xxg(j) times the factor
+!       Exp(-xxg(j)*(r**2+rab**2) * Sqrt[Pi/(r*rab*xxg(j))] * cfcontr(j)
+        argcorte = 3.d0 * max(lsup,10)
+        do jj = 1, nprimj
+            j = jj+i2ini-1
+            aux = xxg(j) * (r-rab)*(r-rab)
+            if (aux .lt. 100.d0) then   ! Test on the argument of the exponential
+                argi = 2.d0 * xxg(j) * r * rab
+                arginv = 1.d0 / argi
+                if (argi .ge. argcorte) then   ! Usa la formula cerrada
+                    expaux = dexp(-aux)
+                    sum1 = 1.d0 - arginv
+                    sum0 = 1.d0 - arginv
+                    bux = .5d0 * arginv
+                    do k = 1, lsupbi-2
+                        sum1 = facti(k+1) - re(lsup2-k) * ri(lsupbi-k) * sum1 * bux
+                        sum0 = facti(k+1) - re(lsup2-2-k)* ri(lsupbi-1-k) * sum0 * bux
+                    enddo
+                    sum0 = fact(lsupbi-1) * sum0
+                    sum1 = 1.d0-fact(lsupbi)*re(lsupbi+1)*sum1*bux
+                    bi(lsupbi) = sum1 * arginv * expaux * cfcontr(j)
+                    bi(lsupbi-1) = sum0 * arginv * expaux * cfcontr(j)
+                else                           ! Usa la serie
+                    expaux = dexp(-xxg(j)*(r*r+rab*rab))
+                    bux = .5d0 * argi * argi
+                    sum1 = 1.d0
+                    sum0 = 1.d0
+                    kmax = lsupbi + 41
+                    do k = 0, kmax-1
+                        sum1 = 1.d0 + ri(kmax-k)* ri(2*(lsupbi+kmax-k)+1) * bux * sum1
+                        sum0 = 1.d0 + ri(kmax-k)* ri(2*(lsupbi-1+kmax-k)+1) * bux * sum0
+                    enddo
+                    aux = (.5d0 * argi)**(lsupbi-1)*expaux*cfcontr(j)*raizpi
+                    bi(lsupbi)=(.5d0*argi)*aux*sum1/facts(lsupbi)
+                    bi(lsupbi-1)=aux*sum0/facts(lsupbi-1)
+                endif
+                do k = lsupbi-1, 1, -1
+                    bi(k-1) = bi(k+1) + re(k+k+1) * arginv * bi(k)
+                enddo
+!     Loads matrix vbux
+                do i = 1, nprimi
+                    do l = 0, lsup
+                        vbux(l) = vbux(l) + 0.5d0 * vaux(i) * bi(l)
+                    enddo
+                enddo
+            endif    ! End of Test on the argument of the exponential
+        enddo     ! End of loop on jj
+        rinv = 1.d0 / r
+        aux = 0.5d0
+        do l = 0, lsup
+            f0(ipunt,l) = vbux(l) * aux * re(l+l+1)
+            aux = aux * rinv
+        enddo
+    enddo     ! End of loop on ipunt
+    return
+    end
+
 !   ***************************************************************
 
   subroutine bivsub(ia, ib, rab)
@@ -2153,6 +2282,92 @@ close(20)
 !       Exp(-xxg(j)*(r**2+rab**2) * Sqrt[Pi/(r*rab*xxg(j))]
              argcorte = 3.d0 * max(lsup,10)
              do j = 1, jfinal
+                knti1i2 = knti1i2 + 1
+                aux = basis(ib)%shells(jb)%exp(j) * (r-rab)*(r-rab)
+                if (aux .ge. 100.d0) then   ! Test on the argument of the exponential
+                   biv(:,knti1i2) = cero
+                else
+                   argi = 2.d0 * basis(ib)%shells(jb)%exp(j) * r * rab
+                   arginv = 1.d0 / argi
+                   if (argi .ge. argcorte) then   ! Usa la formula cerrada
+                      expaux = dexp(-aux)
+                      sum1 = 1.d0 - arginv
+                      sum0 = 1.d0 - arginv
+                      bux = .5d0 * arginv
+                      do k = 1, lsupbi-2
+                            sum1 = facti(k+1) - re(lsup2-k) * ri(lsupbi-k) * sum1 * bux
+                            sum0 = facti(k+1) - re(lsup2-2-k)* ri(lsupbi-1-k) * sum0 * bux
+                      enddo
+                      sum0 = fact(lsupbi-1) * sum0
+                      sum1 = 1.d0-fact(lsupbi)*re(lsupbi+1)*sum1*bux
+                      biv(lsupbi,knti1i2) = sum1 * arginv * expaux
+                      biv(lsupbi-1,knti1i2) = sum0 * arginv * expaux
+                   else                           ! Usa la serie
+                      expaux = dexp(-basis(ib)%shells(jb)%exp(j)*(r*r+rab*rab))
+                      bux = .5d0 * argi * argi
+                      sum1 = 1.d0
+                      sum0 = 1.d0
+                      kmax = lsupbi + 41
+                      do k = 0, kmax-1
+                            sum1 = 1.d0 + ri(kmax-k)* ri(2*(lsupbi+kmax-k)+1) * bux * sum1
+                            sum0 = 1.d0 + ri(kmax-k)* ri(2*(lsupbi-1+kmax-k)+1) * bux * sum0
+                      enddo
+                      aux = (.5d0 * argi)**(lsupbi-1)*expaux*raizpi
+                      biv(lsupbi,knti1i2)=(.5d0*argi)*aux*sum1/facts(lsupbi)
+                      biv(lsupbi-1,knti1i2)=aux*sum0/facts(lsupbi-1)
+                   endif
+                   do k = lsupbi-1, 1, -1
+                      biv(k-1,knti1i2) = biv(k+1,knti1i2) + re(k+k+1) * arginv * biv(k,knti1i2)
+                   enddo
+                endif    ! End of Test on the argument of the exponential
+             enddo     ! End of loop on j
+          enddo     ! End of loop on ipunt
+       enddo     ! End of loop on ib
+    enddo     ! End of loop on ia
+    return
+    end
+
+
+!   ***************************************************************
+
+  subroutine bivmullikensub(ia, ib, rab)
+    USE DAM_400_D
+    USE DAM_400_CONST_D
+    USE DAM_400_DATA_D
+    USE GAUSS
+    USE GENCONTRACTMOD
+    implicit none
+    integer(KINT) :: i, ia, iashells, ib, ibshells, ierr, ii, ipunt, j, ja, jb, jfinal
+    integer(KINT) :: k, knti1i2, kmax, lsup, lsup2, lsupbi, nprimi, nprimj
+    real(KREAL)   :: argcorte, argi, arginv, aux, bux, expaux, r, r2, rab, sum0, sum1
+    real(KREAL)   :: bi(0:mxltot)
+    logical       :: lf0
+
+    iashells = basis(ia)%nshells
+    ibshells = basis(ib)%nshells
+    lsup = lmaxexp + basis(ia)%lmax + basis(ib)%lmax
+    lsupbi = max(lsup,5)
+
+    if(allocated(biv)) deallocate(biv)
+    if(allocated(knti1i2v)) deallocate(knti1i2v)
+    allocate(biv(0:lsupbi,npntaj*iashells*ibshells*mxprimit), knti1i2v(iashells,ibshells), stat = ierr)
+    if (ierr .ne. 0) call error(1,'Memory error when allocating biv. Stop')
+
+    knti1i2 = 0
+    do ja = 1, iashells
+       do jb = 1, ibshells
+          knti1i2v(ja,jb) = knti1i2
+          lsup2 = lsupbi+lsupbi
+          nprimi = basis(ia)%shells(ja)%nprim
+          nprimj = basis(ib)%shells(jb)%nprim
+          do ipunt = 1, npntaj
+!   Loads vaux with the values of the primitives of A in the tabulation point
+             r = rpntaj(ipunt)
+             r2 = r*r
+!    Computes Bessel I functions of argument 2*r*rab*xxg(j) times the factor
+!       Exp(-xxg(j)*(r**2+rab**2) * Sqrt[Pi/(r*rab*xxg(j))]
+             argcorte = 3.d0 * max(lsup,10)
+             do j = 1, nprimj
                 knti1i2 = knti1i2 + 1
                 aux = basis(ib)%shells(jb)%exp(j) * (r-rab)*(r-rab)
                 if (aux .ge. 100.d0) then   ! Test on the argument of the exponential
@@ -2287,6 +2502,72 @@ close(20)
                 vbux(0:lsup) = vbux(0:lsup) + rieqj(j) * vaux(igtj(j)) * bi(0:lsup)
                 do i = igtj(j)+1, nprimi
                    vbux(0:lsup) = vbux(0:lsup) + vaux(i) * bi(0:lsup)
+                enddo
+            endif    ! End of Test on the argument of the exponential
+        enddo     ! End of loop on j
+        rinv = 1.d0 / r
+        aux = 0.5d0
+        do l = 0, lsup
+            f0(ipunt,l) = vbux(l) * aux * re(l+l+1)
+            aux = aux * rinv
+        enddo
+    enddo     ! End of loop on ipunt
+    return
+    end
+
+!   ***************************************************************
+
+  subroutine frgmullikencontr(lf0, ia, ib, i1, i2, rab)
+    USE DAM_400_D
+    USE DAM_400_CONST_D
+    USE DAM_400_DATA_D
+    USE GAUSS
+    USE GENCONTRACTMOD!write(6,"(/,'j = ', i3, ' knti1i2 = ', i9, ' ib = ', i3, ' lb = ', i3, ' jb = ', i3)") j, knti1i2, ib, lb, jb
+    !call flush(6)
+    implicit none
+    integer(KINT) :: i, i1, i2, ia, ib, ii, ipunt, j, ja, jb, jini, jfinal
+    integer(KINT) :: k, knti1i2, l, la, lb, lsup, lsup2, lsupbi, nprimi, nprimj
+    real(KREAL) :: aux, r, r2, rab, rinv
+    logical :: lf0
+    real(KREAL) :: vaux(mxprimit), vbux(0:mxltot), bi(0:mxltot), rieqj(mxprimit)
+    integer(KINT) :: igtj(mxprimit)
+
+!write(6,*) 'entra en frgmullikencontr'
+
+    la = ll(i1)
+    lb = ll(i2)
+
+
+    knti1i2 = knti1i2v(la+1,lb+1)
+    if (knti1i2 .lt. 0) then
+       lf0 = .false.
+       return
+    endif
+
+    ja = kntcoefa(la)
+    jb = kntcoefb(lb)
+
+    lsup = lmaxexp + la + lb
+    lsupbi = max(lsup,5)
+
+    nprimi = basis(ia)%shells(la+1)%nprim
+    nprimj = basis(ib)%shells(lb+1)%nprim
+
+    do ipunt = 1, npntaj
+!   Loads vaux with the values of the primitives of A in the tabulation point
+        r = rpntaj(ipunt)
+        r2 = r*r
+        vaux(1:nprimi) = basis(ia)%shells(la+1)%coef(:,ja)  * exp(-basis(ia)%shells(la+1)%exp(:)*r2)
+!   Loads zeroes in the array of partial sums
+        vbux(0:lsup) = 0.d0
+!        if (jini .gt. 1) knti1i2 = knti1i2 + jini - 1
+        do j = 1, nprimj
+            knti1i2 = knti1i2 + 1
+            if (abs(basis(ib)%shells(lb+1)%coef(j,jb)) .lt. 1.d-20) cycle
+            if (basis(ib)%shells(lb+1)%exp(j) * (r-rab)*(r-rab) .lt. 100.d0) then   ! Test on the argument of the exponential
+                bi(0:lsup) = biv(0:lsup,knti1i2) * basis(ib)%shells(lb+1)%coef(j,jb)
+                do i = 1, nprimi
+                   vbux(0:lsup) = vbux(0:lsup) + 0.5d0 * vaux(i) * bi(0:lsup)
                 enddo
             endif    ! End of Test on the argument of the exponential
         enddo     ! End of loop on j
@@ -2855,8 +3136,89 @@ close(20)
                             qlm2c(lmlt*(lmlt+1)+mlm(lml1l2(ipp))+1) = qlm2c(lmlt*(lmlt+1)+mlm(lml1l2(ipp))+1) &
                                     + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
                                     * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
-if (lmlt .eq. 0) qmullikab = qmullikab + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
-                           * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
+                            if (lmlt .eq. 0) qmullikab = qmullikab + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
+                                                       * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
+                        enddo
+                    enddo
+                enddo
+                cux = - cux * R
+            enddo
+        enddo
+    enddo
+    return
+    end
+
+!
+!	********************************************************
+!
+!	Subroutine for computing multipolar moments of the fragments of a two-center
+!	charge distribution of CGTO:
+!	Version based on the translation method
+!
+  subroutine multfrg2cgaussmulliken(i1, i2, R)
+    USE DAM_400_D
+    USE DAM_400_DATA_D
+    USE DAM_400_CONST_D
+    USE GAUSS
+    implicit none
+    integer(KINT) :: i, i1, i1p, i2, i2p, i1ini, i1fin, i2ini, i2fin, ip, ipp, kmb, kp
+    integer(KINT) :: l, la, lb, llpm, lma, lmlt, lmtot, ma, mb, n, nprimi, nprimj
+    real(KREAL) :: ai, aux, b2d4a, bux, cux, dux, h1f1, R
+    lmtot = (mxltot+1)**2
+    la = ll(i1)
+    lb = ll(i2)
+    nprimi = nprimit(i1)
+    nprimj = nprimit(i2)
+    i1ini = ipntprim(i1)
+    i2ini = ipntprim(i2)
+    if (i1ini .le. 0 .or. i2ini .le. 0) return
+    i1fin = ipntprim(i1)+nprimi-1
+    i2fin = ipntprim(i2)+nprimj-1
+    besselint = cero
+    do i2p = i2ini, i2fin
+        dux = cfcontr(i2p) * raizpi
+        do i1p = i1ini, i1fin
+            ai = uno / (xxg(i1p)+xxg(i2p))
+            b2d4a = xxg(i2p) * xxg(i2p) * R * R * ai
+            aux = ai * sqrt(ai) * exp(-xxg(i1p) * xxg(i2p) * R * R * ai)
+            do l = 0, lmaxexp+la+lb
+                bux = umed * dosl1(l) * aux	! incluye el factor (l+1/2)
+                do n = 0, la + lb
+                    cux = uno
+                    h1f1 = uno
+                    do i = 1, n
+                        cux = cux * re(n+1-i) * dos * ri(l+l+i+i+1) * b2d4a * ri(i)
+                        h1f1 = h1f1 + cux
+                    enddo
+                    besselint(n,l) = besselint(n,l) + cfcontr(i1p) * bux * dux * h1f1
+                    bux = umed * re(l+l+n+n+3) * ai * bux
+                enddo
+                aux = xxg(i2p) * R * ai * aux
+            enddo
+        enddo
+    enddo
+    aux = pi
+    qmullikab = cero
+    do mb = -lb, lb
+        do ma = -la, la
+            lma = la*(la+1)+ma+1
+            cux = aux * roblk(ma,mb)	! Introduces the normalization factors and the density matrix elements
+            do kp = lb, abs(mb), -1
+                kmb = kp*(kp+1)+mb+1
+                dux = cux * bin(ind(lb+abs(mb))+kp+abs(mb)+1)
+                do l = 0, lmaxexp+la+lb
+                    do ip = i1l1l2(lma,l*(l+1)+1), i2l1l2(lma,l*(l+1)+1)
+                        if (llm(lml1l2(ip)) .lt. abs(ma)) cycle
+                        llpm = llm(lml1l2(ip))*(llm(lml1l2(ip))+1)+ma+1
+                        if (llpm .gt. lmtot) cycle
+                        do ipp = i1l1l2(llpm,kmb), i2l1l2(llpm,kmb)
+                            lmlt = llm(lml1l2(ipp))
+                            if (lmlt .gt. lmaxexp) cycle
+                            qlm2c(lmlt*(lmlt+1)+mlm(lml1l2(ipp))+1) = qlm2c(lmlt*(lmlt+1)+mlm(lml1l2(ipp))+1) &
+                                    + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
+                                    * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
+                            if (lmlt .eq. 0) qmullikab = qmullikab + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
+                                                       * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
                         enddo
                     enddo
                 enddo
@@ -3977,10 +4339,10 @@ if (lmlt .eq. 0) qmullikab = qmullikab + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i
     implicit none
     integer(KINT) :: i, i1, i2, ia, ib, ierr, ii, ishift, j, l, la, lb, lrotar, m, nfa, nfb, nga1, nga2, ngb1, ngb2
     real(KREAL) :: charge, cosal, cosbet, cosga, rab, rna, rnab, rnb, sinal, sinbet, singa, xab, xy, yab, zab
-real(KREAL) :: qatomGTO, qtotalGTO
+    real(KREAL) :: qatomGTO, qtotalGTO
     real(KREAL) :: roaux(-mxl:mxl,-mxl:mxl)
-real(KREAL), allocatable :: mullikenGTO(:,:)
-logical lchargesbyl
+    real(KREAL), allocatable :: mullikenGTO(:,:)
+
     allocate(sol(0:mxl), stat = ierr)
     if (ierr .ne. 0) call error(1,'Memory error when allocating sol. Stop')
     allocate(rl(-mxl:mxl,-mxl:mxl,0:mxl), stat = ierr)
@@ -3988,21 +4350,21 @@ logical lchargesbyl
     allocate(dl(-mxl:mxl,-mxl:mxl,0:mxl), stat = ierr)
     if (ierr .ne. 0) call error(1,'Memory error when allocating dl. Stop')
 
-open(25,file=trim(projectname)//".mullikenGTO",form='formatted', iostat=ierr)
-if (ierr .ne. 0) then
-    lchargesbyl = .false.
-else
-    lchargesbyl = .true.
-endif
-if (lchargesbyl) then
-    allocate(mullikenGTO(0:lmaxbase,ncen), stat = ierr)
-    if (ierr .ne. 0) then
-        lchargesbyl = .false.
-        close(25)
-    else
-        mullikenGTO = cero
-    endif
-endif
+!    open(25,file=trim(projectname)//".mullikenGTO",form='formatted', iostat=ierr)
+!    if (ierr .ne. 0) then
+!        lchargesbyl = .false.
+!    else
+!        lchargesbyl = .true.
+!    endif
+!    if (lchargesbyl) then
+!        allocate(mullikenGTO(0:lmaxbase,ncen), stat = ierr)
+!        if (ierr .ne. 0) then
+!            lchargesbyl = .false.
+!            close(25)
+!        else
+!            mullikenGTO = cero
+!        endif
+!    endif
 
     charge = cero
     do ia = 1, ncen
@@ -4020,9 +4382,9 @@ endif
                 call gaussoverlap(i1, i2, cero)
                 do m = -min(la,lb), min(la,lb)
                     charge = charge + rna * rnb * dmat(nfa+la+m,nfb+lb+m) * sol(abs(m))
-if (lchargesbyl) then
-mullikenGTO(la,ia) = mullikenGTO(la,ia) + rna * rnb * dmat(nfb+lb+m,nfa+la+m) * sol(abs(m))
-endif
+!                    if (lchargesbyl) then
+!                        mullikenGTO(la,ia) = mullikenGTO(la,ia) + rna * rnb * dmat(nfb+lb+m,nfa+la+m) * sol(abs(m))
+!                    endif
                 enddo
             enddo
         enddo
@@ -4085,38 +4447,34 @@ endif
                     call gaussoverlap(i1, i2, rab)
                     do m = -min(la,lb), min(la,lb)
                         charge = charge + rna * rnb * roblk(m,m) * sol(abs(m))
-if (lchargesbyl) then
-mullikenGTO(la,ia) = mullikenGTO(la,ia) + umed * rna * rnb * roblk(m,m) * sol(abs(m))
-!write(8,"(/'ia = ', i3, ' ib = ', i3, ' la = ', i3, ' lb = ', i3, ' contrib to la in mullikenGTO = ', e17.10)") &
-!ia, ib, la, lb, umed * rna * rnb * roblk(m,m) * sol(abs(m))
-mullikenGTO(lb,ib) = mullikenGTO(lb,ib) + umed * rna * rnb * roblk(m,m) * sol(abs(m))
-!write(8,"('ia = ', i3, ' ib = ', i3, ' la = ', i3, ' lb = ', i3, ' contrib to lb in mullikenGTO = ', e17.10)") &
-!ia, ib, la, lb, umed * rna * rnb * roblk(m,m) * sol(abs(m))
-endif
+!                        if (lchargesbyl) then
+!                            mullikenGTO(la,ia) = mullikenGTO(la,ia) + umed * rna * rnb * roblk(m,m) * sol(abs(m))
+!                            mullikenGTO(lb,ib) = mullikenGTO(lb,ib) + umed * rna * rnb * roblk(m,m) * sol(abs(m))
+!                        endif
                     enddo
                 enddo
             enddo
         enddo
     enddo
 
-if (lchargesbyl) then
-write(25,"('Mulliken charges computed from the basis set',/)")
-qtotalGTO = cero
-do ia = 1, ncen
-    write(25,"('atom # ', i4)") ia
-    qatomGTO = cero
-    do l = 0, lmaxbase
-        if (abs(mullikenGTO(l,ia)) .lt. 1.d-5) cycle
-        write(25,"('l = ', i2, ' charge = ', f12.5)") l, mullikenGTO(l,ia)
-        qatomGTO = qatomGTO + mullikenGTO(l,ia)
-    enddo
-    write(25,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatomGTO
-    qtotalGTO = qtotalGTO + qatomGTO
-enddo
-write(25,"(/'total electron charge = ', e12.5)") -qtotalGTO
-deallocate(mullikenGTO)
-close(25)
-endif
+!    if (lchargesbyl) then
+!        write(25,"('Mulliken charges computed from the basis set',/)")
+!        qtotalGTO = cero
+!        do ia = 1, ncen
+!            write(25,"('atom # ', i4)") ia
+!            qatomGTO = cero
+!            do l = 0, lmaxbase
+!                if (abs(mullikenGTO(l,ia)) .lt. 1.d-5) cycle
+!                write(25,"('l = ', i2, ' charge = ', f12.5)") l, mullikenGTO(l,ia)
+!                qatomGTO = qatomGTO + mullikenGTO(l,ia)
+!            enddo
+!            write(25,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatomGTO
+!            qtotalGTO = qtotalGTO + qatomGTO
+!        enddo
+!        write(25,"(/'total electron charge = ', e12.5)") -qtotalGTO
+!        deallocate(mullikenGTO)
+!        close(25)
+!    endif
 
     if (lzdo) then
         write(6,"(/'Total valence electron charge computed from density matrix = ', e22.15,/)") -charge

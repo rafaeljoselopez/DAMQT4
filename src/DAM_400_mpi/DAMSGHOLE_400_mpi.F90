@@ -383,11 +383,11 @@ END MODULE
     endif
     if (myrank .eq. 0) then
         if (i0 .eq. 0 .and. iopt(1) .ne. 0) then
-            write(6,"('Error ' i5, '. Program compiled in double precision and file ',a,' in single precision ')") &
+            write(6,"('Error ', i5, '. Program compiled in double precision and file ',a,' in single precision ')") &
                 ierr, trim(gridname)
             abortroot = 1
         else if(i0 .eq. 3 .and. iopt(1) .eq. 0) then
-            write(6,"('Error ' i5, '. Program compiled in single precision and file ',a,' in double precision ')") &
+            write(6,"('Error ', i5, '. Program compiled in single precision and file ',a,' in double precision ')") &
                 ierr, trim(gridname)
             abortroot = 1
         endif
@@ -417,7 +417,7 @@ END MODULE
     if (iopt(1) .eq. 3)  then   ! single precision data
         read(iuni, iostat=ierr) zini4, zfin4, yini4, yfin4, xini4, xfin4
         if (ierr .ne. 0) then
-            if (myrank .eq. 0) write(6,"('Error ' i5, ' reading grid dimensions from file ',a)") ierr, trim(gridname)
+            if (myrank .eq. 0) write(6,"('Error ', i5, ' reading grid dimensions from file ',a)") ierr, trim(gridname)
             abortroot = 1
         endif
         xini = xini4 ; yini = yini4 ; zini = zini4
@@ -425,7 +425,7 @@ END MODULE
     else if (iopt(1) .eq. 0)  then   ! double precision data
         read(iuni, iostat=ierr) zini, zfin, yini, yfin, xini, xfin
         if (ierr .ne. 0) then
-            if (myrank .eq. 0) write(6,"('Error ' i5, ' reading grid dimensions from file ',a)") ierr, trim(gridname)
+            if (myrank .eq. 0) write(6,"('Error ', i5, ' reading grid dimensions from file ',a)") ierr, trim(gridname)
             abortroot = 1
         endif
     else
@@ -491,12 +491,12 @@ END MODULE
     if (iopt(1) .eq. 3)  then   ! single precision grid
         allocate (grid(npoints), grid4(npoints), stat = ierr)
         if (ierr .ne. 0) then
-            write(6,"('Error ' i5, ' allocating grid, grid4 in processor ', i3)") ierr, myrank
+            write(6,"('Error ', i5, ' allocating grid, grid4 in processor ', i3)") ierr, myrank
             abort= 1
         else
             read(iuni, iostat=ierr) grid4
             if (ierr .ne. 0) then
-                write(6,"('Error ' i5, ' reading grid points from file ',a,' in processor ', i3)") ierr, trim(gridname), myrank
+                write(6,"('Error ', i5, ' reading grid points from file ',a,' in processor ', i3)") ierr, trim(gridname), myrank
                 abort= 1
             else
                 grid = grid4
@@ -506,12 +506,12 @@ END MODULE
     else if (iopt(1) .eq. 0)  then   ! double precision grid
         allocate (grid(npoints), stat = ierr)
         if (ierr .ne. 0) then
-            write(6,"('Error ' i5, ' allocating grid in processor ', i3)") ierr, myrank
+            write(6,"('Error ', i5, ' allocating grid in processor ', i3)") ierr, myrank
             abort= 1
         else
             read(iuni, iostat=ierr) grid
             if (ierr .ne. 0) then
-                write(6,"('Error ' i5, ' reading grid points from file ',a,' in processor ', i3)") ierr, trim(gridname), myrank
+                write(6,"('Error ', i5, ' reading grid points from file ',a,' in processor ', i3)") ierr, trim(gridname), myrank
                 abort= 1
             endif
         endif
@@ -528,7 +528,7 @@ END MODULE
 !     End of grid points read
     allocate (indices(max(30000,npoints)/nprocs), vertices(3,max(30000,npoints)/nprocs), stat = ierr)
     if (ierr .ne. 0) then
-        write(6,"('Error ' i5, ' allocating indices, vertices in processor ', i3)") ierr, myrank
+        write(6,"('Error ', i5, ' allocating indices, vertices in processor ', i3)") ierr, myrank
         abort= 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
@@ -539,7 +539,7 @@ END MODULE
 
     allocate (fvoxel(8), xvoxel(8), yvoxel(8), zvoxel(8), stat = ierr)
     if (ierr .ne. 0) then
-        write(6,"('Error ' i5, ' allocating fvoxel, xvoxel, yvoxel, zvoxel in processor ', i3)") ierr, myrank
+        write(6,"('Error ', i5, ' allocating fvoxel, xvoxel, yvoxel, zvoxel in processor ', i3)") ierr, myrank
         abort= 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
@@ -683,7 +683,7 @@ END MODULE
     idimzlm = (lmaxexp+2)**2
     allocate(zlma(idimzlm), zlmadx(idimzlm), zlmady(idimzlm), zlmadz(idimzlm), stat = ierr)
     if (ierr .ne. 0) then
-        write(6,"('Error ' i5, ' allocating zlma, zlmadx, zlmady, zlmadz in processor ', i3)") ierr, myrank
+        write(6,"('Error ', i5, ' allocating zlma, zlmadx, zlmady, zlmadz in processor ', i3)") ierr, myrank
         abort= 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
@@ -694,7 +694,7 @@ END MODULE
 
     allocate (ra2l1((lmaxrep+1)**2), ra2l1inv((lmaxrep+1)**2), stat = ierr)
     if (ierr .ne. 0) then
-        write(6,"('Error ' i5, ' allocating ra2l1 and ra2l1inv in processor ', i3)") ierr, myrank
+        write(6,"('Error ', i5, ' allocating ra2l1 and ra2l1inv in processor ', i3)") ierr, myrank
         abort= 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
@@ -705,7 +705,7 @@ END MODULE
 
     allocate (gradient(3*kntvert), vtot(kntvert), stat = ierr)
     if (ierr .ne. 0) then
-        write(6,"('Error ' i5, ' allocating gradient and vtot in processor ', i3)") ierr, myrank
+        write(6,"('Error ', i5, ' allocating gradient and vtot in processor ', i3)") ierr, myrank
         abort= 1
     endif
     CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
@@ -853,7 +853,7 @@ END MODULE
 !         Opens temporal files for reading
         allocate (nind(0:nprocs), nvert(0:nprocs), stat = ierr)
         if (ierr .ne. 0) then
-            write(6,"('Error ' i5, ' allocating nind and nvert in processor ', i3)") ierr, myrank
+            write(6,"('Error ', i5, ' allocating nind and nvert in processor ', i3)") ierr, myrank
             abort= 1
         endif
         if (abort .eq. 0) then
@@ -925,7 +925,7 @@ END MODULE
         if (abort .eq. 0) then
             allocate (indices(kntind), gradient4(3*kntvert), vertices4(3,kntvert), vtot4(kntvert), stat = ierr)
             if (ierr .ne. 0) then
-                write(6,"('Error ' i5, ' allocating indices, gradient4, vertices4, and vtot4 in processor ', i3)")ierr, myrank
+                write(6,"('Error ', i5, ' allocating indices, gradient4, vertices4, and vtot4 in processor ', i3)")ierr, myrank
                 abort= 1
             endif
         endif
@@ -1600,7 +1600,7 @@ END MODULE
         if (ldebug) then
             write(1234,"(/'Number of starting regions with possible local maxima = ', i3)") kntgroupmax
             do i = 1, kntgroupmax
-                write(1234,"('Number triangles in starting region ', i3 '  = ', i7)") i, numlocalmax(i)
+                write(1234,"('Number triangles in starting region ', i3 , '  = ', i7)") i, numlocalmax(i)
                 write(1234,"(/'Maximum no. ', i3, ' vertices = ', 3(' ',e12.5), ' vtot = ', e22.15)") &
                     i, vertices(:,indicesmax(i)),  vtot(indicesmax(i))
                 write(1234,"('Number of linked vertices = ', i3)") kntindiceslinks(indicesmax(i))
@@ -1696,7 +1696,7 @@ END MODULE
         if (ldebug) then
             write(1234,"(/111('-'),/'Number of starting regions with possible local minima = ', i3)") kntgroupmin
             do i = 1, kntgroupmin
-                write(1234,"('Number triangles in region ', i3 '  = ', i7)") i, numlocalmin(i)
+                write(1234,"('Number triangles in region ', i3 , '  = ', i7)") i, numlocalmin(i)
                 write(1234,"(/'Minimum no. ', i3, ' vertices = ', 3(' ',e12.5), ' vtot = ', e22.15)") &
                     i, vertices(:,indicesmin(i)),  vtot(indicesmin(i))
                 write(1234,"('Number of linked vertices = ', i3)") kntindiceslinks(indicesmin(i))

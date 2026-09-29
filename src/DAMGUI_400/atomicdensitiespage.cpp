@@ -55,6 +55,16 @@ void AtomicDensitiesPage::buildUi()
     auto* lmaxDisplayedLayout = new QHBoxLayout(lmaxDisplayedGroup_);
     lmaxDisplayedLayout->addWidget(lmaxDisplayedSpin_);
 
+
+    densityPartitionGroup_ = new QGroupBox(tr("Type of density partition"), this);
+    damPartitionRadio_ = new QRadioButton(tr("DAM partition"), densityPartitionGroup_);
+    mullikenPartitionRadio_ = new QRadioButton(tr("Mulliken partition"), densityPartitionGroup_);
+    damPartitionRadio_->setChecked(true);
+
+    auto* densityPartitionLayout = new QVBoxLayout(densityPartitionGroup_);
+    densityPartitionLayout->addWidget(damPartitionRadio_);
+    densityPartitionLayout->addWidget(mullikenPartitionRadio_);
+
     fittingTypeGroup_ = new QGroupBox(tr("Type of fitting"), this);
     totalDensityRadio_ = new QRadioButton(tr("Total density"), fittingTypeGroup_);
     oneCenterRadio_ = new QRadioButton(tr("One-center terms"), fittingTypeGroup_);
@@ -132,6 +142,7 @@ void AtomicDensitiesPage::buildUi()
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(lmaxExpansionGroup_);
     mainLayout->addWidget(lmaxDisplayedGroup_);
+    mainLayout->addWidget(densityPartitionGroup_);
     mainLayout->addWidget(fittingTypeGroup_);
     mainLayout->addWidget(thresholdsGroup_);
     mainLayout->addWidget(inputOnlyGroup_);
@@ -253,6 +264,7 @@ int AtomicDensitiesPage::mpiProcessors() const { return mpiProcessorsSpin_->valu
 bool AtomicDensitiesPage::isInputOnly() const { return inputOnlyCheck_->isChecked(); }
 bool AtomicDensitiesPage::isMpiChecked() const { return mpiCheck_->isChecked(); }
 bool AtomicDensitiesPage::isMpiEnabled() const { return mpiCheck_->isEnabled(); }
+bool AtomicDensitiesPage::isMullikenPartitionChecked() const { return mullikenPartitionRadio_->isChecked(); }
 bool AtomicDensitiesPage::isOneCenterChecked() const { return oneCenterRadio_->isChecked(); }
 bool AtomicDensitiesPage::isTotalDensityChecked() const { return totalDensityRadio_->isChecked(); }
 bool AtomicDensitiesPage::isTwoCenterChecked() const { return twoCenterRadio_->isChecked(); }
@@ -486,22 +498,6 @@ bool AtomicDensitiesPage::finishSgbs2Sxyz()
     return true;
 }
 
-//bool AtomicDensitiesPage::finishSgbs2Sxyz(
-//    const QString& targetSxyzFile)
-//{
-//    if (QFile::exists(targetSxyzFile)) {
-//        return true;
-//    }
-
-//    emit errorOccurred(
-//        tr("The conversion finished successfully, but "
-//           "the expected file was not created:\n%1")
-//            .arg(targetSxyzFile)
-//    );
-
-//    return false;
-//}
-
 void AtomicDensitiesPage::handleNormalProcessExit()
 {
     QFile file(lastOutputFileName_);
@@ -573,6 +569,12 @@ void AtomicDensitiesPage::readFromFile(const std::string& file)
     setTopLmaxDisplayed(lmaxExpansion());
     setLmaxDisplayed(ReadWriteOptions::readSpinBox("lmultmx", section, file));
 
+    const bool mulliken =
+        ReadWriteOptions::readRadioButton("lmulliken", section, file);
+
+    setMullikenPartitionChecked(mulliken);
+    setDamPartitionChecked(!mulliken);
+
     QString value = ReadWriteOptions::readTextToLineEdit("ioptaj", section, file);
     if (value == "2"){
         setOneCenterChecked(true);
@@ -627,6 +629,11 @@ ExternalProgramRunner *AtomicDensitiesPage::runner() const
 void AtomicDensitiesPage::setCutoffThreshold(int value)
 {
     cutoffThresholdSpin_->setValue(value);
+}
+
+void AtomicDensitiesPage::setDamPartitionChecked(bool checked)
+{
+    damPartitionRadio_->setChecked(checked);
 }
 
 void AtomicDensitiesPage::setExecEnabled(bool enabled)
@@ -710,6 +717,12 @@ void AtomicDensitiesPage::setMpiVisible(bool visible)
     mpiGroup_->setVisible(visible);
 }
 
+
+void AtomicDensitiesPage::setMullikenPartitionChecked(bool checked)
+{
+    mullikenPartitionRadio_->setChecked(checked);
+}
+
 //    sets variable natom
 void AtomicDensitiesPage::set_natom(int i)
 {
@@ -725,11 +738,6 @@ void AtomicDensitiesPage::setPageEnabled(bool enabled)
 {
     this->setEnabled(enabled);
 }
-
-// void AtomicDensitiesPage::setProjectFolder(const QString& value)
-// {
-//     projectFolder_ = value;
-// }
 
 void AtomicDensitiesPage::setProjectData(const QString &projectFolder,
                         const QString &projectName)
@@ -794,6 +802,8 @@ void AtomicDensitiesPage::writeToFile(const std::string& file,
     writeBool("lzdo", lzdo_);
 
     writeBool("lvalence", lvalence_);
+
+    writeBool("lmulliken", isMullikenPartitionChecked());
 
     QString qv;
     if (isOneCenterChecked()) qv = QString("2");
