@@ -68,7 +68,6 @@ public:
     void setPageEnabled(bool enabled);
     void setProjectData(const QString &projectFolder,
                         const QString &projectName);
-    // void setProjectFolder(const QString& value);
     void setRadiiTableEnabled(bool enabled);
     void setRadiiTableVisible(bool visible);
     void setSecondDerivatives(bool checked);
@@ -76,10 +75,6 @@ public:
     void setTabulationInitial(const QString& value);
     void setTabulationFinal(const QString& value);
     void setTabulationStep(const QString& value);
-//    void writeToFile(const std::string& file,
-//                     bool isWindows,
-//                     bool* printwarns,
-//                     QString* warns);
     void writeToFile(const std::string& file,
                      bool* printwarns,
                      QString* warns);
@@ -108,7 +103,6 @@ private:
     void extraValuesChanged(int state);
     void gradientStateChanged(int state);
     void handleNormalProcessExit();
-//    void inputOnlyStateChanged(int state);
     void lTabulationChanged(int lvalue);
     void secondDerivativesStateChanged(int state);
     void writeSelectedAtoms(const std::string& file,

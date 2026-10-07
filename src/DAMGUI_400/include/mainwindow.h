@@ -112,6 +112,7 @@ class FieldLinesPage;
 class DensityGradientPage;
 class HFForcesPage;
 class RadialFactorsPage;
+class SelfRepulsionPage;
 class OrientedMultipolesPage;
 class ZJExpansionPage;
 class ZJDensityPage;
@@ -187,6 +188,7 @@ private slots:      // Alphabetically sorted (including type in sort)
     void execDammultrot();
     void execDamorb();
     void execDampot();
+    void execDamSelfRepulsion();
     void execDamTopography();
     void execImport();
     void execsgbs2sxyz(const QString &qstring);
@@ -306,6 +308,7 @@ private:
     DensityGradientPage* densityGradientPage_ = nullptr;
     HFForcesPage* hfForcesPage_ = nullptr;
     RadialFactorsPage* radialFactorsPage_ = nullptr;
+    SelfRepulsionPage* selfRepulsionPage_ = nullptr;
     OrientedMultipolesPage* orientedMultipolesPage_ = nullptr;
     ZJExpansionPage* zjExpansionPage_ = nullptr;
     ZJDensityPage* zjDensityPage_ = nullptr;

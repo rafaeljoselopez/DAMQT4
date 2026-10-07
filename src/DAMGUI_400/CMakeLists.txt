@@ -66,6 +66,7 @@ set( DAMGUI400_SRCS
    ./recorder.cpp
    ./rotations.cpp
    ./screenshot.cpp
+   ./selfrepulsionpage.cpp
    ./settingsreader.cpp
    ./settingswriter.cpp
    ./sigmaholepage.cpp
@@ -125,6 +126,7 @@ set( DAMGUI400_MOC_HDRS
    ${DAMGUI400_INCLUDE_DIR}/recorder.h
    ${DAMGUI400_INCLUDE_DIR}/rotations.h
    ${DAMGUI400_INCLUDE_DIR}/screenshot.h
+   ${DAMGUI400_INCLUDE_DIR}/selfrepulsionpage.h
    ${DAMGUI400_INCLUDE_DIR}/sigmaholepage.h
    ${DAMGUI400_INCLUDE_DIR}/singlepassimporter.h
    ${DAMGUI400_INCLUDE_DIR}/Sheet.h

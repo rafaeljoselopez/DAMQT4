@@ -5381,7 +5381,7 @@ endif
     USE PARALELO
     implicit none
     integer(KINT) :: i, i1, i2, ia, ib, ierr, ii, ishift, j, l, la, lb, lrotar, m, nfa, nfb, nga1, nga2, ngb1, ngb2
-    real(KREAL) :: charge, cosal, cosbet, cosga, rab, rna, rnab, rnb, sinal, sinbet, singa, xab, xy, yab, zab
+    real(KREAL) :: charge, charge1, charge2, cosal, cosbet, cosga, rab, rna, rnab, rnb, sinal, sinbet, singa, xab, xy, yab, zab
     real(KREAL) :: qatomGTO, qtotalGTO
     real(KREAL) :: roaux(-mxl:mxl,-mxl:mxl)
     real(KREAL), allocatable :: mullikenGTO(:,:)
@@ -5412,7 +5412,8 @@ endif
 !        endif
 !    endif
 
-    charge = cero
+    charge1 = cero
+    charge2 = cero
     do ia = 1, ncen
         nga1 = ngini(ia)
         if (nga1 .le. 0) cycle
@@ -5427,7 +5428,7 @@ endif
                 nfb = nf(i2)
                 call gaussoverlap(i1, i2, cero)
                 do m = -min(la,lb), min(la,lb)
-                    charge = charge + rna * rnb * dmat(nfb+lb+m,nfa+la+m) * sol(abs(m))
+                    charge1 = charge1 + rna * rnb * dmat(nfb+lb+m,nfa+la+m) * sol(abs(m))
 !                    if (myrank .eq. 0 .and. lchargesbyl) then
 !                        mullikenGTO(la,ia) = mullikenGTO(la,ia) + rna * rnb * dmat(nfb+lb+m,nfa+la+m) * sol(abs(m))
 !                    endif
@@ -5493,7 +5494,7 @@ endif
                     enddo
                     call gaussoverlap(i1, i2, rab)
                     do m = -min(la,lb), min(la,lb)
-                        charge = charge + rna * rnb * roblk(m,m) * sol(abs(m))
+                        charge2 = charge2 + rna * rnb * roblk(m,m) * sol(abs(m))
 !                        if (myrank .eq. 0 .and. lchargesbyl) then
 !                            mullikenGTO(la,ia) = mullikenGTO(la,ia) + umed * rna * rnb * roblk(m,m) * sol(abs(m))
 !                            mullikenGTO(lb,ib) = mullikenGTO(lb,ib) + umed * rna * rnb * roblk(m,m) * sol(abs(m))
@@ -5523,12 +5524,13 @@ endif
 !        close(25)
 !    endif
 
-
+    charge = charge1+charge2
     if (lzdo) then
-        write(6,"(/'Total valence electron charge computed from density matrix = ', e22.15,/)") -charge
+        write(6,"(/'Valence electron charge computed from density matrix: total, one center, two-center = ', 3(2x,e22.15),/)") -charge, -charge1,-charge2
     else
-        write(6,"(/'Total electron charge computed from density matrix = ', e22.15,/)") -charge
+        write(6,"(/'Electron charge computed from density matrix: total, one center, two-center = ', 3(2x,e22.15),/)") -charge, -charge1,-charge2
     endif
+
     write(6,"('Highest value of l in the expansion of atomic densities = ', i4)") lmaxexp
     deallocate(dl, rl, sol)
     return

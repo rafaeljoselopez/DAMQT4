@@ -63,6 +63,7 @@
 #include "densitygradientpage.h"
 #include "hfforcespage.h"
 #include "radialfactorspage.h"
+#include "selfrepulsionpage.h"
 #include "orientedmultipolespage.h"
 #include "zjexpansionpage.h"
 #include "zjdensitypage.h"
@@ -1420,7 +1421,19 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(radialFactorsPage_, &MainWindow::execDamfrad);
 
-    toolBox->addItem(radialFactorsPage_, QIcon(":/images/icon.png"), tr("Radial factors"));
+    toolBox->addItem(radialFactorsPage_, QIcon(":/images/icon.png"), tr("Radial factor"));
+
+
+//    selfRepulsionPage_: SELF REPULSION
+
+    selfRepulsionPage_ = new SelfRepulsionPage(toolBox);
+    selfRepulsionPage_->setEnabled(false);
+
+    postDamPages_ << selfRepulsionPage_;
+
+    connectExecutablePage(selfRepulsionPage_, &MainWindow::execDamSelfRepulsion);
+
+    toolBox->addItem(selfRepulsionPage_, QIcon(":/images/icon.png"), tr("Self repulsion"));
 
 //    orientedMultipolesPage_: ORIENTED MULTIPOLES
 
@@ -2705,6 +2718,7 @@ void MainWindow::loadDefault(int all)
     fieldLinesPage_->loadDefault();
     densityGradientPage_->loadDefault();
     radialFactorsPage_->loadDefault();
+    selfRepulsionPage_->loadDefault();
     orientedMultipolesPage_->loadDefault();
     orientedMultipolesPage_->setNumAtoms(natom);
     orbitalsPage_->loadDefault();
@@ -2762,6 +2776,8 @@ void MainWindow::readOptions(const QString &fullFileName)
     hfForcesPage_->readFromFile(file);           //    hfForcesPage_: Hellmann-Feynman forces
 
     radialFactorsPage_->readFromFile(file);      //    radialFactorsPage_: Radial factors
+
+    selfRepulsionPage_->readFromFile(file);      //    selfRepulsionPage_: Self repulsion
 
     orientedMultipolesPage_->readFromFile(file); //    orientedMultipolesPage_: Oriented multipoles
 
@@ -2877,6 +2893,9 @@ void MainWindow::saveOptions(const QString &fullFileName)
     radialFactorsPage_->writeToFile(
         file, &printwarns, &warns);
 
+    selfRepulsionPage_->writeToFile(
+        file, &printwarns, &warns);
+
     orientedMultipolesPage_->writeToFile(
         file, &printwarns, &warns);
 
@@ -2958,6 +2977,7 @@ void MainWindow::atdenslmaxexp_changed()
     int valor2 = radialFactorsPage_->lMax();
     int valor3 = potentialPage_->lMax();
     int valor4 = fieldLinesPage_->lMax();
+    int valor5 = selfRepulsionPage_->lMax();
 
     if (valor < valor1){
         densityPage_->setLmax(valor);
@@ -2973,6 +2993,8 @@ void MainWindow::atdenslmaxexp_changed()
         fieldLinesPage_->setLmax(valor);
     }
     fieldLinesPage_->setLmaxTop(valor);
+    if (valor < valor5) selfRepulsionPage_->setlTabulation(valor);
+    selfRepulsionPage_->setLmax(valor);
 
     densityPage_->setLminTop(0);
 
@@ -3176,6 +3198,19 @@ void MainWindow::execDamfrad()
     radialFactorsPage_->setIsWindows(iswindows);
     radialFactorsPage_->setProjectData(ProjectFolder,ProjectName);
     radialFactorsPage_->execDamFrad();
+}
+
+/****************************************************************************/
+/*  selfRepulsionPage_: SELF REPULSION                                               */
+/****************************************************************************/
+
+
+//    Executes external program SELFREPULSION  (Computes self repulsion of components of the atomic partition)
+void MainWindow::execDamSelfRepulsion()
+{
+    selfRepulsionPage_->setIsWindows(iswindows);
+    selfRepulsionPage_->setProjectData(ProjectFolder,ProjectName);
+    selfRepulsionPage_->execDamSelfRepulsion();
 }
 
 
@@ -4739,6 +4774,7 @@ void MainWindow::setOutputPrefixes(const QString& prefix)
     topographyPage_->setOutputPrefix(prefix);
     densityGradientPage_->setOutputPrefix(prefix);
     radialFactorsPage_->setOutputPrefix(prefix);
+    selfRepulsionPage_->setOutputPrefix(prefix);
     orientedMultipolesPage_->setOutputPrefix(prefix);
     orbitalsPage_->setOutputPrefix(prefix);
     zjDensityPage_->setOutputPrefix(prefix);
