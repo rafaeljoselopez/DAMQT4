@@ -45,6 +45,7 @@
 #include <QProcess>
 #include <QStandardPaths>
 #include <QMessageBox>
+#include <QSaveFile>
 
 #include <algorithm>
 #include "filedialogutils.h"
@@ -99,6 +100,84 @@ bool copyReplacing(const QString& source, const QString& target)
         return false;
 
     return QFile::copy(source, target);
+}
+
+enum class FileComparison {
+    Identical,
+    Different,
+    Error
+};
+
+FileComparison compareFiles(const QString& first, const QString& second)
+{
+    QFile file1(first);
+    QFile file2(second);
+
+    if (!file1.open(QIODevice::ReadOnly) ||
+        !file2.open(QIODevice::ReadOnly))
+        return FileComparison::Error;
+
+    if (file1.size() != file2.size())
+        return FileComparison::Different;
+
+    constexpr qint64 blockSize = 65536;
+
+    while (!file1.atEnd()) {
+        const QByteArray block1 = file1.read(blockSize);
+        const QByteArray block2 = file2.read(blockSize);
+
+        if (block1.isEmpty() || block2.isEmpty())
+            return FileComparison::Error;
+
+        if (file1.error() != QFileDevice::NoError ||
+            file2.error() != QFileDevice::NoError)
+            return FileComparison::Error;
+
+        if (block1 != block2)
+            return FileComparison::Different;
+    }
+
+    if (file1.error() != QFileDevice::NoError ||
+        file2.error() != QFileDevice::NoError)
+        return FileComparison::Error;
+
+    return FileComparison::Identical;
+}
+
+bool replaceFileSafely(const QString& source, const QString& target)
+{
+    QFile input(source);
+
+    if (!input.open(QIODevice::ReadOnly))
+        return false;
+
+    QSaveFile output(target);
+
+    if (!output.open(QIODevice::WriteOnly))
+        return false;
+
+    constexpr qint64 blockSize = 65536;
+
+    while (!input.atEnd()) {
+        const QByteArray block = input.read(blockSize);
+
+        if (block.isEmpty()) {
+            output.cancelWriting();
+            return false;
+        }
+
+        if (output.write(block) != block.size()) {
+            output.cancelWriting();
+            return false;
+        }
+    }
+
+    if (input.error() != QFileDevice::NoError) {
+        output.cancelWriting();
+        return false;
+    }
+
+    return output.commit();
 }
 
 }
@@ -2404,7 +2483,6 @@ void MainWindow::readMOLEKEL()
     }
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
     existsinp(DirNombreArchivo,1,true);
-    QStringList Parameters;
 
     if (!ImportFolder.endsWith('/'))
         ImportFolder.append('/');
@@ -2439,13 +2517,17 @@ void MainWindow::readMOLEKEL()
 /* Reads data from a MOLPRO out file */
 void MainWindow::readMolpro()
 {
-    if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
+    if (!ImportFolder.endsWith('/'))
+        ImportFolder.append('/');
+
     QString DirNombreImport = ImportFolder+ImportFile;
     QString suffix = QFileInfo(DirNombreImport).suffix();
     QFile file(DirNombreImport);
     QDir path(ProjectFolder);
-    QString filepath=ProjectFolder + QFileInfo(DirNombreImport).fileName();
-    QStringList Parameters;
+
+    QString filepath =
+        QDir(ProjectFolder).filePath(QFileInfo(DirNombreImport).fileName());
+
     if (suffix=="out"){
         if (!path.exists(ProjectFolder)) {
             QMessageBox msgBox;
@@ -2469,12 +2551,64 @@ void MainWindow::readMolpro()
 
         existsinp(projectFile, 1, true);
 
-        file.copy(DirNombreImport,filepath);
-        int ierror=file.error();
-        while (ierror!=0)
-        {
-            ierror=file.error();
+        if (!sameFilePath(DirNombreImport, filepath)) {
+
+            if (QFile::exists(filepath)) {
+
+                const FileComparison result =
+                    compareFiles(DirNombreImport, filepath);
+
+                if (result == FileComparison::Error) {
+                    QMessageBox::warning(
+                        this,
+                        tr("File comparison error"),
+                        tr("Could not compare files:\n%1\n%2")
+                            .arg(DirNombreImport, filepath)
+                        );
+                    return;
+                }
+
+                if (result == FileComparison::Different) {
+
+                    const auto answer = QMessageBox::question(
+                        this,
+                        tr("Replace existing file?"),
+                        tr("The file %1 already exists in the project "
+                           "directory and differs from the selected file.\n"
+                           "Do you want to replace it?")
+                            .arg(filepath),
+                        QMessageBox::Yes | QMessageBox::No,
+                        QMessageBox::No
+                        );
+
+                    if (answer != QMessageBox::Yes)
+                        return;
+
+                    if (!replaceFileSafely(DirNombreImport, filepath)) {
+                        QMessageBox::warning(
+                            this,
+                            tr("File replacement error"),
+                            tr("Could not replace %1 with %2")
+                                .arg(filepath, DirNombreImport)
+                            );
+                        return;
+                    }
+                }
+
+            } else {
+
+                if (!QFile::copy(DirNombreImport, filepath)) {
+                    QMessageBox::warning(
+                        this,
+                        tr("File copy error"),
+                        tr("Could not copy %1 to %2")
+                            .arg(DirNombreImport, filepath)
+                        );
+                    return;
+                }
+            }
         }
+
         const QString processname = "MOLPRO_out_interface.exe";
         const QString execName = get_execName(processname, QString("interfaces_400"));
         if (execName.isEmpty())
@@ -2482,7 +2616,7 @@ void MainWindow::readMolpro()
 
         MolproImportRequest request;
 
-        request.importFilePath = DirNombreImport;
+        request.importFilePath = filepath;
         request.projectFolder = ProjectFolder;
         request.projectName = ProjectName;
         request.executablePath = execName;
@@ -4391,6 +4525,7 @@ void MainWindow::onFchkImportFinished()
 void MainWindow::onMolproImportFinished()
 {
     defineRanges();
+    atomicDensitiesPage_->setEnabled(true);
     updateOrbitalsPageState();
 }
 
