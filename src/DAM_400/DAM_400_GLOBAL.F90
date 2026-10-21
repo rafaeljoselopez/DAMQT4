@@ -148,7 +148,7 @@ MODULE DAM_400_DATA_D
      integer(KINT) :: ilow, iupp
 !    auxiliary arrays for multipolar moments of STO distributions
      real(KREAL), allocatable :: bkmat(:,:), qlm2c(:), qlmdst(:), qlmasint(:), powu(:,:), pow1mu(:,:)
-     real(KREAL) qmullikab, qtotal
+     real(KREAL) chargesab, qtotal
      real(KREAL) :: auxu(0:mxn+mxl), cina(0:mxn), cinb(0:mxn), pow2(0:mxldst), scomp(0:mxn+2*mxl)
 !    auxiliary arrays for multipolar moments of CGTO distributions
      real(KREAL), allocatable :: besselint(:,:)

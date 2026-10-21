@@ -116,20 +116,14 @@ void ProjectPage::connectSignals()
     connect(projectFolderEdit_, &QLineEdit::textChanged,
             this, &ProjectPage::projectFolderChanged);
 
-    // connect(projectNameEdit_, &QLineEdit::textChanged,
-    //         this, &ProjectPage::projectNameChanged);
 
     // connect(projectNameEdit_, &QLineEdit::textChanged,
-    //         this,
-    //         [this](const QString& text) {
-    //             qDebug() << "projectNameEdit_ changed:" << text;
+    //         this, [this](const QString& text) {
     //             emit projectNameChanged(text);
     //         });
 
     connect(projectNameEdit_, &QLineEdit::textChanged,
-            this, [this](const QString& text) {
-                emit projectNameChanged(text);
-            });
+            this, &ProjectPage::projectNameChanged);
 
     connect(importBrowseButton_, &QToolButton::clicked,
             this, &ProjectPage::browseImportRequested);

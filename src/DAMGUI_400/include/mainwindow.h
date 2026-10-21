@@ -170,7 +170,8 @@ private slots:      // Alphabetically sorted (including type in sort)
 
     void chooseLanguage(QAction *action);
 
-    void create_damproj(int exitCode, QProcess::ExitStatus exitStatus);
+    // void create_damproj(int exitCode, QProcess::ExitStatus exitStatus);
+    void create_damproj();
     void createLanguageMenu();
 
     void disable_pages();

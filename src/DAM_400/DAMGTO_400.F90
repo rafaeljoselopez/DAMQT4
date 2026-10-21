@@ -678,12 +678,12 @@ END MODULE
     integer(KINT) :: n, na, nb, nfa, nfb, nga1, nga2, ngb1, ngb2
     real(KREAL) :: aux, bux, cosal, cosbet, cosga, cux, den, dosx, exa, exb, expajust, fabs, factor, fmax
     real(KREAL) :: rab, rabinv, rdif, res, rn, rna, rnab, rnb, rp2, sinal, sinbet, singa, suma, tchb0, tchb1
-    real(KREAL) :: qatom, qtotalmull
+    real(KREAL) :: qatom
     real(KREAL) :: x, x12inv, xa, xab, xb, xinv, xy, ya, yab, yb, za, zab, zb, umbraux, umbralres2
     logical :: lf0, lprint, lmultmod
     real(KREAL), allocatable :: cf12(:), faux(:), fbux(:), fk0(:), r2l2(:), r2v(:), x12(:)
     real(KREAL) :: roaux(-mxl:mxl,-mxl:mxl), bvec(0:mxlenpol-1), qlm1c(0:mxldst)
-    real(KREAL), allocatable :: atomchargesbyl(:,:), mullikenchargesbyl(:,:)
+    real(KREAL), allocatable :: atomchargesbyl(:,:)
 
     lrotar = max(lmaxbase,lmaxexp)
     umbralres2 = umbralres * umbralres
@@ -703,8 +703,8 @@ END MODULE
     if (ierr .ne. 0) call error(1,'Memory error when allocating xajust. Stop')
     if (longoutput) write(6,"('Size of xajust    = ', i15, ' bytes')") size(xajust)
 
-allocate(atomchargesbyl(0:lmaxbase,ncen), mullikenchargesbyl(0:lmaxbase,ncen), stat = ierr)
-if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and mullikenchargesbyl. Stop')
+allocate(atomchargesbyl(0:lmaxbase,ncen), stat = ierr)
+if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl. Stop')
 
 !	Allocates memory for Hypergeometrics 2F1 and overlap integrals between generalized gaussians < g(n,L,M)| g(0,L',M') >
     allocate(h2f1(-mxl:(lmaxexp+mxl)/2,0:lmaxexp+mxl+(lmaxexp+mxl)/2,-(lmaxexp+mxl)/2:0), stat = ierr)
@@ -815,7 +815,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     do i = 1, nintervaj
         rpntaj((i-1)*npntintr+1:i*npntintr) = (rinterv(i) - rinterv(i-1)) * umed * (uno + xcheb) + rinterv(i-1)
     enddo
-! write(6,"('rpntaj = ', 7(1x,e17.10))") rpntaj(1:npntintr)
+
     rpow(1:npntaj,0) = uno
     do j = 1, 2*mxl
         rpow(1:npntaj,j) = rpow(1:npntaj,j-1) * rpntaj
@@ -847,9 +847,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
                 ,/3x,11('-'),2x,4('-'),2x,4('-'),4x,24('-'),3x,24('-'))")
 
     atomchargesbyl = cero
-    mullikenchargesbyl = cero
     qtotal = cero
-    qtotalmull = cero
 
     do ia = 1, ncen	! Do over centers (ia)
         if (ngini(ia) .le. 0) cycle	! If center without associated basis set, cycles
@@ -918,8 +916,6 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
                                 fa(1:npntaj,lml1l2(j)) = fa(1:npntaj,lml1l2(j)) + bux * vaux1c(1:npntaj,npl1l2(j))
                                 if (lml1l2(j) .eq. 1) then
                                     atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
-                                        * dosl1i(llm(lml1l2(j)))
-                                    mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
                                         * dosl1i(llm(lml1l2(j)))
                                 endif
                             enddo
@@ -1027,12 +1023,11 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
 
                         if (.not. lmulliken) then
                             call multfrg2cgauss(i1, i2, rab)
-                            atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + qmullikab
-                        ! 			call multfrg2cgaussnw(i1, i2, rab)
+                            atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + chargesab
                         else
                             call multfrg2cgaussmulliken(i1, i2, rab)
-                            mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + umed * qmullikab
-                            mullikenchargesbyl(lb,ib) = mullikenchargesbyl(lb,ib) + umed * qmullikab
+                            atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + umed * chargesab
+                            atomchargesbyl(lb,ib) = atomchargesbyl(lb,ib) + umed * chargesab
                         endif
 !	Tabulation of A fragment
                         lf0 = .true.	! null f0 -> lf0 = .false.  (set in frgsiggauss)
@@ -1214,11 +1209,16 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     enddo   ! End of Do over centers (ia)
 
 
-!   Prints DAM charges per shell to file
+!   Prints DAM or Mulliken charges per shell to file
 
-    if (.not. lmulliken .and. lchargesbyl) then
-        open(20,file=trim(projectname)//".chargesDAMbyl",form='formatted', iostat=ierr)
-        write(20,"('DAM atomic charges by l',/)")
+    if (lchargesbyl) then
+        if (.not. lmulliken) then
+            open(20,file=trim(projectname)//".DAMchargesbyl",form='formatted', iostat=ierr)
+            write(20,"('DAM atomic charges by l',/)")
+        else
+            open(20,file=trim(projectname)//".mullikenchargesbyl",form='formatted', iostat=ierr)
+            write(20,"('Mulliken atomic charges by l',/)")
+        endif
         do ia = 1, ncen
         write(20,"('atom # ', i4)") ia
         qatom = cero
@@ -1233,27 +1233,6 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
         write(20,"(/'total electron charge = ', e12.5)") -qtotal
         deallocate(atomchargesbyl)
         close(20)
-    endif
-
-!   Prints Mulliken charges per shell to file
-
-    if (lmulliken .and. lchargesbyl) then
-        open(21,file=trim(projectname)//".mullikenchargesbyl",form='formatted', iostat=ierr)
-        write(21,"('Mulliken atomic charges by l',/)")
-        do ia = 1, ncen
-            write(21,"('atom # ', i4)") ia
-            qatom = cero
-            do l = 0, lmaxbase
-                if (abs(mullikenchargesbyl(l,ia)) .lt. 1.d-5) cycle
-                write(21,"('l = ', i2, ' charge = ', f12.5)") l, mullikenchargesbyl(l,ia)
-                qatom = qatom + mullikenchargesbyl(l,ia)
-            enddo
-            write(21,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
-            qtotalmull = qtotalmull + qatom
-        enddo
-        write(21,"(/'total electron charge = ', e12.5)") -qtotalmull
-        deallocate(mullikenchargesbyl)
-        close(21)
     endif
 
     close(10)
@@ -1282,13 +1261,13 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     integer(KINT) :: l, la, lb, lenpol, lk, lm, lma, lmax, lmb, lmin, lrotar, m, ma, mb
     integer(KINT) :: n, na, nb, nfa, nfb, nga1, nga2, ngb1, ngb2
     real(KREAL) :: aux, bux, cosal, cosbet, cosga, cux, den, dosx, exa, exb, expajust, fabs, factor, fmax
-    real(KREAL) :: qatom, qtotalmull
+    real(KREAL) :: qatom
     real(KREAL) :: rab, rabinv, rdif, res, rn, rna, rnab, rnb, rp2, sinal, sinbet, singa, suma, tchb0, tchb1
     real(KREAL) :: x, x12inv, xa, xab, xb, xinv, xy, ya, yab, yb, za, zab, zb, umbraux, umbralres2
     logical :: lf0, lprint, lmultmod
     real(KREAL), allocatable :: cf12(:), faux(:), fbux(:), fk0(:), r2l2(:), r2v(:), x12(:)
     real(KREAL) :: roaux(-mxl:mxl,-mxl:mxl), bvec(0:mxlenpol-1), qlm1c(0:mxldst)
-    real(KREAL), allocatable :: atomchargesbyl(:,:), mullikenchargesbyl(:,:)
+    real(KREAL), allocatable :: atomchargesbyl(:,:)
 
 !write(6,"(//'enters ajustagencontract',//)")
 
@@ -1310,8 +1289,8 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     if (ierr .ne. 0) call error(1,'Memory error when allocating xajust. Stop')
     if (longoutput) write(6,"('Size of xajust    = ', i15, ' bytes')") size(xajust)
 
-    allocate(atomchargesbyl(0:lmaxbase,ncen), mullikenchargesbyl(0:lmaxbase,ncen), stat = ierr)
-    if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and mullikenchargesbyl. Stop')
+    allocate(atomchargesbyl(0:lmaxbase,ncen), stat = ierr)
+    if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl. Stop')
 
 !   Allocates memory for Hypergeometrics 2F1 and overlap integrals between generalized gaussians < g(n,L,M)| g(0,L',M') >
     allocate(h2f1(-mxl:(lmaxexp+mxl)/2,0:lmaxexp+mxl+(lmaxexp+mxl)/2,-(lmaxexp+mxl)/2:0), stat = ierr)
@@ -1455,9 +1434,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
             ,/3x,11('-'),2x,4('-'),2x,4('-'),4x,24('-'),3x,24('-'))")
 
     atomchargesbyl = cero
-    mullikenchargesbyl = cero
     qtotal = cero
-    qtotalmull = cero
 
     do ia = 1, ncen   ! Do over centers (ia)
         if (ngini(ia) .le. 0) cycle   ! If center without associated basis set, cycles
@@ -1526,8 +1503,6 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
                                 if (lml1l2(j) .eq. 1) then
                                     atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
                                         * dosl1i(llm(lml1l2(j)))
-                                    mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + bux * qlm1c((llm(lml1l2(j))+la+lb)/2) &
-                                            * dosl1i(llm(lml1l2(j)))
                                 endif
                                 fa(1:npntaj,lml1l2(j)) = fa(1:npntaj,lml1l2(j)) + bux * vaux1c(1:npntaj,npl1l2(j))
                             enddo
@@ -1560,9 +1535,9 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
                 endif
 
                 if (.not. lmulliken) then
-                                call bivsub(ia, ib, rab)
+                    call bivsub(ia, ib, rab)
                 else
-                call bivmullikensub(ia, ib, rab)
+                    call bivmullikensub(ia, ib, rab)
                 endif
 
                 if (xy .gt. 1.d-10) then
@@ -1647,12 +1622,11 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
 
                         if (.not. lmulliken) then
                             call multfrg2cgauss(i1, i2, rab)
-                            atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + qmullikab
-                        ! 			call multfrg2cgaussnw(i1, i2, rab)
+                            atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + chargesab
                         else
                             call multfrg2cgaussmulliken(i1, i2, rab)
-                            mullikenchargesbyl(la,ia) = mullikenchargesbyl(la,ia) + umed * qmullikab
-                            mullikenchargesbyl(lb,ib) = mullikenchargesbyl(lb,ib) + umed * qmullikab
+                            atomchargesbyl(la,ia) = atomchargesbyl(la,ia) + umed * chargesab
+                            atomchargesbyl(lb,ib) = atomchargesbyl(lb,ib) + umed * chargesab
                         endif
 
 !   Tabulation of A fragment
@@ -1834,11 +1808,16 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     enddo	! End of Do over centers (ia)
 
 
-!   Prints DAM charges per shell to file
+!   Prints DAM or Mulliken charges per shell to file
 
-    if (.not. lmulliken .and. lchargesbyl) then
-        open(20,file=trim(projectname)//".chargesDAMbyl",form='formatted', iostat=ierr)
-        write(20,"('DAM atomic charges by l',/)")
+    if (lchargesbyl) then
+        if (.not. lmulliken) then
+            open(20,file=trim(projectname)//".DAMchargesbyl",form='formatted', iostat=ierr)
+            write(20,"('DAM atomic charges by l',/)")
+        else
+            open(20,file=trim(projectname)//".mullikenchargesbyl",form='formatted', iostat=ierr)
+            write(20,"('Mulliken atomic charges by l',/)")
+        endif
         do ia = 1, ncen
             write(20,"('atom # ', i4)") ia
             qatom = cero
@@ -1853,27 +1832,6 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
         write(20,"(/'total electron charge = ', e12.5)") -qtotal
         deallocate(atomchargesbyl)
         close(20)
-    endif
-
-!   Prints Mulliken charges per shell to file
-
-    if (lmulliken .and. lchargesbyl) then
-        open(21,file=trim(projectname)//".mullikenchargesbyl",form='formatted', iostat=ierr)
-        write(21,"('Mulliken atomic charges by l',/)")
-        do ia = 1, ncen
-        write(21,"('atom # ', i4)") ia
-        qatom = cero
-        do l = 0, lmaxbase
-            if (abs(mullikenchargesbyl(l,ia)) .lt. 1.d-5) cycle
-            write(21,"('l = ', i2, ' charge = ', f12.5)") l, mullikenchargesbyl(l,ia)
-            qatom = qatom + mullikenchargesbyl(l,ia)
-        enddo
-        write(21,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatom
-        qtotalmull = qtotalmull + qatom
-        enddo
-        write(21,"(/'total electron charge = ', e12.5)") -qtotalmull
-        deallocate(mullikenchargesbyl)
-        close(21)
     endif
 
     close(10)
@@ -2532,8 +2490,6 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     real(KREAL) :: vaux(mxprimit), vbux(0:mxltot), bi(0:mxltot), rieqj(mxprimit)
     integer(KINT) :: igtj(mxprimit)
 
-!write(6,*) 'entra en frgmullikencontr'
-
     la = ll(i1)
     lb = ll(i2)
 
@@ -3117,7 +3073,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
         enddo
     enddo
     aux = cuatro * pi
-    qmullikab = cero
+    chargesab = cero
     do mb = -lb, lb
         do ma = -la, la
             lma = la*(la+1)+ma+1
@@ -3136,7 +3092,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
                             qlm2c(lmlt*(lmlt+1)+mlm(lml1l2(ipp))+1) = qlm2c(lmlt*(lmlt+1)+mlm(lml1l2(ipp))+1) &
                                     + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
                                     * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
-                            if (lmlt .eq. 0) qmullikab = qmullikab + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
+                            if (lmlt .eq. 0) chargesab = chargesab + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
                                                        * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
                         enddo
                     enddo
@@ -3198,7 +3154,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
         enddo
     enddo
     aux = pi
-    qmullikab = cero
+    chargesab = cero
     do mb = -lb, lb
         do ma = -la, la
             lma = la*(la+1)+ma+1
@@ -3217,7 +3173,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
                             qlm2c(lmlt*(lmlt+1)+mlm(lml1l2(ipp))+1) = qlm2c(lmlt*(lmlt+1)+mlm(lml1l2(ipp))+1) &
                                     + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
                                     * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
-                            if (lmlt .eq. 0) qmullikab = qmullikab + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
+                            if (lmlt .eq. 0) chargesab = chargesab + dux * ccl1l2(ip) * ccl1l2(ipp) * dosl1i(lmlt) &
                                                        * besselint(la+kp-npl1l2(ip)-npl1l2(ipp),l)
                         enddo
                     enddo
@@ -4339,9 +4295,7 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     implicit none
     integer(KINT) :: i, i1, i2, ia, ib, ierr, ii, ishift, j, l, la, lb, lrotar, m, nfa, nfb, nga1, nga2, ngb1, ngb2
     real(KREAL) :: charge, charge1, charge2, cosal, cosbet, cosga, rab, rna, rnab, rnb, sinal, sinbet, singa, xab, xy, yab, zab
-    real(KREAL) :: qatomGTO, qtotalGTO
     real(KREAL) :: roaux(-mxl:mxl,-mxl:mxl)
-    real(KREAL), allocatable :: mullikenGTO(:,:)
 
     allocate(sol(0:mxl), stat = ierr)
     if (ierr .ne. 0) call error(1,'Memory error when allocating sol. Stop')
@@ -4349,22 +4303,6 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
     if (ierr .ne. 0) call error(1,'Memory error when allocating rl. Stop')
     allocate(dl(-mxl:mxl,-mxl:mxl,0:mxl), stat = ierr)
     if (ierr .ne. 0) call error(1,'Memory error when allocating dl. Stop')
-
-!    open(25,file=trim(projectname)//".mullikenGTO",form='formatted', iostat=ierr)
-!    if (ierr .ne. 0) then
-!        lchargesbyl = .false.
-!    else
-!        lchargesbyl = .true.
-!    endif
-!    if (lchargesbyl) then
-!        allocate(mullikenGTO(0:lmaxbase,ncen), stat = ierr)
-!        if (ierr .ne. 0) then
-!            lchargesbyl = .false.
-!            close(25)
-!        else
-!            mullikenGTO = cero
-!        endif
-!    endif
 
     charge1 = cero
     charge2 = cero
@@ -4383,9 +4321,6 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
                 call gaussoverlap(i1, i2, cero)
                 do m = -min(la,lb), min(la,lb)
                     charge1 = charge1 + rna * rnb * dmat(nfa+la+m,nfb+lb+m) * sol(abs(m))
-!                    if (lchargesbyl) then
-!                        mullikenGTO(la,ia) = mullikenGTO(la,ia) + rna * rnb * dmat(nfb+lb+m,nfa+la+m) * sol(abs(m))
-!                    endif
                 enddo
             enddo
         enddo
@@ -4448,34 +4383,11 @@ if (ierr .ne. 0) call error(1,'Memory error when allocating atomchargesbyl and m
                     call gaussoverlap(i1, i2, rab)
                     do m = -min(la,lb), min(la,lb)
                         charge2 = charge2 + rna * rnb * roblk(m,m) * sol(abs(m))
-!                        if (lchargesbyl) then
-!                            mullikenGTO(la,ia) = mullikenGTO(la,ia) + umed * rna * rnb * roblk(m,m) * sol(abs(m))
-!                            mullikenGTO(lb,ib) = mullikenGTO(lb,ib) + umed * rna * rnb * roblk(m,m) * sol(abs(m))
-!                        endif
                     enddo
                 enddo
             enddo
         enddo
     enddo
-
-!    if (lchargesbyl) then
-!        write(25,"('Mulliken charges computed from the basis set',/)")
-!        qtotalGTO = cero
-!        do ia = 1, ncen
-!            write(25,"('atom # ', i4)") ia
-!            qatomGTO = cero
-!            do l = 0, lmaxbase
-!                if (abs(mullikenGTO(l,ia)) .lt. 1.d-5) cycle
-!                write(25,"('l = ', i2, ' charge = ', f12.5)") l, mullikenGTO(l,ia)
-!                qatomGTO = qatomGTO + mullikenGTO(l,ia)
-!            enddo
-!            write(25,"(/'atom net charge = ', f12.5,/)") zn(ia) - qatomGTO
-!            qtotalGTO = qtotalGTO + qatomGTO
-!        enddo
-!        write(25,"(/'total electron charge = ', e12.5)") -qtotalGTO
-!        deallocate(mullikenGTO)
-!        close(25)
-!    endif
 
     charge = charge1+charge2
     if (lzdo) then

@@ -533,7 +533,7 @@ END MODULE
 !   Prints DAM charges per shell to file
 
         if (.not. lmulliken .and. lchargesbyl) then
-            base = trim(projectname)//".chargesDAMbyl"
+            base = trim(projectname)//".DAMchargesbyl"
             do i = 0, nprocs-1
                 write(filename, '(A,"_",I2.2)') trim(base), i
                 inquire(file=filename, exist=lchargesbyl, iostat=ierr)
@@ -1716,17 +1716,17 @@ endif
         lmultmod = .true.
     endif
 
-    if (lchargesbyl) then
-        open(20,file=trim(projectname)//".chargesDAMbyl_"//trim(adjustl(strbux)),form='formatted', iostat=ierr)
+    if (.not. lmulliken .and. lchargesbyl) then
+        open(20,file=trim(projectname)//".DAMchargesbyl_"//trim(adjustl(strbux)),form='formatted', iostat=ierr)
         if (ierr .ne. 0) then
-            write(6,"('Cannot open file ', a)") trim(projectname)//".chargesDAMbyl_"//trim(adjustl(strbux))
+            write(6,"('Cannot open file ', a)") trim(projectname)//".DAMchargesbyl_"//trim(adjustl(strbux))
             lchargesbyl = .false.
         else
             lchargesbyl = .true.
         endif
     endif
 
-    if (lchargesbyl) then
+    if (lmulliken .and. lchargesbyl) then
         open(21,file=trim(projectname)//".mullikenchargesbyl_"//trim(adjustl(strbux)),form='formatted', iostat=ierr)
         if (ierr .ne. 0) then
             write(6,"('Cannot open file ', a)") trim(projectname)//".mullikenchargesbyl_"//trim(adjustl(strbux))
@@ -2118,7 +2118,7 @@ endif
         write(11) cfrint2l2(1:icfpos(knticf)-1)	! Expansion coefficients of auxiliary integrals rint2l2
         deallocate (cfrint1,cfrint2l2)
     enddo	! End of Do over centers (ia)
-    
+
     if (.not. lmulliken .and. lchargesbyl) then
         if (myrank .eq. 0) then
             write(20,"('DAM atomic charges by l',/)")
@@ -2509,9 +2509,9 @@ endif
     endif
 
     if (.not. lmulliken .and. lchargesbyl) then
-        open(20,file=trim(projectname)//".chargesDAMbyl_"//trim(adjustl(strbux)),form='formatted', iostat=ierr)
+        open(20,file=trim(projectname)//".DAMchargesbyl_"//trim(adjustl(strbux)),form='formatted', iostat=ierr)
         if (ierr .ne. 0) then
-            write(6,"('Cannot open file ', a)") trim(projectname)//".chargesDAMbyl_"//trim(adjustl(strbux))
+            write(6,"('Cannot open file ', a)") trim(projectname)//".DAMchargesbyl_"//trim(adjustl(strbux))
             lchargesbyl = .false.
         else
             lchargesbyl = .true.

@@ -556,7 +556,7 @@ void MainWindow::openProject()
     if (!Open(fileName))
         return;
 
-    defineRanges();
+    // defineRanges();
 
     QMessageBox::information(
         this,
@@ -564,13 +564,6 @@ void MainWindow::openProject()
         tr("Project %1 open").arg(ProjectName),
         QMessageBox::Ok
     );
-
-    atomicDensitiesPage_->setEnabled(true);
-
-    if (QFile::exists(fileName + QStringLiteral("_2016.damqt")))
-        setPostDamPagesEnabled(true);
-
-    orbitalsPage_->setEnabled(true);
 }
 
 /* Action: Open file ggbs or sgbs*/
@@ -1811,10 +1804,6 @@ void MainWindow::importFile()
         ProjectFolder + QStringLiteral("valence")
     );
 
-    // projectPage_->setProjectName(
-    //     fileInfo.completeBaseName()
-    // );
-
     QString projectName = fileInfo.completeBaseName();
 
     if (fileInfo.suffix().compare(
@@ -1823,9 +1812,6 @@ void MainWindow::importFile()
     }
 
     projectPage_->setProjectName(projectName);
-
-    ProjectName =
-        projectPage_->projectName();
 
     ProjectName =
         projectPage_->projectName();
@@ -2194,21 +2180,6 @@ void MainWindow::execSxyzDen()
     const QString sourceImport =
         importDir.filePath(ImportFile);
 
-    // const QFileInfo importInfo(ImportFile);
-    // const QString importSuffix =
-    //     importInfo.suffix().toLower();
-
-    // const QString importBaseName =
-    //     importInfo.completeBaseName();
-
-    // QString targetExtension;
-
-    // if (importSuffix == QStringLiteral("sgbs")) {
-    //     targetExtension = QStringLiteral(".sgbs");
-    // }
-    // else if (importSuffix == QStringLiteral("sgbsden")) {
-    //     targetExtension = QStringLiteral(".sgbsden");
-    // }
     const QFileInfo importInfo(ImportFile);
 
     QString importSuffix =
@@ -2336,9 +2307,9 @@ void MainWindow::readFchk()
     if (ImportFolder.at(ImportFolder.length()-1) != '/')
         ImportFolder.append('/');
     QString DirNombreImport = ImportFolder+ImportFile;
-//    QFile file(DirNombreImport);
+
     QDir path(ProjectFolder);
-    QString filepath=ProjectFolder + QFileInfo(DirNombreImport).fileName(); // + ".fchk";
+
     if (!path.exists(ProjectFolder)) {
         QMessageBox msgBox;
         msgBox.setInformativeText(QString(tr("Project %1 not found")).arg(ProjectFolder)+"\n"+tr("Do you wish to create?"));
@@ -2374,22 +2345,38 @@ void MainWindow::readFchk()
 
 }
 
-void MainWindow::create_damproj(int exitCode, QProcess::ExitStatus exitStatus){
+// void MainWindow::create_damproj(int exitCode, QProcess::ExitStatus exitStatus){
 
-    if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-        const QString damprojFile =
-            QDir(ProjectFolder).filePath(
-                ProjectName + QStringLiteral(".damproj")
-                );
+//     if (exitStatus == QProcess::NormalExit && exitCode == 0) {
+//         const QString damprojFile =
+//             QDir(ProjectFolder).filePath(
+//                 ProjectName + QStringLiteral(".damproj")
+//                 );
 
-        if (!QFile::exists(damprojFile)) {
-            loadDefault(1);
-            saveOptions(damprojFile);
-        }
+//         if (!QFile::exists(damprojFile)) {
+//             loadDefault(1);
+//             saveOptions(damprojFile);
+//         }
 
-        SetCurrentFile(damprojFile, true, false);
-        updateProjectAvailability();
+//         SetCurrentFile(damprojFile, true, false);
+//         updateProjectAvailability();
+//     }
+// }
+
+void MainWindow::create_damproj()
+{
+    const QString damprojFile =
+        QDir(ProjectFolder).filePath(
+            ProjectName + QStringLiteral(".damproj")
+            );
+
+    if (!QFile::exists(damprojFile)) {
+        loadDefault(1);
+        saveOptions(damprojFile);
     }
+
+    SetCurrentFile(damprojFile, true, false);
+    updateProjectAvailability();
 }
 
 /* Reads data from an MOLEKEL .mkl  file */
@@ -2418,7 +2405,9 @@ void MainWindow::readMOLEKEL()
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
     existsinp(DirNombreArchivo,1,true);
     QStringList Parameters;
-    if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
+
+    if (!ImportFolder.endsWith('/'))
+        ImportFolder.append('/');
 
     QStringList arguments;
 
@@ -4394,7 +4383,8 @@ void mainmenu::resizeEvent(QResizeEvent *event){
 
 void MainWindow::onFchkImportFinished()
 {
-    create_damproj(0, QProcess::NormalExit);
+    // create_damproj(0, QProcess::NormalExit);
+    create_damproj();
     updateOrbitalsPageState();
 }
 
