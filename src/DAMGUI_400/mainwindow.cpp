@@ -25,7 +25,6 @@
 //
 //      Last version: May 2026
 //
-#include <string.h>
 #include <QDesktopServices>
 #include <QDir>
 #include <QUrl>
@@ -178,6 +177,79 @@ bool replaceFileSafely(const QString& source, const QString& target)
     }
 
     return output.commit();
+}
+
+bool ensureProjectFile(const QString& source,
+                       const QString& destination,
+                       QWidget* parent)
+{
+    if (sameFilePath(source, destination))
+        return QFileInfo::exists(source);
+
+    if (!QFileInfo::exists(source)) {
+        QMessageBox::warning(
+            parent,
+            QObject::tr("File not found"),
+            QObject::tr("The source file does not exist:\n%1")
+                .arg(source)
+            );
+        return false;
+    }
+
+    if (QFileInfo::exists(destination)) {
+        const FileComparison result = compareFiles(source, destination);
+
+        if (result == FileComparison::Error) {
+            QMessageBox::warning(
+                parent,
+                QObject::tr("File comparison error"),
+                QObject::tr("Could not compare files:\n%1\n%2")
+                    .arg(source, destination)
+                );
+            return false;
+        }
+
+        if (result == FileComparison::Identical)
+            return true;
+
+        const auto answer = QMessageBox::question(
+            parent,
+            QObject::tr("Replace existing file?"),
+            QObject::tr(
+                "The file %1 already exists in the project directory "
+                "and differs from the selected file.\n"
+                "Do you want to replace it?"
+                ).arg(destination),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No
+            );
+
+        if (answer != QMessageBox::Yes)
+            return false;
+
+        if (replaceFileSafely(source, destination))
+            return true;
+
+        QMessageBox::warning(
+            parent,
+            QObject::tr("File replacement error"),
+            QObject::tr("Could not replace %1 with %2")
+                .arg(destination, source)
+            );
+        return false;
+    }
+
+    if (QFile::copy(source, destination))
+        return true;
+
+    QMessageBox::warning(
+        parent,
+        QObject::tr("File copy error"),
+        QObject::tr("Could not copy %1 to %2")
+            .arg(source, destination)
+        );
+
+    return false;
 }
 
 }
@@ -2551,63 +2623,8 @@ void MainWindow::readMolpro()
 
         existsinp(projectFile, 1, true);
 
-        if (!sameFilePath(DirNombreImport, filepath)) {
-
-            if (QFile::exists(filepath)) {
-
-                const FileComparison result =
-                    compareFiles(DirNombreImport, filepath);
-
-                if (result == FileComparison::Error) {
-                    QMessageBox::warning(
-                        this,
-                        tr("File comparison error"),
-                        tr("Could not compare files:\n%1\n%2")
-                            .arg(DirNombreImport, filepath)
-                        );
-                    return;
-                }
-
-                if (result == FileComparison::Different) {
-
-                    const auto answer = QMessageBox::question(
-                        this,
-                        tr("Replace existing file?"),
-                        tr("The file %1 already exists in the project "
-                           "directory and differs from the selected file.\n"
-                           "Do you want to replace it?")
-                            .arg(filepath),
-                        QMessageBox::Yes | QMessageBox::No,
-                        QMessageBox::No
-                        );
-
-                    if (answer != QMessageBox::Yes)
-                        return;
-
-                    if (!replaceFileSafely(DirNombreImport, filepath)) {
-                        QMessageBox::warning(
-                            this,
-                            tr("File replacement error"),
-                            tr("Could not replace %1 with %2")
-                                .arg(filepath, DirNombreImport)
-                            );
-                        return;
-                    }
-                }
-
-            } else {
-
-                if (!QFile::copy(DirNombreImport, filepath)) {
-                    QMessageBox::warning(
-                        this,
-                        tr("File copy error"),
-                        tr("Could not copy %1 to %2")
-                            .arg(DirNombreImport, filepath)
-                        );
-                    return;
-                }
-            }
-        }
+        if (!ensureProjectFile(DirNombreImport, filepath, this))
+            return;
 
         const QString processname = "MOLPRO_out_interface.exe";
         const QString execName = get_execName(processname, QString("interfaces_400"));
@@ -2634,14 +2651,10 @@ void MainWindow::readMolpro()
 /* Reads data from a MOPAC aux file */
 void MainWindow::readMopac()
 {
-    if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
-    QString DirNombreImport = ImportFolder+ImportFile;
-//    QFile file(DirNombreImport);
-    QDir path(ProjectFolder);
-    QString filepath=ProjectFolder + QFileInfo(DirNombreImport).fileName();
-    QStringList Parameters;
-    QString strprocess;
-    if (!path.exists(ProjectFolder)) {
+    if (!ImportFolder.endsWith('/'))
+        ImportFolder.append('/');
+
+    if (!QDir(ProjectFolder).exists()) {
         QMessageBox msgBox;
         msgBox.setInformativeText(QString(tr("Project %1 not found")).arg(ProjectFolder)+"\n"+tr("Do you wish to create?"));
         msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox:: Cancel);
@@ -2659,19 +2672,28 @@ void MainWindow::readMopac()
             return;
         }
     }
+
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
+
     existsinp(DirNombreArchivo,1,true);
-    if (ImportFolder.at(ImportFolder.length()-1) != '/') ImportFolder.append('/');
+
+    const QString importFilePath =
+        QDir(ImportFolder).filePath(ImportFile);
+
+    const QString projectFilePath =
+        QDir(ProjectFolder).filePath(QFileInfo(importFilePath).fileName());
+
+    if (!ensureProjectFile(importFilePath, projectFilePath, this))
+        return;
 
     QStringList arguments;
 
     arguments
-            << QFileInfo(ImportFile).completeBaseName()
-            << ImportFolder
-            << ProjectFolder
-            << ProjectName;
+        << QFileInfo(projectFilePath).completeBaseName()
+        << ProjectFolder
+        << ProjectFolder
+        << ProjectName;
 
-//    Parameters << QFileInfo(ImportFile).completeBaseName() << ImportFolder  << ProjectFolder << ProjectName  ;
     QString processname = "Mopac_aux_interface.exe";
     QString execName = get_execName(processname, QString("interfaces_400"));
     if (execName.isEmpty())
