@@ -68,7 +68,7 @@
     real(KREAL), allocatable :: rnamelist(:)
     integer(KINT) :: icfaux(2)
     character(len=256) :: base, output
-    namelist / options / ipmax, ioptaj, iswindows, leg35, lmaxexp, lm2c, lmultmx, longoutput, lvalence, lzdo &
+    namelist / options / ipmax, ioptaj, iswindows, leg35, lmaxexp, lm2c, lmulliken, lmultmx, longoutput, lvalence, lzdo &
         , umbral, umbralres, thresoverlap, wthreshold
     call MPI_INIT(ierr)
     call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ierr)
@@ -101,6 +101,8 @@
     thresoverlap = 1.d-12   ! Threshold for distributions neglect
     wthreshold = 200        ! Threshold for B integrals (see Avk subroutine)
     iswindows = .false.     ! .true. if running on a MS-windows system
+
+    lmulliken = .false.      ! If .true. uses Mulliken partition of the density otherwise uses DAM partition
 !    End of Defaults for the NAMELIST OPTIONS
 
     nqleg = 25        ! Default Legendre quadrature length for numerical integration of B integrals (Obsolescent)
@@ -133,6 +135,21 @@
             i = index(projectname,dirsep,.true.)    ! Checks position of last directory name separator
         end if
 
+        if (lmulliken) then
+            write(6,"(/,'MULLIKEN PARTITION OF DENSITY NOT PREPARED FOR STO',/)")
+            abort = 1
+        else
+            write(6,"(/,'DEFORMED ATOMS (DAM) PARTITION OF DENSITY',/)")
+        endif
+    endif
+
+    CALL MPI_REDUCE(abort,abortroot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+    CALL MPI_BCAST(abortroot,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
+    if (abortroot .gt. 0) then
+        call error(1,'Stop')
+    endif
+
+    if (myrank .eq. 0) then
         if (lzdo) then
             write(6,"(/'IMPORTANT: ZDO approximation used, fits one-center part of density',/)")
             ioptaj = 2
@@ -1765,23 +1782,24 @@
 !            Computes the modules of multipolar moments and stores them in file  filename.mltmod
 !            Since the multipolar moments, are defined as the coefficients that multiply the unnormalized irregular spherical harmonics
 !            in the long-range potential, they are multipied here by sqrt((1+delta(m,0)) * (l+|m|)!/(l-|m|)! ) to keep them invariant under rotations
-            if (lmultmod) then
-                lm = 0
-                do l = 0, lmultmx
-                    aux = 0.d0
-                    do m = -l, l
-                        lm = lm + 1
-                        if (m .eq. 0) then
-                            bux = dos
-                        else
-                            bux = uno
-                        endif
-                        aux = aux + rmultipfr(lm,ia-istart+1) * rmultipfr(lm,ia-istart+1) * bux * fact(l+abs(m)) * facti(l-abs(m))
-                    enddo
-                    rmultipmod(l) = sqrt(aux)
+        endif
+
+        if (lmultmod) then
+            lm = 0
+            do l = 0, lmultmx
+                aux = 0.d0
+                do m = -l, l
+                    lm = lm + 1
+                    if (m .eq. 0) then
+                        bux = dos
+                    else
+                        bux = uno
+                    endif
+                    aux = aux + rmultipfr(lm,ia-istart+1) * rmultipfr(lm,ia-istart+1) * bux * fact(l+abs(m)) * facti(l-abs(m))
                 enddo
-                write(19,"(a, 2x, i5, 2x, 25(e22.15,1x))") atmnam(ia), ia, rmultipmod(0:lmultmx)
-            endif
+                rmultipmod(l) = sqrt(aux)
+            enddo
+            write(19,"(a, 2x, i5, 2x, 25(e22.15,1x))") atmnam(ia), ia, rmultipmod(0:lmultmx)
         endif
 !
 !    Fits the radial factors

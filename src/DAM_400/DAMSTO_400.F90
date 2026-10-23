@@ -56,7 +56,7 @@
     logical :: leg35, lprint, lsgbs, lsgbsgz
     real(KREAL4) :: tarray(2), tiempo, dtime
     real(KREAL) :: qlm((mxmult+1)**2), qlmnuc((mxmult+1)**2)
-    namelist / options / ipmax, ioptaj, iswindows, leg35, lmaxexp, lm2c, lmultmx, longoutput, lvalence, lzdo &
+    namelist / options / ipmax, ioptaj, iswindows, leg35, lmaxexp, lm2c, lmulliken, lmultmx, longoutput, lvalence, lzdo &
         , umbral, umbralres, thresoverlap, wthreshold
     tiempo = dtime(tarray)
 !    Defaults for the NAMELIST OPTIONS
@@ -78,6 +78,8 @@
     thresoverlap = 1.d-12   ! Threshold for distributions neglect
     wthreshold = 200        ! Threshold for B integrals (see Avk subroutine)
     iswindows = .false.     ! .true. if running on a MS-windows system
+
+    lmulliken = .false.      ! If .true. uses Mulliken partition of the density otherwise uses DAM partition
 !    End of Defaults for the NAMELIST OPTIONS
 
     nqleg = 25          ! Default Legendre quadrature length for numerical integration of B integrals (Obsolescent)
@@ -99,6 +101,12 @@
         dirsep = "/"
         i = index(projectname,dirsep,.true.)    ! Checks position of last directory name separator
     end if
+
+    if (lmulliken) then
+        call error(1,'MULLIKEN PARTITION OF DENSITY NOT PREPARED FOR STO. Stop')
+    else
+        write(6,"(/,'DEFORMED ATOMS (DAM) PARTITION OF DENSITY',/)")
+    endif
 
     if (lzdo) then
         write(6,"(/'IMPORTANT: ZDO approximation used, fits one-center part of density',/)")
