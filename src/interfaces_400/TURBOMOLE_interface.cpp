@@ -168,7 +168,8 @@ int main(int argc,char *argv[]) {
     ifstream inputcoord;
     inputcoord.open(s.c_str(),ios::in);
     if (!inputcoord) {
-        inputcoord.open("coord",ios::in);
+        inputcoord.clear();
+        inputcoord.open((inpath + "coord").c_str(), ios::in);
     }
     if (!inputcoord) {
         cerr << "Unable to open file " << s <<  endl ;
@@ -176,34 +177,83 @@ int main(int argc,char *argv[]) {
         exit(1);
     }
 
-    s = TMfiles + ".basis";
+    // s = TMfiles + ".basis";
+    // ifstream inputbasis;
+    // inputbasis.open(s.c_str(),ios::in);
+    // if (!inputbasis) {
+    //     inputbasis.open("basis",ios::in);
+    // }
+    // if (!inputbasis) {
+    //     cerr << "Unable to open file " << s << endl ;
+    //     outimportfile << "Unable to open file " << s << endl ;
+    //     exit(1);
+    // }
+
+    s = projectname.empty()
+            ? inpath + "basis"
+            : TMfiles + ".basis";
+
     ifstream inputbasis;
-    inputbasis.open(s.c_str(),ios::in);
-    if (!inputbasis) {
-        inputbasis.open("basis",ios::in);
+    inputbasis.open(s.c_str(), ios::in);
+
+    if (!inputbasis && !projectname.empty()) {
+        inputbasis.clear();
+        inputbasis.open((inpath + "basis").c_str(), ios::in);
     }
+
     if (!inputbasis) {
-        cerr << "Unable to open file " << s << endl ;
-        outimportfile << "Unable to open file " << s << endl ;
+        cerr << "Unable to open file " << s << endl;
+        outimportfile << "Unable to open file " << s << endl;
         exit(1);
     }
 
-    s = TMfiles + ".mos";
+    // s = TMfiles + ".mos";
+    // ifstream inputalpha, inputbeta;
+    // inputalpha.open(s.c_str(),ios::in);
+    // if (!inputalpha) {
+    //     inputalpha.open("mos",ios::in);
+    // }
+
+    s = projectname.empty()
+            ? inpath + "mos"
+            : TMfiles + ".mos";
+
     ifstream inputalpha, inputbeta;
-    inputalpha.open(s.c_str(),ios::in);
-    if (!inputalpha) {
-        inputalpha.open("mos",ios::in);
+    inputalpha.open(s.c_str(), ios::in);
+
+    if (!inputalpha && !projectname.empty()) {
+        inputalpha.clear();
+        inputalpha.open((inpath + "mos").c_str(), ios::in);
     }
+
+    if (inputalpha)
+        lclosedsh = true;
+    else
+        lclosedsh = false;
 
     if (inputalpha) lclosedsh = true;
     else lclosedsh = false;
 
-    s = TMfiles + ".control";
+    // s = TMfiles + ".control";
+    // ifstream inputcontrol;
+    // inputcontrol.open(s.c_str(),ios::in);
+    // if (!inputcontrol) {
+    //     inputcontrol.open("control",ios::in);
+    // }
+
+    s = projectname.empty()
+            ? inpath + "control"
+            : TMfiles + ".control";
+
     ifstream inputcontrol;
-    inputcontrol.open(s.c_str(),ios::in);
-    if (!inputcontrol) {
-        inputcontrol.open("control",ios::in);
+    inputcontrol.open(s.c_str(), ios::in);
+
+    if (!inputcontrol && !projectname.empty()) {
+        inputcontrol.clear();
+        inputcontrol.open((inpath + "control").c_str(), ios::in);
     }
+
+    leecontrol = static_cast<bool>(inputcontrol);
     
     if (!inputcontrol) {
         leecontrol = false;
@@ -212,23 +262,60 @@ int main(int argc,char *argv[]) {
         leecontrol = true;
     }
 
-    if (!lclosedsh){    // If the calculation is not closed shell seek for alpha and beta files 
-        s = TMfiles + ".alpha";
-        inputalpha.open(s.c_str(),ios::in);
-        if (!inputalpha) inputalpha.open("alpha",ios::in);
-        if (!inputalpha) luhf = false;
-        else{
-            s = TMfiles + ".beta";
-            inputbeta.open(s.c_str(),ios::in);
-            if (!inputbeta) inputbeta.open("beta",ios::in);
-            if (!inputbeta) luhf = false;
-            else luhf = true;
-            if (!leecontrol){
+    // if (!lclosedsh){    // If the calculation is not closed shell seek for alpha and beta files
+    //     s = TMfiles + ".alpha";
+    //     inputalpha.open(s.c_str(),ios::in);
+    //     if (!inputalpha) inputalpha.open("alpha",ios::in);
+    //     if (!inputalpha) luhf = false;
+    //     else{
+    //         s = TMfiles + ".beta";
+    //         inputbeta.open(s.c_str(),ios::in);
+    //         if (!inputbeta) inputbeta.open("beta",ios::in);
+    //         if (!inputbeta) luhf = false;
+    //         else luhf = true;
+    //         if (!leecontrol){
+    //             cerr << "Occupancies are required for uhf calculations and control file is not found." << endl
+    //                 << "Please make control file available. Stop." << endl ;
+    //         }
+    //     }
+    // }
+
+    if (!lclosedsh) {
+        s = projectname.empty()
+        ? inpath + "alpha"
+        : TMfiles + ".alpha";
+
+        inputalpha.clear();
+        inputalpha.open(s.c_str(), ios::in);
+
+        if (!inputalpha && !projectname.empty()) {
+            inputalpha.clear();
+            inputalpha.open((inpath + "alpha").c_str(), ios::in);
+        }
+
+        if (!inputalpha) {
+            luhf = false;
+        } else {
+            s = projectname.empty()
+            ? inpath + "beta"
+            : TMfiles + ".beta";
+
+            inputbeta.open(s.c_str(), ios::in);
+
+            if (!inputbeta && !projectname.empty()) {
+                inputbeta.clear();
+                inputbeta.open((inpath + "beta").c_str(), ios::in);
+            }
+
+            luhf = static_cast<bool>(inputbeta);
+
+            if (!leecontrol) {
                 cerr << "Occupancies are required for uhf calculations and control file is not found." << endl
-                    << "Please make control file available. Stop." << endl ;
+                     << "Please make control file available. Stop." << endl;
             }
         }
     }
+
     if (!( lclosedsh || luhf )) {
         cerr << "Unable to open file(s) with molecular orbitals coefficients. Stop " << endl ;
         outimportfile << "Unable to open file(s) with molecular orbitals coefficients. Stop " << endl ;
