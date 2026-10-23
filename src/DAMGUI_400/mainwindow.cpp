@@ -1813,7 +1813,8 @@ void MainWindow::execImport()
     }else if (suffix=="fchk"){
         lslater = false;
         readFchk();
-    }else if (suffix=="mos" || suffix=="coord" || suffix=="basis"){
+    }else if (suffix=="mos" || suffix=="coord" || suffix=="basis" ||
+               ImportFile=="mos" || ImportFile=="coord" || ImportFile=="basis"){
         lslater = false;
         readTurbom();
     }else if (suffix=="mkl"){
@@ -1955,11 +1956,27 @@ void MainWindow::importFile()
         ProjectFolder + QStringLiteral("valence")
     );
 
+    // QString projectName = fileInfo.completeBaseName();
+
+    // if (fileInfo.suffix().compare(
+    //         QStringLiteral("gz"), Qt::CaseInsensitive) == 0) {
+    //     projectName = QFileInfo(projectName).completeBaseName();
+    // }
+
     QString projectName = fileInfo.completeBaseName();
 
     if (fileInfo.suffix().compare(
             QStringLiteral("gz"), Qt::CaseInsensitive) == 0) {
         projectName = QFileInfo(projectName).completeBaseName();
+    }
+
+    // TURBOMOLE files without prefixes
+    if (fileInfo.suffix().isEmpty() &&
+        (fileInfo.fileName() == QStringLiteral("coord") ||
+         fileInfo.fileName() == QStringLiteral("basis") ||
+         fileInfo.fileName() == QStringLiteral("mos"))) {
+
+        projectName = fileInfo.dir().dirName();
     }
 
     projectPage_->setProjectName(projectName);
@@ -2058,10 +2075,30 @@ void MainWindow::TXTImport_changed()
         projectPage_->setExecEnabled(true);
         projectPage_->setProjectFolderEnabled(true);
     }
-    if (projectPage_->projectName().isEmpty() && !projectPage_->importFile().isEmpty()){
-        projectPage_->setProjectName(FileWithoutExt(projectPage_->importFile()));
+
+    // if (projectPage_->projectName().isEmpty() && !projectPage_->importFile().isEmpty()){
+    //     projectPage_->setProjectName(FileWithoutExt(projectPage_->importFile()));
+    //     projectPage_->setProjectNameEnabled(true);
+    // }
+
+    if (projectPage_->projectName().isEmpty() &&
+        !projectPage_->importFile().isEmpty()) {
+
+        const QString importFile = projectPage_->importFile();
+        const QString fileName = QFileInfo(importFile).fileName();
+
+        QString projectName = FileWithoutExt(importFile);
+
+        if (fileName == "coord" ||
+            fileName == "basis" ||
+            fileName == "mos") {
+            projectName = QFileInfo(importFile).dir().dirName();
+        }
+
+        projectPage_->setProjectName(projectName);
         projectPage_->setProjectNameEnabled(true);
     }
+
     atomicDensitiesPage_->setEnabled(false);
 }
 
@@ -2744,14 +2781,151 @@ void MainWindow::readTurbom()
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
     existsinp(DirNombreArchivo,1,true);
 
-    if (ImportFolder.at(ImportFolder.length() - 1) != '/')
-        ImportFolder.append('/');
+    const QDir sourceDir(ImportFolder);
+    const QDir targetDir(ProjectFolder);
 
+    QString turbomPrefix = QFileInfo(ImportFile).completeBaseName();
+
+    if (ImportFile == "coord" ||
+        ImportFile == "basis" ||
+        ImportFile == "mos") {
+        turbomPrefix.clear();
+    }
+
+    // Find the original TURBOMOLE files.
+    auto sourceFile = [&](const QString& extension) -> QString
+    {
+        if (!turbomPrefix.isEmpty()) {
+            const QString prefixed =
+                sourceDir.filePath(turbomPrefix + "." + extension);
+
+            if (QFileInfo::exists(prefixed))
+                return prefixed;
+        }
+
+        return sourceDir.filePath(extension);
+    };
+
+    // Copy a TURBOMOLE file to the project directory.
+    auto copyFile = [&](const QString& extension) -> bool
+    {
+        const QString source = sourceFile(extension);
+
+        if (!QFileInfo::exists(source))
+            return false;
+
+        const QString destination =
+            targetDir.filePath(ProjectName + "." + extension);
+
+        return ensureProjectFile(source, destination, this);
+    };
+
+    // Check the required input files before copying.
+    const bool hasCoord = QFileInfo::exists(sourceFile("coord"));
+    const bool hasBasis = QFileInfo::exists(sourceFile("basis"));
+
+    if (!hasCoord || !hasBasis) {
+        QMessageBox::warning(
+            this,
+            tr("TURBOMOLE import"),
+            tr("Required TURBOMOLE files not found (coord or basis).")
+            );
+        return;
+    }
+
+    // Determine the orbital files.
+    const bool hasMos = QFileInfo::exists(sourceFile("mos"));
+    const bool hasAlpha = QFileInfo::exists(sourceFile("alpha"));
+    const bool hasBeta = QFileInfo::exists(sourceFile("beta"));
+
+    if (!hasMos && hasAlpha && hasBeta) {
+        const QString oldMos =
+            targetDir.filePath(ProjectName + ".mos");
+
+        if (QFileInfo::exists(oldMos)) {
+            QMessageBox::warning(
+                this,
+                tr("TURBOMOLE import"),
+                tr("An existing MOS file was found in the project directory:\n%1\n\n"
+                   "This file would interfere with the unrestricted calculation.\n"
+                   "Please remove or rename it before importing.")
+                    .arg(oldMos)
+                );
+            return;
+        }
+    }
+
+    // if (hasMos) {
+    //     if (!copyFile("mos"))
+    //         return;
+    // } else if (hasAlpha && hasBeta) {
+    //     if (!copyFile("alpha") || !copyFile("beta"))
+    //         return;
+    // } else {
+    //     QMessageBox::warning(
+    //         this,
+    //         tr("TURBOMOLE import"),
+    //         tr("Orbital files not found (mos or alpha/beta).")
+    //         );
+    //     return;
+    // }
+
+    // // The control file is optional for restricted calculations.
+    // if (QFileInfo::exists(sourceFile("control"))) {
+    //     if (!copyFile("control"))
+    //         return;
+    // } else if (!hasMos) {
+    //     QMessageBox::warning(
+    //         this,
+    //         tr("TURBOMOLE import"),
+    //         tr("The control file is required for unrestricted calculations.")
+    //         );
+    //     return;
+    // }
+
+    // Check orbital files before copying.
+    if (!hasMos && !(hasAlpha && hasBeta)) {
+        QMessageBox::warning(
+            this,
+            tr("TURBOMOLE import"),
+            tr("Orbital files not found (mos or alpha/beta).")
+            );
+        return;
+    }
+
+    // Control is required for unrestricted calculations.
+    const bool hasControl = QFileInfo::exists(sourceFile("control"));
+
+    if (!hasMos && !hasControl) {
+        QMessageBox::warning(
+            this,
+            tr("TURBOMOLE import"),
+            tr("The control file is required for unrestricted calculations.")
+            );
+        return;
+    }
+
+    // All required files are available. Start copying.
+    if (!copyFile("coord") || !copyFile("basis"))
+        return;
+
+    if (hasMos) {
+        if (!copyFile("mos"))
+            return;
+    } else {
+        if (!copyFile("alpha") || !copyFile("beta"))
+            return;
+    }
+
+    if (hasControl && !copyFile("control"))
+        return;
+
+    // All imported files now use ProjectName as prefix.
     QStringList arguments;
 
     arguments
-        << QFileInfo(ImportFile).completeBaseName()
-        << ImportFolder
+        << ProjectName
+        << ProjectFolder
         << ProjectFolder
         << ProjectName;
 
