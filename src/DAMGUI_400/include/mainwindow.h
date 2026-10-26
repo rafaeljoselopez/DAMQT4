@@ -259,6 +259,7 @@ private slots:      // Alphabetically sorted (including type in sort)
     
 private:
     bool saveProjectToFile(const QString& fullFileName);
+    void readSinglePass(const QString& interfaceName);
 
     template <typename Page, typename ExecSlot>
     void connectExecutablePage(Page *page, ExecSlot execSlot)

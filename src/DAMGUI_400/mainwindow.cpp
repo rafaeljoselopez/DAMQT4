@@ -2567,46 +2567,61 @@ void MainWindow::create_damproj()
     updateProjectAvailability();
 }
 
-/* Reads data from an MOLEKEL .mkl  file */
+/* Reads data from a MOLEKEL .mkl file */
 void MainWindow::readMOLEKEL()
+{
+    readSinglePass(QStringLiteral("MOLEKEL"));
+}
+
+/* Reads data using a single-pass interface */
+void MainWindow::readSinglePass(const QString& interfaceName)
 {
     QDir path(ProjectFolder);
 
     if (!path.exists(ProjectFolder)) {
         QMessageBox msgBox;
-        msgBox.setInformativeText(QString(tr("Project %1 not found")).arg(ProjectFolder)+"\n"+tr("Do you wish to create?"));
-        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox:: Cancel);
+        msgBox.setInformativeText(
+            tr("Project %1 not found").arg(ProjectFolder)
+            + "\n" + tr("Do you wish to create?")
+            );
+        msgBox.setStandardButtons(
+            QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel
+            );
         msgBox.setDefaultButton(QMessageBox::Cancel);
         msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
         msgBox.setButtonText(QMessageBox::No, tr("No"));
         msgBox.setButtonText(QMessageBox::Cancel, tr("Cancel"));
         msgBox.setIcon(QMessageBox::Warning);
-        int ret = msgBox.exec();
-        if (ret == QMessageBox::Yes){
-            QDir().mkpath(ProjectFolder);
-            statusBar()->showMessage(tr("Project succesfully created"), 2000);
-            setPostDamPagesEnabled(false);
-        }else{
+
+        if (msgBox.exec() != QMessageBox::Yes)
             return;
-        }
+
+        QDir().mkpath(ProjectFolder);
+        statusBar()->showMessage(tr("Project succesfully created"), 2000);
+        setPostDamPagesEnabled(false);
     }
-    QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
-    existsinp(DirNombreArchivo,1,true);
+
+    const QString projectFile =
+        ProjectFolder + ProjectName + QStringLiteral(".damproj");
+
+    existsinp(projectFile, 1, true);
 
     if (!ImportFolder.endsWith('/'))
         ImportFolder.append('/');
 
-    QStringList arguments;
+    const QStringList arguments = {
+        QFileInfo(ImportFile).completeBaseName(),
+        ImportFolder,
+        ProjectFolder,
+        ProjectName
+    };
 
-    arguments
-            << QFileInfo(ImportFile).completeBaseName()
-            << ImportFolder
-            << ProjectFolder
-            << ProjectName;
+    const QString processName =
+        interfaceName + QStringLiteral("_interface.exe");
 
-    QString processname = "MOLEKEL_interface.exe";
+    const QString execName =
+        get_execName(processName, QStringLiteral("interfaces_400"));
 
-    QString execName = get_execName(processname, QString("interfaces_400"));
     if (execName.isEmpty())
         return;
 
@@ -2616,9 +2631,9 @@ void MainWindow::readMOLEKEL()
 
     request.outputFilePath =
         QDir(ProjectFolder).filePath(
-            ProjectName
-            + QStringLiteral("-MOLEKEL_interface.out")
-        );
+            ProjectName + "-" + interfaceName
+            + QStringLiteral("_interface.out")
+            );
 
     singlePassImporter_->start(request);
 }
@@ -2923,62 +2938,10 @@ void MainWindow::readTurbom()
 
 }
 
-/* Reads data from a NWChem output file (IMPORTANT! extension must be nwcout) */
+/* Reads data from a NWChem output file (extension nwcout) */
 void MainWindow::readNWChem()
 {
-    QDir path(ProjectFolder);
-
-    if (!path.exists(ProjectFolder)) {
-        QMessageBox msgBox;
-        msgBox.setInformativeText(QString(tr("Project %1 not found")).arg(ProjectFolder)+"\n"+tr("Do you wish to create?"));
-        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox:: Cancel);
-        msgBox.setDefaultButton(QMessageBox::Cancel);
-        msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
-        msgBox.setButtonText(QMessageBox::No, tr("No"));
-        msgBox.setButtonText(QMessageBox::Cancel, tr("Cancel"));
-        msgBox.setIcon(QMessageBox::Warning);
-        int ret = msgBox.exec();
-        if (ret == QMessageBox::Yes){
-            QDir().mkpath(ProjectFolder);
-            statusBar()->showMessage(tr("Project succesfully created"), 2000);
-            setPostDamPagesEnabled(false);
-        }else{
-                return;
-        }
-    }
-    QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
-    existsinp(DirNombreArchivo,1,true);
-
-    QStringList arguments;
-
-    if (ImportFolder.at(ImportFolder.length() - 1) != '/')
-        ImportFolder.append('/');
-
-    arguments
-        << QFileInfo(ImportFile).completeBaseName()
-        << ImportFolder
-        << ProjectFolder
-        << ProjectName;
-
-    const QString processName = "NWChem_interface.exe";
-    const QString execName =
-        get_execName(processName, QString("interfaces_400"));
-
-    if (execName.isEmpty())
-        return;
-
-    SinglePassImportRequest request;
-    request.executablePath = execName;
-    request.arguments = arguments;
-
-    request.outputFilePath =
-        QDir(ProjectFolder).filePath(
-            ProjectName
-            + QStringLiteral("-NWChem_interface.out")
-        );
-
-    singlePassImporter_->start(request);
-
+    readSinglePass(QStringLiteral("NWChem"));
 }
 
 /**************************************************************************************************/
