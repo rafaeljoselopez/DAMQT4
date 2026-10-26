@@ -2855,34 +2855,6 @@ void MainWindow::readTurbom()
         }
     }
 
-    // if (hasMos) {
-    //     if (!copyFile("mos"))
-    //         return;
-    // } else if (hasAlpha && hasBeta) {
-    //     if (!copyFile("alpha") || !copyFile("beta"))
-    //         return;
-    // } else {
-    //     QMessageBox::warning(
-    //         this,
-    //         tr("TURBOMOLE import"),
-    //         tr("Orbital files not found (mos or alpha/beta).")
-    //         );
-    //     return;
-    // }
-
-    // // The control file is optional for restricted calculations.
-    // if (QFileInfo::exists(sourceFile("control"))) {
-    //     if (!copyFile("control"))
-    //         return;
-    // } else if (!hasMos) {
-    //     QMessageBox::warning(
-    //         this,
-    //         tr("TURBOMOLE import"),
-    //         tr("The control file is required for unrestricted calculations.")
-    //         );
-    //     return;
-    // }
-
     // Check orbital files before copying.
     if (!hasMos && !(hasAlpha && hasBeta)) {
         QMessageBox::warning(

@@ -44,12 +44,6 @@ void SinglePassImporter::onProcessFinished(
     int exitCode,
     QProcess::ExitStatus exitStatus)
 {
-//    if (exitStatus == QProcess::NormalExit && exitCode == 0) {
-//        handleNormalProcessExit();
-//        emit importFinished(currentOutputFilePath_);
-//    } else {
-//        emit importFailed(exitCode, exitStatus);
-//    }
     if (exitStatus == QProcess::NormalExit && exitCode == 0) {
         if (currentPostProcess_)
             currentPostProcess_();
@@ -58,6 +52,10 @@ void SinglePassImporter::onProcessFinished(
         emit importFinished(currentOutputFilePath_);
         return;
     }
+
+    // Display the interface output also when the process fails.
+    if (exitStatus == QProcess::NormalExit)
+        handleNormalProcessExit();
 
     emit importFailed(exitCode, exitStatus);
 }

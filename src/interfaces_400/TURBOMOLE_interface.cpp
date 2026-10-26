@@ -443,6 +443,8 @@ int main(int argc,char *argv[]) {
         if (nelec%2 != 0){
             cerr << "Odd number of electrons. Occupancies are required and control file is not found." << endl
                     << "Please make control file available. Stop." << endl ;
+            outimportfile << "Odd number of electrons. Occupancies are required and control file is not found." << endl
+                          << "Please make control file available. Stop." << endl ;
             exit(1);
         }
         firstalphaocc = 1;
