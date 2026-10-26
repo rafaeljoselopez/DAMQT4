@@ -2654,30 +2654,14 @@ void MainWindow::readMolpro()
     QString DirNombreImport = ImportFolder+ImportFile;
     QString suffix = QFileInfo(DirNombreImport).suffix();
     QFile file(DirNombreImport);
-    QDir path(ProjectFolder);
 
     QString filepath =
         QDir(ProjectFolder).filePath(QFileInfo(DirNombreImport).fileName());
 
     if (suffix=="out"){
-        if (!path.exists(ProjectFolder)) {
-            QMessageBox msgBox;
-            msgBox.setInformativeText(QString(tr("Project %1 not found")).arg(ProjectFolder)+"\n"+tr("Do you wish to create?"));
-            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox:: Cancel);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
-            msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
-            msgBox.setButtonText(QMessageBox::No, tr("No"));
-            msgBox.setButtonText(QMessageBox::Cancel, tr("Cancel"));
-            msgBox.setIcon(QMessageBox::Warning);
-            const int ret = msgBox.exec();
-            if (ret == QMessageBox::Yes){
-                QDir().mkpath(ProjectFolder);
-                statusBar()->showMessage(tr("Project succesfully created"), 2000);
-                setPostDamPagesEnabled(false);
-            }else{
-                return;
-            }
-        }
+        if (!ensureProjectDirectory())
+            return;
+
         const QString projectFile = ProjectFolder + ProjectName + ".damproj";
 
         existsinp(projectFile, 1, true);
