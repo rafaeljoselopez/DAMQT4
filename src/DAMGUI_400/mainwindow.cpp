@@ -2573,33 +2573,40 @@ void MainWindow::readMOLEKEL()
     readSinglePass(QStringLiteral("MOLEKEL"));
 }
 
+bool MainWindow::ensureProjectDirectory()
+{
+    if (QDir(ProjectFolder).exists())
+        return true;
+
+    QMessageBox msgBox;
+    msgBox.setInformativeText(
+        tr("Project %1 not found").arg(ProjectFolder)
+        + "\n" + tr("Do you wish to create?")
+        );
+    msgBox.setStandardButtons(
+        QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel
+        );
+    msgBox.setDefaultButton(QMessageBox::Cancel);
+    msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
+    msgBox.setButtonText(QMessageBox::No, tr("No"));
+    msgBox.setButtonText(QMessageBox::Cancel, tr("Cancel"));
+    msgBox.setIcon(QMessageBox::Warning);
+
+    if (msgBox.exec() != QMessageBox::Yes)
+        return false;
+
+    QDir().mkpath(ProjectFolder);
+    statusBar()->showMessage(tr("Project succesfully created"), 2000);
+    setPostDamPagesEnabled(false);
+
+    return true;
+}
+
 /* Reads data using a single-pass interface */
 void MainWindow::readSinglePass(const QString& interfaceName)
 {
-    QDir path(ProjectFolder);
-
-    if (!path.exists(ProjectFolder)) {
-        QMessageBox msgBox;
-        msgBox.setInformativeText(
-            tr("Project %1 not found").arg(ProjectFolder)
-            + "\n" + tr("Do you wish to create?")
-            );
-        msgBox.setStandardButtons(
-            QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel
-            );
-        msgBox.setDefaultButton(QMessageBox::Cancel);
-        msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
-        msgBox.setButtonText(QMessageBox::No, tr("No"));
-        msgBox.setButtonText(QMessageBox::Cancel, tr("Cancel"));
-        msgBox.setIcon(QMessageBox::Warning);
-
-        if (msgBox.exec() != QMessageBox::Yes)
-            return;
-
-        QDir().mkpath(ProjectFolder);
-        statusBar()->showMessage(tr("Project succesfully created"), 2000);
-        setPostDamPagesEnabled(false);
-    }
+    if (!ensureProjectDirectory())
+        return;
 
     const QString projectFile =
         ProjectFolder + ProjectName + QStringLiteral(".damproj");
@@ -2706,24 +2713,8 @@ void MainWindow::readMopac()
     if (!ImportFolder.endsWith('/'))
         ImportFolder.append('/');
 
-    if (!QDir(ProjectFolder).exists()) {
-        QMessageBox msgBox;
-        msgBox.setInformativeText(QString(tr("Project %1 not found")).arg(ProjectFolder)+"\n"+tr("Do you wish to create?"));
-        msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No | QMessageBox:: Cancel);
-        msgBox.setDefaultButton(QMessageBox::Cancel);
-        msgBox.setButtonText(QMessageBox::Yes, tr("Yes"));
-        msgBox.setButtonText(QMessageBox::No, tr("No"));
-        msgBox.setButtonText(QMessageBox::Cancel, tr("Cancel"));
-        msgBox.setIcon(QMessageBox::Warning);
-        int ret = msgBox.exec();
-        if (ret == QMessageBox::Yes){
-            QDir().mkpath(ProjectFolder);
-            statusBar()->showMessage(tr("Project succesfully created"), 2000);
-            setPostDamPagesEnabled(false);
-        }else{
-            return;
-        }
-    }
+    if (!ensureProjectDirectory())
+        return;
 
     QString DirNombreArchivo = ProjectFolder+ProjectName+".damproj";
 
