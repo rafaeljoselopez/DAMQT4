@@ -3818,6 +3818,13 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
                 .arg(ProjectName+suffix)+
                 QString(":\n%1.").arg(file.errorString()));
         nats = 0;
+
+        if (geometryWasGzipped) {
+            QProcess::execute(
+                QStringLiteral("gzip"),
+                QStringList{filename}
+                );
+        }
         return;
     }
     QTextStream in(&file);
@@ -3854,10 +3861,17 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
         zC += q * z[i];
         qC += q;
         raux = x[i]*x[i] + y[i]*y[i] + z[i]*z[i];
+        if (raux > rmax) rmax = raux;
+    }
+    if (qC != 0.){
         xC = xC / qC;
         yC = yC / qC;
         zC = zC / qC;
-        if (raux > rmax) rmax = raux;
+    }
+    else{
+        xC = 0.;
+        yC = 0.;
+        zC = 0.;
     }
     for (int i = 0 ; i < nats ; i++){
         x[i] = x[i] - xC;
