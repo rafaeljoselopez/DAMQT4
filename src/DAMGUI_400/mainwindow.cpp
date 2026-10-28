@@ -327,16 +327,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::showOutputText);
 
     connect(fchkImporter_, &FchkImporter::outputFileError,
-        this,
-        [this](const QString& fileName,
-               const QString& errorString) {
-            QMessageBox::warning(
-                this,
-                tr("ProcessOutput"),
-                tr("File %1 cannot be read:\n%2.")
-                    .arg(fileName, errorString)
-            );
-        });
+            this, &MainWindow::showOutputFileError);
 
     molproImporter_ = new MolproImporter(this);
 
@@ -347,16 +338,7 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::showOutputText);
 
     connect(molproImporter_, &MolproImporter::outputFileError,
-        this,
-        [this](const QString& fileName,
-               const QString& errorString) {
-            QMessageBox::warning(
-                this,
-                tr("ProcessOutput"),
-                tr("File %1 cannot be read:\n%2.")
-                    .arg(fileName, errorString)
-            );
-        });
+            this, &MainWindow::showOutputFileError);
 
     singlePassImporter_ = new SinglePassImporter(this);
 
@@ -372,19 +354,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(singlePassImporter_, &SinglePassImporter::outputTextReady,
             this, &MainWindow::showOutputText);
 
-    connect(
-        singlePassImporter_,
-        &SinglePassImporter::outputFileError,
-        this,
-        [this](const QString& fileName,
-               const QString& errorString) {
-            QMessageBox::warning(
-                this,
-                tr("ProcessOutput"),
-                tr("File %1 cannot be read:\n%2.")
-                    .arg(fileName, errorString)
-            );
-        });
+    connect(singlePassImporter_, &SinglePassImporter::outputFileError,
+            this, &MainWindow::showOutputFileError);
 
     splash = new QSplashScreen(pixmap);
     splash->show();
@@ -544,6 +515,18 @@ void MainWindow::showOutputText(const QString &text)
 {
     textEdit->setFont(QFont("Courier", 10));
     textEdit->setPlainText(text);
+}
+
+void MainWindow::showOutputFileError(
+    const QString& fileName,
+    const QString& errorString)
+{
+    QMessageBox::warning(
+        this,
+        tr("ProcessOutput"),
+        tr("File %1 cannot be read:\n%2.")
+            .arg(fileName, errorString)
+        );
 }
 
 /*****************************************************************************************************/
@@ -4606,7 +4589,6 @@ void mainmenu::resizeEvent(QResizeEvent *event){
 
 void MainWindow::onFchkImportFinished()
 {
-    // create_damproj(0, QProcess::NormalExit);
     create_damproj();
     updateOrbitalsPageState();
 }

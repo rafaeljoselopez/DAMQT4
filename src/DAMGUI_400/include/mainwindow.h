@@ -250,6 +250,8 @@ private slots:      // Alphabetically sorted (including type in sort)
     void updatewindowsoverlay();
 
     void showOutputText(const QString &text);
+    void showOutputFileError(const QString& fileName,
+                             const QString& errorString);
 
 
     QString get_execName(QString, QString);
