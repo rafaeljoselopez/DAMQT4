@@ -3509,28 +3509,6 @@ void MainWindow::execsgbs2sxyz(const QString& sxyzFileName)
     }
 
     QFile::remove(inputFile);
-
-    const QString importedRoot =
-        QDir(ProjectFolder).filePath(
-            QFileInfo(ImportFile).completeBaseName()
-        );
-
-    if (importedRoot + QStringLiteral(".sxyz")
-        != sxyzFileName) {
-
-        QFile::rename(
-            importedRoot + QStringLiteral(".sxyz"),
-            sxyzFileName
-        );
-
-        QFile::rename(
-            importedRoot + QStringLiteral(".sgbs2sxyz"),
-            QDir(ProjectFolder).filePath(
-                ProjectName
-                + QStringLiteral(".sgbs2sxyz")
-            )
-        );
-    }
 }
 
 
