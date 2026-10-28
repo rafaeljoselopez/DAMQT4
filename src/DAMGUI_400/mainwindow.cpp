@@ -1461,7 +1461,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(densityPage_, &MainWindow::execDamden);
 
-    toolBox->addItem(densityPage_, QIcon(":/images/icon.png"), tr("Density"));
+    addToolBoxPage(densityPage_, tr("Density"));
 
 //    potentialPage_: ELECTROSTATIC POTENTIAL
 
@@ -1471,7 +1471,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(potentialPage_, &MainWindow::execDampot);
 
-    toolBox->addItem(potentialPage_,QIcon(":/images/icon.png"),tr("Electrostatic potential"));
+    addToolBoxPage(potentialPage_, tr("Electrostatic potential"));
 
 //    orbitalsPage_: MOLECULAR ORBITALS
 
@@ -1480,7 +1480,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(orbitalsPage_, &MainWindow::execDamorb);
 
-    toolBox->addItem(orbitalsPage_, QIcon(":/images/icon.png"), tr("Molecular orbitals"));
+    addToolBoxPage(orbitalsPage_, tr("Molecular orbitals"));
 
 //    topographyPage_: MOLECULAR TOPOGRAPHY
 
@@ -1490,7 +1490,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(topographyPage_, &MainWindow::execDamTopography);
 
-    toolBox->addItem(topographyPage_, QIcon(":/images/icon.png"), tr("Molecular topography"));
+    addToolBoxPage(topographyPage_, tr("Molecular topography"));
 
 //    sigmaHolePage_: surface potential (MESP sigma hole)
 
@@ -1500,7 +1500,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(sigmaHolePage_, &MainWindow::execDamSGhole);
 
-    toolBox->addItem(sigmaHolePage_, QIcon(":/images/icon.png"), tr("Surface potential"));
+    addToolBoxPage(sigmaHolePage_, tr("Surface potential"));
 
 //    fieldLinesPage_: ELECTRIC FIELD
 
@@ -1510,7 +1510,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(fieldLinesPage_, &MainWindow::execDamfield);
 
-    toolBox->addItem(fieldLinesPage_, QIcon(":/images/icon.png"), tr("Electric field"));
+    addToolBoxPage(fieldLinesPage_, tr("Electric field"));
 
 //    densityGradientPage_: DENSITY GRADIENT
 
@@ -1520,7 +1520,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(densityGradientPage_, &MainWindow::execDamdengrad);
 
-    toolBox->addItem(densityGradientPage_, QIcon(":/images/icon.png"), tr("Density gradient"));
+    addToolBoxPage(densityGradientPage_, tr("Density gradient"));
 
 //    hfForcesPage_: HELLMANN-FEYNMAN FORCES ON NUCLEI
 
@@ -1530,7 +1530,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(hfForcesPage_, &MainWindow::execDamforces);
 
-    toolBox->addItem(hfForcesPage_, QIcon(":/images/icon.png"), tr("Hellmann-Feynman forces on nuclei"));
+    addToolBoxPage(hfForcesPage_, tr("Hellmann-Feynman forces"));
 
 //    radialFactorsPage_: RADIAL FACTORS
 
@@ -1540,7 +1540,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(radialFactorsPage_, &MainWindow::execDamfrad);
 
-    toolBox->addItem(radialFactorsPage_, QIcon(":/images/icon.png"), tr("Radial factor"));
+    addToolBoxPage(radialFactorsPage_, tr("Radial factor"));
 
 
 //    selfRepulsionPage_: SELF REPULSION
@@ -1551,7 +1551,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(selfRepulsionPage_, &MainWindow::execDamSelfRepulsion);
 
-    toolBox->addItem(selfRepulsionPage_, QIcon(":/images/icon.png"), tr("Self repulsion"));
+    addToolBoxPage(selfRepulsionPage_, tr("Self repulsion"));
 
 //    orientedMultipolesPage_: ORIENTED MULTIPOLES
 
@@ -1561,7 +1561,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(orientedMultipolesPage_, &MainWindow::execDammultrot);
 
-    toolBox->addItem(orientedMultipolesPage_, QIcon(":/images/icon.png"), tr("Oriented multipoles"));
+    addToolBoxPage(orientedMultipolesPage_, tr("Oriented multipoles"));
 
 //    zjExpansionPage_: ZERNIKE-JACOBI EXPANSIONS OF DENSITY
 
@@ -1571,7 +1571,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(zjExpansionPage_, &MainWindow::execDamZJ);
 
-    toolBox->addItem(zjExpansionPage_, QIcon(":/images/icon.png"), tr("Zernike-Jacobi density expansion"));
+    addToolBoxPage(zjExpansionPage_, tr("Zernike-Jacobi density expansion"));
     
 //    zjDensityPage_: TABULATION OF DENSITY FROM ZERNIKE-JACOBI EXPANSIONS
 
@@ -1581,7 +1581,7 @@ void MainWindow::CreateLeftMenu()
 
     connectExecutablePage(zjDensityPage_, &MainWindow::execDamdenZJ);
 
-    toolBox->addItem(zjDensityPage_, QIcon(":/images/icon.png"), tr("Zernike-Jacobi density tabulation"));
+    addToolBoxPage(zjDensityPage_, tr("Zernike-Jacobi density tabulation"));
 
     dock->setFeatures(QDockWidget::NoDockWidgetFeatures);
     QSizePolicy sizePolicy1(QSizePolicy::Expanding, QSizePolicy::Preferred);
@@ -2046,11 +2046,6 @@ void MainWindow::TXTImport_changed()
         projectPage_->setExecEnabled(true);
         projectPage_->setProjectFolderEnabled(true);
     }
-
-    // if (projectPage_->projectName().isEmpty() && !projectPage_->importFile().isEmpty()){
-    //     projectPage_->setProjectName(FileWithoutExt(projectPage_->importFile()));
-    //     projectPage_->setProjectNameEnabled(true);
-    // }
 
     if (projectPage_->projectName().isEmpty() &&
         !projectPage_->importFile().isEmpty()) {
@@ -4951,4 +4946,9 @@ void MainWindow::setFileDialogProjectFolders(const QString& folder)
     sigmaHolePage_->setProjectFolder(folder);
     orbitalsPage_->setProjectFolder(folder);
     zjDensityPage_->setProjectFolder(folder);
+}
+
+void MainWindow::addToolBoxPage(QWidget* page, const QString& title)
+{
+    toolBox->addItem(page, QIcon(":/images/icon.png"), title);
 }

@@ -288,6 +288,8 @@ private:
                 this, execSlot);
     }
 
+    void addToolBoxPage(QWidget* page, const QString& title);
+
     void initializeNames();
     void readMolproXml(const QString& importFile,
                        const QString& importFolder);
