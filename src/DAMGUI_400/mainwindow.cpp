@@ -1810,10 +1810,6 @@ void MainWindow::execImport()
     }
     potentialPage_->setExactPotential(false);
 
-    // if (isgzipped){
-    //     QProcess::execute(QStringLiteral("gzip"),QStringList{DirNombreImport});
-    // }
-
     if (isgzipped) {
         const int ios = QProcess::execute(
             QStringLiteral("gzip"),
@@ -1900,7 +1896,6 @@ void MainWindow::importFile()
     projectPage_->setImportFile(fileName);
 
     ImportFolder = fileInfo.absolutePath();
-    ImportFile = fileInfo.completeBaseName();
 
     projectPage_->setProjectFolder(
         fileInfo.absolutePath()
@@ -1926,13 +1921,6 @@ void MainWindow::importFile()
     lvalence = QFileInfo::exists(
         ProjectFolder + QStringLiteral("valence")
     );
-
-    // QString projectName = fileInfo.completeBaseName();
-
-    // if (fileInfo.suffix().compare(
-    //         QStringLiteral("gz"), Qt::CaseInsensitive) == 0) {
-    //     projectName = QFileInfo(projectName).completeBaseName();
-    // }
 
     QString projectName = fileInfo.completeBaseName();
 
