@@ -3781,7 +3781,6 @@ void MainWindow::importOUT()
 //    Reads geometry
 void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QVector<double> &z,QVector<int> &ncarga)
 {
-    rmax = 0.;
     QString suffix;
     if (lslater){
         suffix = ".sxyz";
@@ -3838,7 +3837,6 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
     z.resize(nats);
     ncarga.resize(nats);
     double q;
-    double raux;
     double xC = 0.;
     double yC = 0.;
     double zC = 0.;
@@ -3860,10 +3858,8 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
         yC += q * y[i];
         zC += q * z[i];
         qC += q;
-        raux = x[i]*x[i] + y[i]*y[i] + z[i]*z[i];
-        if (raux > rmax) rmax = raux;
     }
-    if (qC != 0.){
+    if (qC > 0.){
         xC = xC / qC;
         yC = yC / qC;
         zC = zC / qC;
@@ -3873,12 +3869,12 @@ void MainWindow::readGeometry(int &nats,QVector<double> &x,QVector<double> &y,QV
         yC = 0.;
         zC = 0.;
     }
+
     for (int i = 0 ; i < nats ; i++){
         x[i] = x[i] - xC;
         y[i] = y[i] - yC;
         z[i] = z[i] - zC;
     }
-    rmax = sqrt(rmax);
 
     file.close();
 

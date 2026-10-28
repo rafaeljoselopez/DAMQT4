@@ -333,7 +333,6 @@ private:
     int topindex;
     int widgetsknt;
 
-    double rmax;
     double rstar;
     double xmax;
     double xmin;
