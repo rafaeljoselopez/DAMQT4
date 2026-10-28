@@ -4679,38 +4679,9 @@ void MainWindow::updateOrbitalsPageState()
 void MainWindow::readMolproXml(const QString& importFile,
                                const QString& importFolder)
 {
-    QDir path;
 
-    if (!path.exists(ProjectFolder)) {
-        QMessageBox msgBox;
-
-        msgBox.setInformativeText(
-            tr("Project %1 not found").arg(ProjectFolder)
-            + "\n"
-            + tr("Do you wish to create?")
-        );
-
-        msgBox.setStandardButtons(
-            QMessageBox::Yes |
-            QMessageBox::No |
-            QMessageBox::Cancel
-        );
-
-        msgBox.setDefaultButton(QMessageBox::Cancel);
-        msgBox.setIcon(QMessageBox::Warning);
-
-        if (msgBox.exec() != QMessageBox::Yes) {
-            return;
-        }
-
-        QDir().mkpath(ProjectFolder);
-        statusBar()->showMessage(
-            tr("Project successfully created"),
-            2000
-        );
-
-        setPostDamPagesEnabled(false);
-    }
+    if (!ensureProjectDirectory())
+        return;
 
     const QString sourceXmlFile = QDir::cleanPath(
         QDir(importFolder).filePath(importFile)
@@ -4860,7 +4831,7 @@ void MainWindow::onMolproXmlFinished(
     int exitCode,
     QProcess::ExitStatus exitStatus)
 {
-    projectPage_->setExecEnabled(true);
+    setExecutionControlsEnabled(true);
     QApplication::restoreOverrideCursor();
 
     if (exitStatus != QProcess::NormalExit || exitCode != 0) {
@@ -4884,18 +4855,6 @@ void MainWindow::onMolproXmlFinished(
             tr("MOLPRO XML interface"),
             tr("The interface finished, but the basis-set or density "
                "files were not generated.")
-        );
-
-        return;
-    }
-
-    projectPage_->setExecEnabled(true);
-    QApplication::restoreOverrideCursor();
-
-    if (exitStatus != QProcess::NormalExit || exitCode != 0) {
-        statusBar()->showMessage(
-            tr("MOLPRO XML interface failed, exit code = %1")
-                .arg(exitCode)
         );
 
         return;
