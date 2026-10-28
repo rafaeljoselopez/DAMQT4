@@ -1749,7 +1749,6 @@ void MainWindow::execImport()
         QMessageBox::warning(this, tr("DAMQT"),tr("Navigate to a directory with a suitable import file "));
         return;
     }
-//    QFile file(DirNombreImport);
     if (!QFile::exists(DirNombreImport)){
         QMessageBox::warning(this, tr("DAMQT"),
                      tr("File %1 not found.").arg(DirNombreImport));
@@ -1802,12 +1801,8 @@ void MainWindow::execImport()
         readNWChem();
     }
     atomicDensitiesPage_->setlslater(lslater);
-    if (lslater){
-        potentialPage_->setExactPotentialVisible(false);
-    }
-    else{
-        potentialPage_->setExactPotentialVisible(true);
-    }
+
+    potentialPage_->setExactPotentialVisible(!lslater);
     potentialPage_->setExactPotential(false);
 
     if (isgzipped) {
