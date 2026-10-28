@@ -2319,21 +2319,11 @@ void MainWindow::execSxyzDen()
 
     const QFileInfo importInfo(ImportFile);
 
-    QString importSuffix =
+    const QString importSuffix =
         importInfo.suffix().toLower();
 
-    QString importBaseName =
+    const QString importBaseName =
         importInfo.completeBaseName();
-
-    bool importIsGzipped = false;
-
-    if (importSuffix == QStringLiteral("gz")) {
-        importIsGzipped = true;
-
-        const QFileInfo compressedBase(importBaseName);
-        importSuffix = compressedBase.suffix().toLower();
-        importBaseName = compressedBase.completeBaseName();
-    }
 
     QString targetExtension;
 
@@ -2352,9 +2342,6 @@ void MainWindow::execSxyzDen()
         );
         return;
     }
-
-    if (importIsGzipped)
-        targetExtension += QStringLiteral(".gz");
 
     const QString targetImport =
         outputDir.filePath(
