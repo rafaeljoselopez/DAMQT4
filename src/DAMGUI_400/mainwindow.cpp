@@ -1456,9 +1456,8 @@ void MainWindow::CreateLeftMenu()
 //    densityPage_:   MOLECULAR DENSITY
 
     densityPage_ = new DensityPage(mpi, toolBox);
-    densityPage_->setEnabled(false);
 
-    postDamPages_ << densityPage_;
+    registerPostDamPage(densityPage_);
 
     connectExecutablePage(densityPage_, &MainWindow::execDamden);
 
@@ -1467,9 +1466,8 @@ void MainWindow::CreateLeftMenu()
 //    potentialPage_: ELECTROSTATIC POTENTIAL
 
     potentialPage_ = new PotentialPage(mpi, toolBox);
-    potentialPage_->setEnabled(false);
 
-    postDamPages_ << potentialPage_;
+    registerPostDamPage(potentialPage_);
 
     connectExecutablePage(potentialPage_, &MainWindow::execDampot);
 
@@ -1487,9 +1485,8 @@ void MainWindow::CreateLeftMenu()
 //    topographyPage_: MOLECULAR TOPOGRAPHY
 
     topographyPage_ = new TopographyPage(mpi, toolBox);
-    topographyPage_->setEnabled(false);
 
-    postDamPages_ << topographyPage_;
+    registerPostDamPage(topographyPage_);
 
     connectExecutablePage(topographyPage_, &MainWindow::execDamTopography);
 
@@ -1498,9 +1495,8 @@ void MainWindow::CreateLeftMenu()
 //    sigmaHolePage_: surface potential (MESP sigma hole)
 
     sigmaHolePage_ = new SigmaHolePage(mpi, toolBox);
-    sigmaHolePage_->setEnabled(false);
 
-    postDamPages_ << sigmaHolePage_;
+    registerPostDamPage(sigmaHolePage_);
 
     connectExecutablePage(sigmaHolePage_, &MainWindow::execDamSGhole);
 
@@ -1509,9 +1505,8 @@ void MainWindow::CreateLeftMenu()
 //    fieldLinesPage_: ELECTRIC FIELD
 
     fieldLinesPage_ = new FieldLinesPage(mpi, toolBox);
-    fieldLinesPage_->setEnabled(false);
 
-    postDamPages_ << fieldLinesPage_;
+    registerPostDamPage(fieldLinesPage_);
 
     connectExecutablePage(fieldLinesPage_, &MainWindow::execDamfield);
 
@@ -1520,9 +1515,8 @@ void MainWindow::CreateLeftMenu()
 //    densityGradientPage_: DENSITY GRADIENT
 
     densityGradientPage_ = new DensityGradientPage(mpi, toolBox);
-    densityGradientPage_->setEnabled(false);
 
-    postDamPages_ << densityGradientPage_;
+    registerPostDamPage(densityGradientPage_);
 
     connectExecutablePage(densityGradientPage_, &MainWindow::execDamdengrad);
 
@@ -1531,9 +1525,8 @@ void MainWindow::CreateLeftMenu()
 //    hfForcesPage_: HELLMANN-FEYNMAN FORCES ON NUCLEI
 
     hfForcesPage_ = new HFForcesPage(toolBox);
-    hfForcesPage_->setEnabled(false);
 
-    postDamPages_ << hfForcesPage_;
+    registerPostDamPage(hfForcesPage_);
 
     connectExecutablePage(hfForcesPage_, &MainWindow::execDamforces);
 
@@ -1542,9 +1535,8 @@ void MainWindow::CreateLeftMenu()
 //    radialFactorsPage_: RADIAL FACTORS
 
     radialFactorsPage_ = new RadialFactorsPage(toolBox);
-    radialFactorsPage_->setEnabled(false);
 
-    postDamPages_ << radialFactorsPage_;
+    registerPostDamPage(radialFactorsPage_);
 
     connectExecutablePage(radialFactorsPage_, &MainWindow::execDamfrad);
 
@@ -1554,9 +1546,8 @@ void MainWindow::CreateLeftMenu()
 //    selfRepulsionPage_: SELF REPULSION
 
     selfRepulsionPage_ = new SelfRepulsionPage(toolBox);
-    selfRepulsionPage_->setEnabled(false);
 
-    postDamPages_ << selfRepulsionPage_;
+    registerPostDamPage(selfRepulsionPage_);
 
     connectExecutablePage(selfRepulsionPage_, &MainWindow::execDamSelfRepulsion);
 
@@ -1565,9 +1556,8 @@ void MainWindow::CreateLeftMenu()
 //    orientedMultipolesPage_: ORIENTED MULTIPOLES
 
     orientedMultipolesPage_ = new OrientedMultipolesPage(toolBox);
-    orientedMultipolesPage_->setEnabled(false);
 
-    postDamPages_ << orientedMultipolesPage_;
+    registerPostDamPage(orientedMultipolesPage_);
 
     connectExecutablePage(orientedMultipolesPage_, &MainWindow::execDammultrot);
 
@@ -1576,9 +1566,8 @@ void MainWindow::CreateLeftMenu()
 //    zjExpansionPage_: ZERNIKE-JACOBI EXPANSIONS OF DENSITY
 
     zjExpansionPage_ = new ZJExpansionPage(toolBox);
-    zjExpansionPage_->setEnabled(false);
 
-    postDamPages_ << zjExpansionPage_;
+    registerPostDamPage(zjExpansionPage_);
 
     connectExecutablePage(zjExpansionPage_, &MainWindow::execDamZJ);
 
@@ -1587,9 +1576,8 @@ void MainWindow::CreateLeftMenu()
 //    zjDensityPage_: TABULATION OF DENSITY FROM ZERNIKE-JACOBI EXPANSIONS
 
     zjDensityPage_ = new ZJDensityPage(toolBox);
-    zjDensityPage_->setEnabled(false);
 
-    postDamPages_ << zjDensityPage_;
+    registerPostDamPage(zjDensityPage_);
 
     connectExecutablePage(zjDensityPage_, &MainWindow::execDamdenZJ);
 

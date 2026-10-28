@@ -503,6 +503,13 @@ private:
     void setPostDamPagesEnabled(bool enabled);
     void setuvxyz();
 
+    template<typename T>
+    void registerPostDamPage(T* page)
+    {
+        page->setEnabled(false);
+        postDamPages_ << page;
+    }
+
     void writeSettings();
 
     int read_natom(QString fileName);
