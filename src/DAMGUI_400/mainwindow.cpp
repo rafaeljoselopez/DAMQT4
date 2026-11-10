@@ -1816,6 +1816,7 @@ void MainWindow::execImport()
     }
 
     if (isgzipped && (suffix == QStringLiteral("sgbs") ||
+                      suffix == QStringLiteral("sgbsden") ||
                       suffix == QStringLiteral("ggbs"))) {
 
         const QString projectImport =
@@ -3408,6 +3409,34 @@ void MainWindow::execDamdenZJ()
 
 void MainWindow::execsgbs2sxyz(const QString& sxyzFileName)
 {
+    const QString projectRoot =
+        QDir(QFileInfo(sxyzFileName).path()).filePath(
+            QFileInfo(sxyzFileName).completeBaseName()
+            );
+
+    QString compressedFile;
+
+    const QString sgbsFile =
+        projectRoot + QStringLiteral(".sgbs");
+
+    const QString sgbsdenFile =
+        projectRoot + QStringLiteral(".sgbsden");
+
+    if (!QFile::exists(sgbsFile)) {
+        const QString sgbsGz =
+            sgbsFile + QStringLiteral(".gz");
+
+        if (QFile::exists(sgbsGz)) {
+            compressedFile = sgbsGz;
+        }
+        else if (!QFile::exists(sgbsdenFile)) {
+            const QString sgbsdenGz =
+                sgbsdenFile + QStringLiteral(".gz");
+
+            if (QFile::exists(sgbsdenGz))
+                compressedFile = sgbsdenGz;
+        }
+    }
     QString inputFile =
         QString(sxyzFileName).replace(
             QStringLiteral(".sxyz"),
@@ -3444,10 +3473,55 @@ void MainWindow::execsgbs2sxyz(const QString& sxyzFileName)
         get_execName(
             QStringLiteral("sgbs2sxyz.exe"),
             QStringLiteral("DAM_400")
-        );
+            );
 
-    if (executable.isEmpty())
+    if (executable.isEmpty()) {
+        QFile::remove(inputFile);
         return;
+    }
+
+    QString uncompressedFile;
+
+    if (!compressedFile.isEmpty()) {
+        const int ios = QProcess::execute(
+            QStringLiteral("gunzip"),
+            QStringList{compressedFile}
+            );
+
+        if (ios != 0) {
+            QMessageBox::warning(
+                this,
+                tr("sgbs2sxyz"),
+                tr("Cannot decompress file %1.")
+                    .arg(compressedFile)
+                );
+
+            QFile::remove(inputFile);
+            return;
+        }
+
+        uncompressedFile =
+            compressedFile.left(compressedFile.size() - 3);
+    }
+
+    const auto restoreCompression = [&]() {
+        if (uncompressedFile.isEmpty())
+            return;
+
+        const int ios = QProcess::execute(
+            QStringLiteral("gzip"),
+            QStringList{uncompressedFile}
+            );
+
+        if (ios != 0) {
+            QMessageBox::warning(
+                this,
+                tr("sgbs2sxyz"),
+                tr("Cannot recompress file %1.")
+                    .arg(uncompressedFile)
+                );
+        }
+    };
 
     QString errorFile = inputFile;
     errorFile.replace(
@@ -3477,6 +3551,7 @@ void MainWindow::execsgbs2sxyz(const QString& sxyzFileName)
                 .arg(process.errorString())
         );
 
+        restoreCompression();
         QFile::remove(inputFile);
         return;
     }
@@ -3491,6 +3566,7 @@ void MainWindow::execsgbs2sxyz(const QString& sxyzFileName)
             tr("The process did not finish within the expected time.")
         );
 
+        restoreCompression();
         QFile::remove(inputFile);
         return;
     }
@@ -3504,10 +3580,12 @@ void MainWindow::execsgbs2sxyz(const QString& sxyzFileName)
                 .arg(errorFile)
         );
 
+        restoreCompression();
         QFile::remove(inputFile);
         return;
     }
 
+    restoreCompression();
     QFile::remove(inputFile);
 }
 
