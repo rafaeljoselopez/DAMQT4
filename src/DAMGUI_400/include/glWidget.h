@@ -45,6 +45,8 @@
 #include <QPushButton>
 #include <QQuaternion>
 #include <QRadioButton>
+#include <QSplitter>
+#include <QStackedWidget>
 #include <QStatusBar>
 #include <QStringList>
 #include <QTime>
@@ -321,6 +323,8 @@ private:
     void writeViewportSettings(SettingsWriter& writer);
     void writeMoleculesSettings(SettingsWriter& writer);
 
+    void updateSelectedMoleculeProperties();
+
 
     bool angstrom;
     bool animating;
@@ -391,6 +395,8 @@ private:
 
     // QGridLayout *layoutmolecules;
     QTreeWidget *sceneTree;
+    QSplitter *sceneSplitter;
+    QStackedWidget *propertiesStack;
 
     QFileSystemWatcher *watcher = nullptr;
 

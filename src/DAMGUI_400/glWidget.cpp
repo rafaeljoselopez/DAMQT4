@@ -261,6 +261,48 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     create_molecules_menu_and_layouts();    // Molecules menu and layouts
 
+    //        Scene explorer and contextual properties
+
+    sceneSplitter = new QSplitter(Qt::Vertical, QDLwindow);
+
+    propertiesStack = new QStackedWidget(sceneSplitter);
+    propertiesStack->setMinimumHeight(100);
+
+    connect(sceneTree, &QTreeWidget::itemSelectionChanged,
+            this, &glWidget::updateSelectedMoleculeProperties);
+
+    // Initial placeholder page
+    QWidget *emptyPropertiesPage = new QWidget(propertiesStack);
+
+    QVBoxLayout *propertiesLayout = new QVBoxLayout(emptyPropertiesPage);
+
+    QLabel *propertiesLabel = new QLabel(
+        tr("Select an object to edit its properties"),
+        emptyPropertiesPage
+    );
+
+    propertiesLabel->setAlignment(Qt::AlignCenter);
+    propertiesLabel->setWordWrap(true);
+
+    propertiesLayout->addWidget(propertiesLabel);
+
+    propertiesStack->addWidget(emptyPropertiesPage);
+    propertiesStack->setCurrentWidget(emptyPropertiesPage);
+
+    // Add scene explorer and properties panel to splitter
+
+    sceneSplitter->addWidget(sceneTree);
+    sceneSplitter->addWidget(propertiesStack);
+
+    // Initial proportions
+
+    sceneSplitter->setStretchFactor(0, 1);
+    sceneSplitter->setStretchFactor(1, 1);
+
+    sceneSplitter->setMinimumHeight(350);
+    sceneSplitter->setChildrenCollapsible(false);
+    sceneSplitter->setSizes({200, 150});
+
     //        Measure distances and angles
     BTNmeasures = new QPushButton(tr("Geometry measures"));
 //    connections << connect(BTNmeasures, SIGNAL(clicked()), this, SLOT(BTNmeasures_clicked()));
@@ -311,8 +353,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     QVBoxLayout *layout = new QVBoxLayout(QDLwindow);
     layout->addWidget(BTNaddmolecule);
-    // layout->addLayout(layoutmolecules);
-    layout->addWidget(sceneTree);
+    layout->addWidget(sceneSplitter);
     layout->addWidget(BTNmeasures);
     layout->addWidget(BTNrotation);
     layout->addWidget(FRMrotation);
@@ -426,6 +467,7 @@ void glWidget::create_molecules_menu_and_layouts()
 
         QTreeWidgetItem *item = new QTreeWidgetItem(sceneTree);
         item->setText(0, mol->getname());
+        item->setData(0, Qt::UserRole, i);
 
         // Active checkbox
 
@@ -434,6 +476,11 @@ void glWidget::create_molecules_menu_and_layouts()
 
         connect(CHKmol, &QCheckBox::stateChanged,
                 mol, &molecule::toggleactive);
+
+        connect(CHKmol, &QCheckBox::stateChanged,
+                this, [this](int) {
+                    updateSelectedMoleculeProperties();
+                });
 
         activateboxes.append(CHKmol);
 
@@ -490,7 +537,6 @@ void glWidget::create_molecules_menu_and_layouts()
     // Avoid occupying excessive vertical space
 
     sceneTree->setMinimumHeight(100);
-    sceneTree->setMaximumHeight(250);
 }
 
 //  Function deletecluster: removes cluster from molecules list
@@ -583,25 +629,10 @@ void glWidget::showmolecule(int i){
         BTNshowlist.at(i)->setText("Hide");
     }
     molecules->last()->emitupdatedisplay();
+    updateSelectedMoleculeProperties();
 }
 
 //          Rotations menu
-
-//void glWidget::create_rotation_menu(){
-//    FRMrotation = QDLwindow->rotationsdialog->getFRMrotation();
-//    FRMrotation->setVisible(false);
-//    QDLwindow->rotationsdialog->recorddialog->setmolpath(molpath);
-//    BTNrotation = new QPushButton(tr("Rotations"));
-//    connections << connect(BTNrotation, SIGNAL(clicked()), this, SLOT(BTNrotation_clicked()));
-//    connections << connect(QDLwindow->rotationsdialog,SIGNAL(rotation_changed()),this,SLOT(rotation_changed()));
-//    connections << connect(QDLwindow->rotationsdialog, SIGNAL(chkrotatechanged(bool)), this, SLOT(CHKrotate_changed(bool)));
-//    connections << connect(QDLwindow->rotationsdialog, SIGNAL(animationclicked(bool)), this, SLOT(toggleanimation(bool)));
-//    connections << connect(timer, SIGNAL(timeout()), this, SLOT(animaterotation()));
-//    connections << connect(QDLwindow->rotationsdialog,SIGNAL(SLDspeed_changed()), this, SLOT(resetinterval()));
-//    connections << connect(QDLwindow->rotationsdialog->recorddialog, SIGNAL(startrecording()), this, SLOT(startrecording()));
-//    connections << connect(QDLwindow->rotationsdialog->recorddialog, SIGNAL(stoprecording()), this, SLOT(stoprecording()));
-//    connections << connect(QDLwindow->rotationsdialog->recorddialog, SIGNAL(recordfilenamechanged(QString)), this, SLOT(set_recordfilename(QString)));
-//}
 
 void glWidget::create_rotation_menu()
 {
@@ -1230,6 +1261,8 @@ void glWidget::initQDLpointers(){
 
     // layoutmolecules = nullptr;
     sceneTree = nullptr;
+    sceneSplitter = nullptr;
+    propertiesStack = nullptr;
 
     SPBbondthres = nullptr;
 }
@@ -5467,6 +5500,46 @@ void moleculeDialog::closeEvent(QCloseEvent *event){
 
 void moleculeDialog::renewwidth(QSize a){
     resize(a.width()-10,height());
+}
+
+void glWidget::updateSelectedMoleculeProperties()
+{
+    if (!sceneTree || !propertiesStack)
+        return;
+
+    QList<QTreeWidgetItem*> selectedItems =
+        sceneTree->selectedItems();
+
+    QWidget *page = propertiesStack->widget(0);
+
+    if (!page)
+        return;
+
+    QLabel *label = page->findChild<QLabel*>();
+
+    if (!label)
+        return;
+
+    if (selectedItems.isEmpty()) {
+        label->setText(
+            tr("Select an object to edit its properties")
+        );
+        return;
+    }
+
+    int i = selectedItems.first()->data(0, Qt::UserRole).toInt();
+
+    if (i < 0 || i >= molecules->count())
+        return;
+
+    molecule *mol = molecules->at(i);
+
+    label->setText(
+        tr("Molecule: %1\n\nActive: %2\nVisible: %3")
+            .arg(mol->getname())
+            .arg(mol->isactive() ? tr("Yes") : tr("No"))
+            .arg(mol->isvisible() ? tr("Yes") : tr("No"))
+    );
 }
 
 //-------------------------------------------------------------------------------------------------
