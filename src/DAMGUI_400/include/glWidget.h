@@ -42,6 +42,7 @@
 #include <QGroupBox>
 #include <QFileSystemWatcher>
 #include <QMainWindow>
+#include <QMenu>
 #include <QPushButton>
 #include <QQuaternion>
 #include <QRadioButton>
@@ -418,7 +419,8 @@ private:
     QList<QCheckBox*> activateboxes;
     QList<QMetaObject::Connection> connections;         // Stores connections to release in destructor
 //    QList<QMetaObject::Connection> msrs_connections;    // Stores measures connections to release in destructor
-    QList<QPushButton*> BTNshowlist;                    // Stores buttons for hide/show molecules
+    // QList<QPushButton*> BTNshowlist;                    // Stores buttons for hide/show molecules
+    QList<QCheckBox*> visibilityBoxes;          // Stores boxes for hide/show molecules
 
     QPoint position;
 
