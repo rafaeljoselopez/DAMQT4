@@ -2252,6 +2252,16 @@ void MainWindow::execGgbsDen()
     atomicDensitiesPage_->setEnabled(true);
     setPostDamPagesEnabled(optionsExist);
     orbitalsPage_->setEnabled(true);
+
+    const QString report =
+        tr("DAMQT4 - Project import\n\n"
+           "Import completed successfully.\n\n"
+           "Project name: %1\n"
+           "Project directory: %2\n"
+           "Imported file type: .ggbs")
+            .arg(ProjectName, ProjectFolder);
+
+    showOutputText(report);
 }
 
 /* Slater data files */
@@ -2420,6 +2430,16 @@ void MainWindow::execSxyzDen()
     atomicDensitiesPage_->setEnabled(true);
     setPostDamPagesEnabled(optionsExist);
     orbitalsPage_->setEnabled(true);
+
+    const QString report =
+        tr("DAMQT4 - Project import\n\n"
+           "Import completed successfully.\n\n"
+           "Project name: %1\n"
+           "Project directory: %2\n"
+           "Imported file type: %3")
+            .arg(ProjectName, ProjectFolder, targetExtension);
+
+    showOutputText(report);
 }
     
 /**************************************************************************************************/
