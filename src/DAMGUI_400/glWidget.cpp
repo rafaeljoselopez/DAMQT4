@@ -29,6 +29,7 @@
 #include <QVBoxLayout>
 #include <QCloseEvent>
 #include <QColorDialog>
+#include <QHeaderView>
 //#include <QSignalMapper>
 
 #include <QDir>
@@ -310,7 +311,8 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     QVBoxLayout *layout = new QVBoxLayout(QDLwindow);
     layout->addWidget(BTNaddmolecule);
-    layout->addLayout(layoutmolecules);
+    // layout->addLayout(layoutmolecules);
+    layout->addWidget(sceneTree);
     layout->addWidget(BTNmeasures);
     layout->addWidget(BTNrotation);
     layout->addWidget(FRMrotation);
@@ -339,61 +341,157 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
 // Molecules menu and layouts
 
-void glWidget::create_molecules_menu_and_layouts(){
+// void glWidget::create_molecules_menu_and_layouts(){
 
+//     activateboxes.clear();
+
+//     layoutmolecules = new QGridLayout();
+// //    QSignalMapper* deletesignalMapper = new QSignalMapper (this) ;
+// //    QSignalMapper* showsignalMapper = new QSignalMapper (this) ;
+//     BTNshowlist.clear();
+//     for (int i = 0 ; i < molecules->count() ; i++){
+//         molecules->at(i)->setparentposition(this->pos());
+//         QLabel *LBLmol = new QLabel();
+//         LBLmol->setText(molecules->at(i)->getname());
+//         QCheckBox *CHKmol = new QCheckBox();
+//         CHKmol->setText(tr("active"));
+//         if (molecules->at(i)->isactive()){
+//             CHKmol->setChecked(true);
+//         }
+//         else{
+//             CHKmol->setChecked(false);
+//         }
+// //        connections << connect(CHKmol, SIGNAL(stateChanged(int)), molecules->at(i), SLOT(toggleactive()));
+//         connect(CHKmol,&QCheckBox::stateChanged,
+//                 molecules->at(i),&molecule::toggleactive);
+//         activateboxes << CHKmol;
+//         QPushButton *BTNmol = new QPushButton();
+//         BTNmol->setText(tr("Edit"));
+// //        connections << connect(BTNmol, SIGNAL(clicked()), molecules->at(i), SLOT(editmolecule()));
+//         connect(BTNmol,&QPushButton::clicked,
+//                 molecules->at(i),&molecule::editmolecule);
+//         QPushButton *BTNdeletemol = new QPushButton();
+//         BTNdeletemol->setText(tr("Delete"));
+// //        connections << connect(BTNdeletemol, SIGNAL(clicked()), deletesignalMapper, SLOT(map()), Qt::UniqueConnection);
+//         connect(BTNdeletemol,&QPushButton::clicked,
+//                 this,[this, i]() { deletemolecule(i); });
+// //        deletesignalMapper -> setMapping(BTNdeletemol,i);
+//         QPushButton *BTNshow = new QPushButton();
+//         if (molecules->at(i)->isvisible())
+//             BTNshow->setText(tr("Hide"));
+//         else
+//             BTNshow->setText(tr("Show"));
+//         BTNshowlist.append(BTNshow);
+// //        connections << connect(BTNshow, SIGNAL(clicked()), showsignalMapper, SLOT(map()), Qt::UniqueConnection);
+//         connect(BTNshow,&QPushButton::clicked,
+//                 this,[this, i]() { showmolecule(i); });
+// //        showsignalMapper -> setMapping(BTNshow,i);
+//         layoutmolecules->addWidget(LBLmol,i,0);
+//         layoutmolecules->addWidget(CHKmol,i,1);
+//         layoutmolecules->addWidget(BTNmol,i,2);
+//         layoutmolecules->addWidget(BTNshow,i,3);
+//         layoutmolecules->addWidget(BTNdeletemol,i,4);
+//     }
+// //    connections << connect (deletesignalMapper, SIGNAL(mapped(int)), this, SLOT(deletemolecule(int)), Qt::UniqueConnection) ;
+// //    connections << connect (showsignalMapper, SIGNAL(mapped(int)), this, SLOT(showmolecule(int)), Qt::UniqueConnection) ;
+// }
+
+void glWidget::create_molecules_menu_and_layouts()
+{
     activateboxes.clear();
-
-    layoutmolecules = new QGridLayout();
-//    QSignalMapper* deletesignalMapper = new QSignalMapper (this) ;
-//    QSignalMapper* showsignalMapper = new QSignalMapper (this) ;
     BTNshowlist.clear();
-    for (int i = 0 ; i < molecules->count() ; i++){
-        molecules->at(i)->setparentposition(this->pos());
-        QLabel *LBLmol = new QLabel();
-        LBLmol->setText(molecules->at(i)->getname());
-        QCheckBox *CHKmol = new QCheckBox();
-        CHKmol->setText(tr("active"));
-        if (molecules->at(i)->isactive()){
-            CHKmol->setChecked(true);
-        }
-        else{
-            CHKmol->setChecked(false);
-        }
-//        connections << connect(CHKmol, SIGNAL(stateChanged(int)), molecules->at(i), SLOT(toggleactive()));
-        connect(CHKmol,&QCheckBox::stateChanged,
-                molecules->at(i),&molecule::toggleactive);
-        activateboxes << CHKmol;
-        QPushButton *BTNmol = new QPushButton();
-        BTNmol->setText(tr("Edit"));
-//        connections << connect(BTNmol, SIGNAL(clicked()), molecules->at(i), SLOT(editmolecule()));
-        connect(BTNmol,&QPushButton::clicked,
-                molecules->at(i),&molecule::editmolecule);
-        QPushButton *BTNdeletemol = new QPushButton();
-        BTNdeletemol->setText(tr("Delete"));
-//        connections << connect(BTNdeletemol, SIGNAL(clicked()), deletesignalMapper, SLOT(map()), Qt::UniqueConnection);
-        connect(BTNdeletemol,&QPushButton::clicked,
-                this,[this, i]() { deletemolecule(i); });
-//        deletesignalMapper -> setMapping(BTNdeletemol,i);
-        QPushButton *BTNshow = new QPushButton();
-        if (molecules->at(i)->isvisible())
-            BTNshow->setText(tr("Hide"));
-        else
-            BTNshow->setText(tr("Show"));
-        BTNshowlist.append(BTNshow); 
-//        connections << connect(BTNshow, SIGNAL(clicked()), showsignalMapper, SLOT(map()), Qt::UniqueConnection);
-        connect(BTNshow,&QPushButton::clicked,
-                this,[this, i]() { showmolecule(i); });
-//        showsignalMapper -> setMapping(BTNshow,i);
-        layoutmolecules->addWidget(LBLmol,i,0);
-        layoutmolecules->addWidget(CHKmol,i,1);
-        layoutmolecules->addWidget(BTNmol,i,2);
-        layoutmolecules->addWidget(BTNshow,i,3);
-        layoutmolecules->addWidget(BTNdeletemol,i,4);
-    }
-//    connections << connect (deletesignalMapper, SIGNAL(mapped(int)), this, SLOT(deletemolecule(int)), Qt::UniqueConnection) ;
-//    connections << connect (showsignalMapper, SIGNAL(mapped(int)), this, SLOT(showmolecule(int)), Qt::UniqueConnection) ;
-}
 
+    sceneTree = new QTreeWidget(QDLwindow);
+
+    sceneTree->setColumnCount(5);
+    sceneTree->setHeaderLabels({
+        tr("Molecule"),
+        tr("Active"),
+        tr("Edit"),
+        tr("Visible"),
+        tr("Delete")
+    });
+
+    sceneTree->setRootIsDecorated(false);
+    sceneTree->setSelectionMode(QAbstractItemView::SingleSelection);
+    sceneTree->setAlternatingRowColors(true);
+
+    for (int i = 0; i < molecules->count(); ++i) {
+
+        molecule *mol = molecules->at(i);
+
+        mol->setparentposition(this->pos());
+
+        // Molecule entry
+
+        QTreeWidgetItem *item = new QTreeWidgetItem(sceneTree);
+        item->setText(0, mol->getname());
+
+        // Active checkbox
+
+        QCheckBox *CHKmol = new QCheckBox();
+        CHKmol->setChecked(mol->isactive());
+
+        connect(CHKmol, &QCheckBox::stateChanged,
+                mol, &molecule::toggleactive);
+
+        activateboxes.append(CHKmol);
+
+        sceneTree->setItemWidget(item, 1, CHKmol);
+
+        // Edit button
+
+        QPushButton *BTNmol = new QPushButton(tr("Edit"));
+
+        connect(BTNmol, &QPushButton::clicked,
+                mol, &molecule::editmolecule);
+
+        sceneTree->setItemWidget(item, 2, BTNmol);
+
+        // Show / Hide button
+
+        QPushButton *BTNshow = new QPushButton(
+            mol->isvisible() ? tr("Hide") : tr("Show")
+        );
+
+        BTNshowlist.append(BTNshow);
+
+        connect(BTNshow, &QPushButton::clicked,
+                this, [this, i]() {
+                    showmolecule(i);
+                });
+
+        sceneTree->setItemWidget(item, 3, BTNshow);
+
+        // Delete button
+
+        QPushButton *BTNdeletemol = new QPushButton(tr("Delete"));
+
+        connect(BTNdeletemol, &QPushButton::clicked,
+                this, [this, i]() {
+                    deletemolecule(i);
+                });
+
+        sceneTree->setItemWidget(item, 4, BTNdeletemol);
+    }
+
+    // Column sizing
+
+    sceneTree->header()->setSectionResizeMode(
+        0, QHeaderView::Stretch
+    );
+
+    for (int col = 1; col < 5; ++col) {
+        sceneTree->header()->setSectionResizeMode(
+            col, QHeaderView::ResizeToContents
+        );
+    }
+
+    // Avoid occupying excessive vertical space
+
+    sceneTree->setMinimumHeight(100);
+    sceneTree->setMaximumHeight(250);
+}
 
 //  Function deletecluster: removes cluster from molecules list
 //
@@ -1130,7 +1228,8 @@ void glWidget::initQDLpointers(){
     FRMtranslation = nullptr;
     FRMviewport = nullptr;
 
-    layoutmolecules = nullptr;
+    // layoutmolecules = nullptr;
+    sceneTree = nullptr;
 
     SPBbondthres = nullptr;
 }

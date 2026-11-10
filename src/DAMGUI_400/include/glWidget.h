@@ -48,6 +48,7 @@
 #include <QStatusBar>
 #include <QStringList>
 #include <QTime>
+#include <QTreeWidget>
 #include <QtCore/qmath.h>
 
 #include "ColorButton.h"
@@ -388,7 +389,8 @@ private:
 
     MyDockWidget *gdock;
 
-    QGridLayout *layoutmolecules;
+    // QGridLayout *layoutmolecules;
+    QTreeWidget *sceneTree;
 
     QFileSystemWatcher *watcher = nullptr;
 
