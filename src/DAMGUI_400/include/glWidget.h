@@ -337,6 +337,7 @@ private:
     void writeMoleculesSettings(SettingsWriter& writer);
 
     void updateSelectedMoleculeProperties();
+    void updateGeometryProperties();
 
 
     bool angstrom;
@@ -396,6 +397,9 @@ private:
     QCheckBox *CHKsettingsrot;
     QCheckBox *CHKsettingssurf;
     QCheckBox *CHKsettingsviewport;
+    QCheckBox *geometryHideAtoms = nullptr;
+    QCheckBox *geometryHideBonds = nullptr;
+    QCheckBox *geometryHideHydrogens = nullptr;
 
     QColor ambientcolor;
     QColor bkgcolor;
@@ -405,6 +409,8 @@ private:
     QColor specularcolor;
 
     MyDockWidget *gdock;
+
+    molecule *geometryPropertiesMolecule = nullptr;
 
     // QGridLayout *layoutmolecules;
     QTreeWidget *sceneTree;
@@ -430,9 +436,9 @@ private:
 
     QList<QCheckBox*> activateboxes;
     QList<QMetaObject::Connection> connections;         // Stores connections to release in destructor
-//    QList<QMetaObject::Connection> msrs_connections;    // Stores measures connections to release in destructor
-    // QList<QPushButton*> BTNshowlist;                    // Stores buttons for hide/show molecules
     QList<QCheckBox*> visibilityBoxes;          // Stores boxes for hide/show molecules
+
+    QMetaObject::Connection geometryVisibilityConnection;
 
     QPoint position;
 
@@ -487,6 +493,7 @@ private:
     QVector3D lightPosition;                // Light position in world space
     QVector3D rotationAxis;                 // Rotation axis
 
+    QWidget *geometryPropertiesPage = nullptr;
 
     qreal ballradius;                       // Radius of atom spheres
     qreal cylradius;                        // Radius of bond cylinders

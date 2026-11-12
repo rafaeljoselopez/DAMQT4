@@ -289,6 +289,58 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     propertiesStack->addWidget(emptyPropertiesPage);
     propertiesStack->setCurrentWidget(emptyPropertiesPage);
+    // Geometry properties page
+
+    geometryPropertiesPage = new QWidget(propertiesStack);
+
+    QVBoxLayout *geometryLayout =
+        new QVBoxLayout(geometryPropertiesPage);
+
+    QLabel *geometryTitle =
+        new QLabel(tr("Geometry"), geometryPropertiesPage);
+
+    QGroupBox *atomsBondsGroup =
+        new QGroupBox(tr("Atoms and bonds"), geometryPropertiesPage);
+
+    QVBoxLayout *atomsBondsLayout =
+        new QVBoxLayout(atomsBondsGroup);
+
+    geometryHideAtoms =
+        new QCheckBox(tr("Hide atoms"), atomsBondsGroup);
+
+    geometryHideBonds =
+        new QCheckBox(tr("Hide bonds"), atomsBondsGroup);
+
+    geometryHideHydrogens =
+        new QCheckBox(tr("Hide hydrogens"), atomsBondsGroup);
+
+    connect(geometryHideAtoms, &QCheckBox::toggled,
+            this, [this](bool checked) {
+        if (geometryPropertiesMolecule)
+            geometryPropertiesMolecule->sethideatoms(checked);
+    });
+
+    connect(geometryHideBonds, &QCheckBox::toggled,
+            this, [this](bool checked) {
+        if (geometryPropertiesMolecule)
+            geometryPropertiesMolecule->sethidebonds(checked);
+    });
+
+    connect(geometryHideHydrogens, &QCheckBox::toggled,
+            this, [this](bool checked) {
+        if (geometryPropertiesMolecule)
+            geometryPropertiesMolecule->sethidehydrogens(checked);
+    });
+
+    atomsBondsLayout->addWidget(geometryHideAtoms);
+    atomsBondsLayout->addWidget(geometryHideBonds);
+    atomsBondsLayout->addWidget(geometryHideHydrogens);
+
+    geometryLayout->addWidget(geometryTitle);
+    geometryLayout->addWidget(atomsBondsGroup);
+    geometryLayout->addStretch();
+
+    propertiesStack->addWidget(geometryPropertiesPage);
 
     // Add scene explorer and properties panel to splitter
 
@@ -4824,6 +4876,12 @@ void glWidget::updateWindowDialog(MyDockWidget *gdock){
     bool QDLwindowexist = false;
     if (QDLwindow){
         QDLwindowexist = true;
+
+        disconnect(geometryVisibilityConnection);
+        geometryVisibilityConnection = QMetaObject::Connection();
+
+        geometryPropertiesMolecule = nullptr;
+
         delete QDLwindow;
         QDLwindow = nullptr;
         delete scrollArea;
@@ -5488,10 +5546,19 @@ void glWidget::updateSelectedMoleculeProperties()
     if (!sceneTree || !propertiesStack)
         return;
 
+    // Disconnect previous geometry notification
+
+    disconnect(geometryVisibilityConnection);
+    geometryVisibilityConnection = QMetaObject::Connection();
+
+    geometryPropertiesMolecule = nullptr;
+
     QList<QTreeWidgetItem*> selectedItems =
         sceneTree->selectedItems();
 
     QWidget *page = propertiesStack->widget(0);
+
+    propertiesStack->setCurrentWidget(page);
 
     if (!page)
         return;
@@ -5532,9 +5599,17 @@ void glWidget::updateSelectedMoleculeProperties()
         break;
 
     case SceneNodeType::Geometry:
-        label->setText(
-            tr("Geometry\n\nMolecule: %1").arg(mol->getname())
-        );
+
+        geometryPropertiesMolecule = mol;
+
+        updateGeometryProperties();
+
+        geometryVisibilityConnection =
+            connect(mol, &molecule::geometryVisibilityChanged,
+                    this, &glWidget::updateGeometryProperties);
+
+        propertiesStack->setCurrentWidget(geometryPropertiesPage);
+
         break;
 
     case SceneNodeType::Labels:
@@ -5573,6 +5648,33 @@ void glWidget::updateSelectedMoleculeProperties()
         );
         break;
     }
+}
+
+void glWidget::updateGeometryProperties()
+{
+    if (!geometryPropertiesMolecule)
+        return;
+
+    if (!geometryHideAtoms ||
+        !geometryHideBonds ||
+        !geometryHideHydrogens)
+        return;
+
+    QSignalBlocker blockAtoms(geometryHideAtoms);
+    QSignalBlocker blockBonds(geometryHideBonds);
+    QSignalBlocker blockHydrogens(geometryHideHydrogens);
+
+    geometryHideAtoms->setChecked(
+        geometryPropertiesMolecule->gethideatoms()
+    );
+
+    geometryHideBonds->setChecked(
+        geometryPropertiesMolecule->gethidebonds()
+    );
+
+    geometryHideHydrogens->setChecked(
+        geometryPropertiesMolecule->gethidehydrogens()
+    );
 }
 
 //-------------------------------------------------------------------------------------------------
