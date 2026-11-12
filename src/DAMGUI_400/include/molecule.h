@@ -258,6 +258,7 @@ signals:
     void updateGL();
     void updateRightMenu();
     void geometryVisibilityChanged();
+    void labelsVisibilityChanged();
 
 public slots:
     bool QDLeditMolecule_isVisible();

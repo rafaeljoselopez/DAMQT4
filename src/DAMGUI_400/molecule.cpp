@@ -4503,12 +4503,22 @@ void molecule::setdrawatomcoords(bool a){
     drawatomcoords = a;
 }
 
-void molecule::setdrawatomindices(bool a){
+void molecule::setdrawatomindices(bool a)
+{
+    if (drawatomindices == a)
+        return;
+
     drawatomindices = a;
+    emit labelsVisibilityChanged();
 }
 
-void molecule::setdrawatomsymbols(bool a){
+void molecule::setdrawatomsymbols(bool a)
+{
+    if (drawatomsymbols == a)
+        return;
+
     drawatomsymbols = a;
+    emit labelsVisibilityChanged();
 }
 
 void molecule::setfontcolor(QColor a){
