@@ -216,23 +216,35 @@ void molecule::create_molecular_skeleton_widgets_and_layouts(){
 
     CHKhideatoms = new QCheckBox(FRMskeleton);
     CHKhideatoms->setText(tr("Hide atoms"));
-    CHKhideatoms->setChecked(false);
+    CHKhideatoms->setChecked(hideatoms);
 
     connect(CHKhideatoms, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKhideatoms_changed);
 
     CHKhidebonds = new QCheckBox(FRMskeleton);
     CHKhidebonds->setText(tr("Hide bonds"));
-    CHKhidebonds->setChecked(false);
+    CHKhidebonds->setChecked(hidebonds);
 
     connect(CHKhidebonds, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKhidebonds_changed);
 
     CHKhidehydrogens = new QCheckBox(tr("Hide hydrogens"));
-    CHKhidehydrogens->setChecked(false);
+    CHKhidehydrogens->setChecked(hidehydrogens);
 
     connect(CHKhidehydrogens, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKhidehydrogens_changed);
+
+    connect(this, &molecule::geometryVisibilityChanged,
+            FRMskeleton, [this]() {
+
+                QSignalBlocker blockAtoms(CHKhideatoms);
+                QSignalBlocker blockBonds(CHKhidebonds);
+                QSignalBlocker blockHydrogens(CHKhidehydrogens);
+
+                CHKhideatoms->setChecked(hideatoms);
+                CHKhidebonds->setChecked(hidebonds);
+                CHKhidehydrogens->setChecked(hidehydrogens);
+            });
 
 //          Layouts
 
