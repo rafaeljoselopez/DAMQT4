@@ -4523,6 +4523,7 @@ void molecule::sethideatoms(bool hide)
     hideatoms = hide;
     makeStructureBondsandSticks();
     emit updatedisplay();
+    emit geometryVisibilityChanged();
 }
 
 void molecule::sethidebonds(bool hide)
@@ -4533,6 +4534,7 @@ void molecule::sethidebonds(bool hide)
     hidebonds = hide;
     makeStructureBondsandSticks();
     emit updatedisplay();
+    emit geometryVisibilityChanged();
 }
 
 void molecule::sethidehydrogens(bool hide)
@@ -4543,6 +4545,7 @@ void molecule::sethidehydrogens(bool hide)
     hidehydrogens = hide;
     makeStructureBondsandSticks();
     emit updatedisplay();
+    emit geometryVisibilityChanged();
 }
 
 void molecule::setiscluster(bool a){
