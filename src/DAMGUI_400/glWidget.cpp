@@ -397,7 +397,7 @@ void glWidget::create_molecules_menu_and_layouts()
         tr("Visible")
     });
 
-    sceneTree->setRootIsDecorated(false);
+    sceneTree->setRootIsDecorated(true);
     sceneTree->setSelectionMode(QAbstractItemView::SingleSelection);
     sceneTree->setAlternatingRowColors(true);
 
@@ -412,6 +412,10 @@ void glWidget::create_molecules_menu_and_layouts()
         QTreeWidgetItem *item = new QTreeWidgetItem(sceneTree);
         item->setText(0, mol->getname());
         item->setData(0, Qt::UserRole, i);
+        item->setData(
+            0, Qt::UserRole + 1,
+            static_cast<int>(SceneNodeType::Molecule)
+        );
 
         // Active checkbox
 
@@ -441,6 +445,31 @@ void glWidget::create_molecules_menu_and_layouts()
 
         visibilityBoxes.append(CHKvisible);
         sceneTree->setItemWidget(item, 2, CHKvisible);
+
+        // Hierarchical scene nodes
+
+        auto addChild = [item, i](
+                            const QString &name,
+                            SceneNodeType type)
+        {
+            QTreeWidgetItem *child = new QTreeWidgetItem(item);
+
+            child->setText(0, name);
+            child->setData(0, Qt::UserRole, i);
+            child->setData(
+                0, Qt::UserRole + 1,
+                static_cast<int>(type)
+            );
+        };
+
+        addChild(tr("Geometry"),        SceneNodeType::Geometry);
+        addChild(tr("Labels"),          SceneNodeType::Labels);
+        addChild(tr("Forces"),          SceneNodeType::Forces);
+        addChild(tr("Field lines"),     SceneNodeType::FieldLines);
+        addChild(tr("Critical points"), SceneNodeType::CriticalPoints);
+        addChild(tr("Surfaces"),        SceneNodeType::Surfaces);
+        addChild(tr("Grids"),           SceneNodeType::Grids);
+
     }
 
     // Column sizing
@@ -469,6 +498,13 @@ void glWidget::create_molecules_menu_and_layouts()
         QTreeWidgetItem *item = sceneTree->itemAt(pos);
 
         if (!item)
+            return;
+
+        SceneNodeType type = static_cast<SceneNodeType>(
+            item->data(0, Qt::UserRole + 1).toInt()
+        );
+
+        if (type != SceneNodeType::Molecule)
             return;
 
         int i = item->data(0, Qt::UserRole).toInt();
@@ -5479,12 +5515,64 @@ void glWidget::updateSelectedMoleculeProperties()
 
     molecule *mol = molecules->at(i);
 
-    label->setText(
-        tr("Molecule: %1\n\nActive: %2\nVisible: %3")
-            .arg(mol->getname())
-            .arg(mol->isactive() ? tr("Yes") : tr("No"))
-            .arg(mol->isvisible() ? tr("Yes") : tr("No"))
+    SceneNodeType type = static_cast<SceneNodeType>(
+        selectedItems.first()
+            ->data(0, Qt::UserRole + 1).toInt()
     );
+
+    switch (type) {
+
+    case SceneNodeType::Molecule:
+        label->setText(
+            tr("Molecule: %1\n\nActive: %2\nVisible: %3")
+                .arg(mol->getname())
+                .arg(mol->isactive() ? tr("Yes") : tr("No"))
+                .arg(mol->isvisible() ? tr("Yes") : tr("No"))
+        );
+        break;
+
+    case SceneNodeType::Geometry:
+        label->setText(
+            tr("Geometry\n\nMolecule: %1").arg(mol->getname())
+        );
+        break;
+
+    case SceneNodeType::Labels:
+        label->setText(
+            tr("Labels\n\nMolecule: %1").arg(mol->getname())
+        );
+        break;
+
+    case SceneNodeType::Forces:
+        label->setText(
+            tr("Forces\n\nMolecule: %1").arg(mol->getname())
+        );
+        break;
+
+    case SceneNodeType::FieldLines:
+        label->setText(
+            tr("Field lines\n\nMolecule: %1").arg(mol->getname())
+        );
+        break;
+
+    case SceneNodeType::CriticalPoints:
+        label->setText(
+            tr("Critical points\n\nMolecule: %1").arg(mol->getname())
+        );
+        break;
+
+    case SceneNodeType::Surfaces:
+        label->setText(
+            tr("Surfaces\n\nMolecule: %1").arg(mol->getname())
+        );
+        break;
+
+    case SceneNodeType::Grids:
+        label->setText(
+            tr("Grids\n\nMolecule: %1").arg(mol->getname())
+        );
+        break;
+    }
 }
 
 //-------------------------------------------------------------------------------------------------

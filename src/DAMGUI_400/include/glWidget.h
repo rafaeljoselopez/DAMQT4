@@ -301,7 +301,19 @@ private slots:
     void template_changed(int);
     void toggleanimation(bool);
 
-private: 
+private:
+
+    enum class SceneNodeType {
+        Molecule,
+        Geometry,
+        Labels,
+        Forces,
+        FieldLines,
+        CriticalPoints,
+        Surfaces,
+        Grids
+    };
+
     void create_measures();
     void create_window();
     void initpointers();
