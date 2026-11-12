@@ -2820,22 +2820,19 @@ void molecule::CHKforces_changed(){
     hfforces->createforces();
 }
 
-void molecule::CHKhideatoms_changed(){
-    hideatoms = CHKhideatoms->isChecked();
-    makeStructureBondsandSticks();
-    emit updatedisplay();
+void molecule::CHKhideatoms_changed()
+{
+    sethideatoms(CHKhideatoms->isChecked());
 }
 
-void molecule::CHKhidebonds_changed(){
-    hidebonds = CHKhidebonds->isChecked();
-    makeStructureBondsandSticks();
-    emit updatedisplay();
+void molecule::CHKhidebonds_changed()
+{
+    sethidebonds(CHKhidebonds->isChecked());
 }
 
-void molecule::CHKhidehydrogens_changed(){
-    hidehydrogens = CHKhidehydrogens->isChecked();
-    makeStructureBondsandSticks();
-    emit updatedisplay();
+void molecule::CHKhidehydrogens_changed()
+{
+    sethidehydrogens(CHKhidehydrogens->isChecked());
 }
 
 void molecule::CHKrotate_changed(){
@@ -4516,6 +4513,36 @@ void molecule::setfontaxeslabels(QFont a){
 
 void molecule::setfullname(QString a){
     fullname = a;
+}
+
+void molecule::sethideatoms(bool hide)
+{
+    if (hideatoms == hide)
+        return;
+
+    hideatoms = hide;
+    makeStructureBondsandSticks();
+    emit updatedisplay();
+}
+
+void molecule::sethidebonds(bool hide)
+{
+    if (hidebonds == hide)
+        return;
+
+    hidebonds = hide;
+    makeStructureBondsandSticks();
+    emit updatedisplay();
+}
+
+void molecule::sethidehydrogens(bool hide)
+{
+    if (hidehydrogens == hide)
+        return;
+
+    hidehydrogens = hide;
+    makeStructureBondsandSticks();
+    emit updatedisplay();
 }
 
 void molecule::setiscluster(bool a){

@@ -175,6 +175,9 @@ public:
     void setlabelsvshift(int);
     void set_ProjectFolder(QString);
     void set_ProjectName(QString);
+    void sethideatoms(bool hide);
+    void sethidebonds(bool hide);
+    void sethidehydrogens(bool hide);
 
     fieldlines *flines = nullptr;
     forces *hfforces = nullptr;
