@@ -38,6 +38,8 @@
 #include <QSignalBlocker>
 #include <QVBoxLayout>
 
+#include <QDebug>
+
 #include "molecule.h"
 #include <cmath>
 
@@ -4677,6 +4679,28 @@ void molecule::setvisible(bool a){
 
 void molecule::setworld_rotation(QQuaternion a){
     world_rotation = a;
+}
+
+void molecule::showAtomSymbols(bool show)
+{
+    if (getdrawatomsymbols() == show)
+        return;
+
+    setdrawatomsymbols(show);
+
+    if (visible)
+        emit updatedisplay();
+}
+
+void molecule::showAtomIndices(bool show)
+{
+    if (getdrawatomindices() == show)
+        return;
+
+    setdrawatomindices(show);
+
+    if (visible)
+        emit updatedisplay();
 }
 
 void molecule::toggleactive(){

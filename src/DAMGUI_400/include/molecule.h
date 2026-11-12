@@ -252,6 +252,9 @@ public:
     void settranslationButtons();
     void settranslation(QVector3D);
     void setvisible(bool);
+    void showAtomSymbols(bool show);
+    void showAtomIndices(bool show);
+
 signals:
     void animate(bool);
     void updatedisplay();

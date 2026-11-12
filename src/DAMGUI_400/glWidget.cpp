@@ -332,6 +332,49 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
             geometryPropertiesMolecule->sethidehydrogens(checked);
     });
 
+    // Labels properties page
+
+    labelsPropertiesPage = new QWidget(propertiesStack);
+
+    QVBoxLayout *labelsLayout =
+        new QVBoxLayout(labelsPropertiesPage);
+
+    QLabel *labelsTitle =
+        new QLabel(tr("Labels"), labelsPropertiesPage);
+
+    QGroupBox *atomLabelsGroup =
+        new QGroupBox(tr("Atom labels"), labelsPropertiesPage);
+
+    QVBoxLayout *atomLabelsLayout =
+        new QVBoxLayout(atomLabelsGroup);
+
+    labelsShowSymbols =
+        new QCheckBox(tr("Atom symbols"), atomLabelsGroup);
+
+    labelsShowIndices =
+        new QCheckBox(tr("Atom indices"), atomLabelsGroup);
+
+    connect(labelsShowSymbols, &QCheckBox::toggled,
+            this, [this](bool checked) {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->showAtomSymbols(checked);
+    });
+
+    connect(labelsShowIndices, &QCheckBox::toggled,
+            this, [this](bool checked) {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->showAtomIndices(checked);
+    });
+
+    atomLabelsLayout->addWidget(labelsShowSymbols);
+    atomLabelsLayout->addWidget(labelsShowIndices);
+
+    labelsLayout->addWidget(labelsTitle);
+    labelsLayout->addWidget(atomLabelsGroup);
+    labelsLayout->addStretch();
+
+    propertiesStack->addWidget(labelsPropertiesPage);
+
     atomsBondsLayout->addWidget(geometryHideAtoms);
     atomsBondsLayout->addWidget(geometryHideBonds);
     atomsBondsLayout->addWidget(geometryHideHydrogens);
@@ -4882,6 +4925,11 @@ void glWidget::updateWindowDialog(MyDockWidget *gdock){
 
         geometryPropertiesMolecule = nullptr;
 
+        disconnect(labelsVisibilityConnection);
+        labelsVisibilityConnection = QMetaObject::Connection();
+
+        labelsPropertiesMolecule = nullptr;
+
         delete QDLwindow;
         QDLwindow = nullptr;
         delete scrollArea;
@@ -5553,6 +5601,11 @@ void glWidget::updateSelectedMoleculeProperties()
 
     geometryPropertiesMolecule = nullptr;
 
+    disconnect(labelsVisibilityConnection);
+    labelsVisibilityConnection = QMetaObject::Connection();
+
+    labelsPropertiesMolecule = nullptr;
+
     QList<QTreeWidgetItem*> selectedItems =
         sceneTree->selectedItems();
 
@@ -5613,9 +5666,17 @@ void glWidget::updateSelectedMoleculeProperties()
         break;
 
     case SceneNodeType::Labels:
-        label->setText(
-            tr("Labels\n\nMolecule: %1").arg(mol->getname())
-        );
+
+        labelsPropertiesMolecule = mol;
+
+        updateLabelsProperties();
+
+        labelsVisibilityConnection =
+            connect(mol, &molecule::labelsVisibilityChanged,
+                    this, &glWidget::updateLabelsProperties);
+
+        propertiesStack->setCurrentWidget(labelsPropertiesPage);
+
         break;
 
     case SceneNodeType::Forces:
@@ -5676,6 +5737,26 @@ void glWidget::updateGeometryProperties()
         geometryPropertiesMolecule->gethidehydrogens()
     );
 }
+
+void glWidget::updateLabelsProperties()
+{
+    if (!labelsPropertiesMolecule ||
+        !labelsShowSymbols ||
+        !labelsShowIndices)
+        return;
+
+    QSignalBlocker blockSymbols(labelsShowSymbols);
+    QSignalBlocker blockIndices(labelsShowIndices);
+
+    labelsShowSymbols->setChecked(
+        labelsPropertiesMolecule->getdrawatomsymbols()
+    );
+
+    labelsShowIndices->setChecked(
+        labelsPropertiesMolecule->getdrawatomindices()
+    );
+}
+
 
 //-------------------------------------------------------------------------------------------------
 //

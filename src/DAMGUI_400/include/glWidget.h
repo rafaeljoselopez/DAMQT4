@@ -338,6 +338,7 @@ private:
 
     void updateSelectedMoleculeProperties();
     void updateGeometryProperties();
+    void updateLabelsProperties();
 
 
     bool angstrom;
@@ -386,6 +387,7 @@ private:
     myScrollArea *scrollArea;
 
     moleculeDialog *QDLwindow;
+    molecule *labelsPropertiesMolecule = nullptr;
 
     QCheckBox *CHKsettingsballs;
     QCheckBox *CHKsettingsbkg;
@@ -400,6 +402,8 @@ private:
     QCheckBox *geometryHideAtoms = nullptr;
     QCheckBox *geometryHideBonds = nullptr;
     QCheckBox *geometryHideHydrogens = nullptr;
+    QCheckBox *labelsShowSymbols = nullptr;
+    QCheckBox *labelsShowIndices = nullptr;
 
     QColor ambientcolor;
     QColor bkgcolor;
@@ -439,6 +443,7 @@ private:
     QList<QCheckBox*> visibilityBoxes;          // Stores boxes for hide/show molecules
 
     QMetaObject::Connection geometryVisibilityConnection;
+    QMetaObject::Connection labelsVisibilityConnection;
 
     QPoint position;
 
@@ -494,6 +499,7 @@ private:
     QVector3D rotationAxis;                 // Rotation axis
 
     QWidget *geometryPropertiesPage = nullptr;
+    QWidget *labelsPropertiesPage = nullptr;
 
     qreal ballradius;                       // Radius of atom spheres
     qreal cylradius;                        // Radius of bond cylinders
