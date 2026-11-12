@@ -340,6 +340,11 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     connect(BTNselectnone, &QPushButton::clicked,
             this, &molecule::BTNselectnone_clicked);
 
+    connect(this, &molecule::labelsVisibilityChanged,
+            FRMsymbols, [this]() {
+                updateLabelsEditorControls();
+            });
+
 //        Fonts
     BTNfont = new QPushButton(QIcon(":/images/fonts48.png"),tr("Font"));
 
@@ -4815,6 +4820,34 @@ void molecule::SPBforcesthickness_changed(int i){
 void molecule::SPBlabelsvshift_changed(int i){
     labelsvshift = i;
     emitupdatedisplay();
+}
+
+void molecule::updateLabelsEditorControls()
+{
+    if (!QDLeditMolecule || !CHKshowsymbols || !CHKshowindices ||
+        !CHKactiveonly || !LBLselect || !BTNselectall || !BTNselectnone)
+        return;
+
+    QSignalBlocker blockSymbols(CHKshowsymbols);
+    QSignalBlocker blockIndices(CHKshowindices);
+
+    CHKshowsymbols->setChecked(drawatomsymbols);
+    CHKshowindices->setChecked(drawatomindices);
+
+    const bool showSelectionControls =
+        drawatomcoords || drawatomindices || drawatomsymbols;
+
+    CHKactiveonly->setVisible(showSelectionControls);
+
+    const bool showSelectionButtons =
+        showSelectionControls && CHKactiveonly->isChecked();
+
+    LBLselect->setVisible(showSelectionButtons);
+    BTNselectall->setVisible(showSelectionButtons);
+    BTNselectnone->setVisible(showSelectionButtons);
+
+    QDLeditMolecule->update();
+    QDLeditMolecule->adjustSize();
 }
 
 QVector <GLuint> molecule::getallindices(){

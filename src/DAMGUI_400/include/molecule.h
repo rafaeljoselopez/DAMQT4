@@ -406,6 +406,8 @@ private:
     int getscalevalueInt(float, int, int, float, float);
     double extractContourFromSghName(const std::string& filename);
 
+    void updateLabelsEditorControls();
+
     QVector <GLuint> coneindices;
     QVector <GLuint> cylinderindices;
     QVector <QVector3D> conevertices;
