@@ -5888,7 +5888,9 @@ void glWidget::updateLabelsProperties()
         !labelsCoordinatePrecisionLabel ||
         !labelsAngstromUnits ||
         !labelsBohrUnits ||
-        !labelsOnlySelectedAtoms)
+        !labelsOnlySelectedAtoms ||
+        !labelsSelectAll ||
+        !labelsSelectNone)
         return;
 
     QSignalBlocker blockSymbols(labelsShowSymbols);
@@ -5936,6 +5938,13 @@ void glWidget::updateLabelsProperties()
         labelsPropertiesMolecule->getdrawatomcoords();
 
     labelsOnlySelectedAtoms->setVisible(showSelectionControls);
+
+    const bool showSelectionButtons =
+        showSelectionControls &&
+        labelsPropertiesMolecule->getonlyatomactive();
+
+    labelsSelectAll->setVisible(showSelectionButtons);
+    labelsSelectNone->setVisible(showSelectionButtons);
 }
 
 
