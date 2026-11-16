@@ -395,6 +395,12 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     connect(SPBlabelsvshift, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBlabelsvshift_changed);
 
+    connect(this, &molecule::labelsVerticalShiftChanged,
+            FRMsymbols, [this]() {
+                QSignalBlocker blocker(SPBlabelsvshift);
+                SPBlabelsvshift->setValue(getlabelsvshift());
+            });
+
     QGridLayout *Layout1=new QGridLayout();
     Layout1->addWidget(CHKshowsymbols,0,0);
     Layout1->addWidget(CHKshowindices,1,0);
@@ -2497,23 +2503,47 @@ void molecule::BTNflinescolor_clicked(){
     emit updatedisplay();
 }
 
-void molecule::BTNfontcolor_clicked(){
-    QColor currcolor = fontcolor;
-    QColor newcolor = QColorDialog::getColor(currcolor, this);
-    if(newcolor.isValid()) {
-        setfontcolor(newcolor);
-        BTNfontcolor->setColor(&newcolor);
-    }
-    if (visible)
-        emit updatedisplay();
-    return;
+void molecule::BTNfontcolor_clicked()
+{
+    changeLabelsColor();
 }
 
-void molecule::BTNfont_clicked(){
-    setfont(QFontDialog::getFont(nullptr, font));
+void molecule::BTNfont_clicked()
+{
+    changeLabelsFont();
+}
+
+void molecule::changeLabelsFont()
+{
+    bool accepted = false;
+
+    QFont newFont = QFontDialog::getFont(
+        &accepted, font, nullptr, tr("Select labels font")
+        );
+
+    if (!accepted)
+        return;
+
+    setfont(newFont);
+
     if (visible)
         emit updatedisplay();
-    return;
+}
+
+void molecule::changeLabelsColor()
+{
+    QColor newColor = QColorDialog::getColor(fontcolor, this);
+
+    if (!newColor.isValid())
+        return;
+
+    setfontcolor(newColor);
+
+    if (BTNfontcolor)
+        BTNfontcolor->setColor(&newColor);
+
+    if (visible)
+        emit updatedisplay();
 }
 
 void molecule::BTNfontaxeslabels_clicked(){
@@ -4616,8 +4646,13 @@ void molecule::setdrawatomsymbols(bool a)
     emit labelsVisibilityChanged();
 }
 
-void molecule::setfontcolor(QColor a){
+void molecule::setfontcolor(QColor a)
+{
+    if (fontcolor == a)
+        return;
+
     fontcolor = a;
+    emit labelsFontColorChanged();
 }
 
 void molecule::setfont(QFont a){
@@ -4669,8 +4704,13 @@ void molecule::setiscluster(bool a){
     iscluster = a;
 }
 
-void molecule::setlabelsvshift(int i){
+void molecule::setlabelsvshift(int i)
+{
+    if (labelsvshift == i)
+        return;
+
     labelsvshift = i;
+    emit labelsVerticalShiftChanged();
 }
 
 void molecule::setname(QString a){
@@ -4945,8 +4985,9 @@ void molecule::SPBforcesthickness_changed(int i){
 }
 
 // Changes vertical display for critical points labels
-void molecule::SPBlabelsvshift_changed(int i){
-    labelsvshift = i;
+void molecule::SPBlabelsvshift_changed(int i)
+{
+    setlabelsvshift(i);
     emitupdatedisplay();
 }
 

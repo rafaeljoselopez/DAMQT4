@@ -382,6 +382,8 @@ private:
     int speed;
     int windownumber;
 
+    ColorButton *labelsFontColor = nullptr;
+
     DoubleSpinBox *SPBbondthres;
 
     MainWindow3DViewer *mainWin;
@@ -444,6 +446,7 @@ private:
     QGroupBox *FRMviewport;
 
     QLabel *labelsCoordinatePrecisionLabel = nullptr;
+    QLabel *labelsVerticalShiftLabel = nullptr;
 
     QList<QCheckBox*> activateboxes;
     QList<QMetaObject::Connection> connections;         // Stores connections to release in destructor
@@ -454,6 +457,8 @@ private:
     QMetaObject::Connection labelsUnitsConnection;
     QMetaObject::Connection labelsVisibilityConnection;
     QMetaObject::Connection labelsOnlySelectedConnection;
+    QMetaObject::Connection labelsVerticalShiftConnection;
+    QMetaObject::Connection labelsFontColorConnection;
 
     QPoint position;
 
@@ -474,6 +479,7 @@ private:
     QPushButton *BTNviewport;
     ColorButton *labelsSelectAll = nullptr;
     ColorButton *labelsSelectNone = nullptr;
+    QPushButton *labelsFont = nullptr;
 
     QQuaternion rotation;                   // Quaternion for rotation
 
@@ -483,6 +489,8 @@ private:
     QScrollArea *windowArea;
 
     QSize size;
+
+    QSpinBox *labelsVerticalShift = nullptr;
 
     QString CaptureFolder;
     QString clustername;

@@ -471,6 +471,63 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
             labelsPropertiesMolecule->changeAllAtomsActive(false);
     });
 
+    // Labels vertical shift
+
+    QHBoxLayout *verticalShiftLayout = new QHBoxLayout();
+
+    labelsVerticalShiftLabel =
+        new QLabel(tr("Vertical shift"), atomLabelsGroup);
+
+    labelsVerticalShift = new QSpinBox(atomLabelsGroup);
+    labelsVerticalShift->setRange(-50, 50);
+    labelsVerticalShift->setMaximumWidth(70);
+
+    verticalShiftLayout->addWidget(labelsVerticalShiftLabel);
+    verticalShiftLayout->addWidget(labelsVerticalShift);
+    verticalShiftLayout->addStretch();
+
+    connect(labelsVerticalShift,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+        if (labelsPropertiesMolecule) {
+            labelsPropertiesMolecule->setlabelsvshift(value);
+            labelsPropertiesMolecule->emitupdatedisplay();
+        }
+    });
+
+    // Labels font
+
+    labelsFont = new QPushButton(
+        QIcon(":/images/fonts48.png"),
+        tr("Font"),
+        atomLabelsGroup
+    );
+
+    connect(labelsFont, &QPushButton::clicked,
+            this, [this]() {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->changeLabelsFont();
+    });
+
+    // Labels font color
+
+    labelsFontColor = new ColorButton(atomLabelsGroup);
+    labelsFontColor->setIcon(QIcon(":/images/fonts48.png"));
+    labelsFontColor->setText(tr("Color"));
+
+    connect(labelsFontColor, &QPushButton::clicked,
+            this, [this]() {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->changeLabelsColor();
+    });
+
+    QHBoxLayout *fontLayout = new QHBoxLayout();
+
+    fontLayout->addStretch();
+    fontLayout->addWidget(labelsFont);
+    fontLayout->addWidget(labelsFontColor);
+    fontLayout->addStretch();
+
     atomLabelsLayout->addWidget(labelsShowSymbols);
     atomLabelsLayout->addWidget(labelsShowIndices);
     atomLabelsLayout->addWidget(labelsShowCoordinates);
@@ -478,6 +535,8 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     atomLabelsLayout->addLayout(unitsLayout);
     atomLabelsLayout->addWidget(labelsOnlySelectedAtoms);
     atomLabelsLayout->addLayout(selectionLayout);
+    atomLabelsLayout->addLayout(verticalShiftLayout);
+    atomLabelsLayout->addLayout(fontLayout);
 
     labelsLayout->addWidget(labelsTitle);
     labelsLayout->addWidget(atomLabelsGroup);
@@ -5047,6 +5106,12 @@ void glWidget::updateWindowDialog(MyDockWidget *gdock){
         disconnect(labelsOnlySelectedConnection);
         labelsOnlySelectedConnection = QMetaObject::Connection();
 
+        disconnect(labelsVerticalShiftConnection);
+        labelsVerticalShiftConnection = QMetaObject::Connection();
+
+        disconnect(labelsFontColorConnection);
+        labelsFontColorConnection = QMetaObject::Connection();
+
         labelsPropertiesMolecule = nullptr;
 
         delete QDLwindow;
@@ -5732,6 +5797,12 @@ void glWidget::updateSelectedMoleculeProperties()
     disconnect(labelsOnlySelectedConnection);
     labelsOnlySelectedConnection = QMetaObject::Connection();
 
+    disconnect(labelsVerticalShiftConnection);
+    labelsVerticalShiftConnection = QMetaObject::Connection();
+
+    disconnect(labelsFontColorConnection);
+    labelsFontColorConnection = QMetaObject::Connection();
+
     labelsPropertiesMolecule = nullptr;
 
     QList<QTreeWidgetItem*> selectedItems =
@@ -5815,6 +5886,14 @@ void glWidget::updateSelectedMoleculeProperties()
             connect(mol, &molecule::onlySelectedAtomsChanged,
                     this, &glWidget::updateLabelsProperties);
 
+        labelsVerticalShiftConnection =
+            connect(mol, &molecule::labelsVerticalShiftChanged,
+                    this, &glWidget::updateLabelsProperties);
+
+        labelsFontColorConnection =
+            connect(mol, &molecule::labelsFontColorChanged,
+                    this, &glWidget::updateLabelsProperties);
+
         propertiesStack->setCurrentWidget(labelsPropertiesPage);
 
         break;
@@ -5890,7 +5969,10 @@ void glWidget::updateLabelsProperties()
         !labelsBohrUnits ||
         !labelsOnlySelectedAtoms ||
         !labelsSelectAll ||
-        !labelsSelectNone)
+        !labelsSelectNone ||
+        !labelsVerticalShift ||
+        !labelsVerticalShiftLabel ||
+        !labelsFontColor)
         return;
 
     QSignalBlocker blockSymbols(labelsShowSymbols);
@@ -5900,6 +5982,7 @@ void glWidget::updateLabelsProperties()
     QSignalBlocker blockAngstrom(labelsAngstromUnits);
     QSignalBlocker blockBohr(labelsBohrUnits);
     QSignalBlocker blockOnlySelected(labelsOnlySelectedAtoms);
+    QSignalBlocker blockVerticalShift(labelsVerticalShift);
 
     labelsShowSymbols->setChecked(
         labelsPropertiesMolecule->getdrawatomsymbols()
@@ -5945,6 +6028,13 @@ void glWidget::updateLabelsProperties()
 
     labelsSelectAll->setVisible(showSelectionButtons);
     labelsSelectNone->setVisible(showSelectionButtons);
+
+    labelsVerticalShift->setValue(
+        labelsPropertiesMolecule->getlabelsvshift()
+    );
+
+    QColor color = labelsPropertiesMolecule->getfontcolor();
+    labelsFontColor->setColor(&color);
 }
 
 

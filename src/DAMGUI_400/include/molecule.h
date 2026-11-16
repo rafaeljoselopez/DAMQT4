@@ -223,6 +223,8 @@ public:
     QVector <int> getcharges();
     QVector <QVector3D> getxyz();
 
+    void changeLabelsFont();
+    void changeLabelsColor();
     void createeditMoleculeDialog();
     void darken();
     void initatomactive(bool);
@@ -272,6 +274,8 @@ signals:
     void coordPrecisionChanged();
     void coordinateUnitsChanged();
     void onlySelectedAtomsChanged();
+    void labelsVerticalShiftChanged();
+    void labelsFontColorChanged();
 
 public slots:
     bool QDLeditMolecule_isVisible();
