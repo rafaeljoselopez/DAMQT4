@@ -302,6 +302,14 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     connect(SPBcoordprecision, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBcoordprecision_changed);
 
+    connect(this, &molecule::coordPrecisionChanged,
+            FRMsymbols, [this]() {
+                if (!SPBcoordprecision)
+                    return;
+
+                QSignalBlocker blocker(SPBcoordprecision);
+                SPBcoordprecision->setValue(getcoordprecision());
+            });
 
     FRMcoorunits = new QGroupBox();
     RBTangstromcoor = new QRadioButton(tr("angstrom"),FRMcoorunits);
@@ -314,6 +322,17 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     connect(RBTbohrcoor, &QRadioButton::toggled,
             this, &molecule::RBTbohrcoor_changed);
 
+    connect(this, &molecule::coordinateUnitsChanged,
+            FRMsymbols, [this]() {
+                if (!RBTbohrcoor || !RBTangstromcoor)
+                    return;
+
+                QSignalBlocker blockBohr(RBTbohrcoor);
+                QSignalBlocker blockAngstrom(RBTangstromcoor);
+
+                RBTangstromcoor->setChecked(getangstromcoor());
+                RBTbohrcoor->setChecked(!getangstromcoor());
+            });
 
     CHKactiveonly = new QCheckBox(tr("Only selected atoms"));
     CHKactiveonly->setChecked(onlyatomactive);
@@ -343,6 +362,11 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
             this, &molecule::BTNselectnone_clicked);
 
     connect(this, &molecule::labelsVisibilityChanged,
+            FRMsymbols, [this]() {
+                updateLabelsEditorControls();
+            });
+
+    connect(this, &molecule::onlySelectedAtomsChanged,
             FRMsymbols, [this]() {
                 updateLabelsEditorControls();
             });
@@ -1739,9 +1763,11 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
             surf, &surface::setshowextremacoords);
 
 
-    LBLcoordprecision = new QLabel(tr("Precision"));
+    QLabel *LBLcoordprecision = new QLabel(tr("Precision"));
     LBLcoordprecision->setVisible(CHKshowextremacoords->isChecked());
-    SPBcoordprecision = new QSpinBox();
+
+    QSpinBox *SPBcoordprecision = new QSpinBox();
+
     SPBcoordprecision->setMinimum(0);
     SPBcoordprecision->setMaximum(7);
     SPBcoordprecision->setMaximumWidth(50);
@@ -2652,6 +2678,37 @@ void molecule::BTNZaxiscolor_clicked(){
         emitupdatedisplay();
     }
     return;
+}
+
+void molecule::changeAtomCoordinatePrecision(int precision)
+{
+    if (getcoordprecision() == precision)
+        return;
+
+    setcoordprecision(precision);
+
+    if (visible)
+        emit updatedisplay();
+}
+
+void molecule::changeAllAtomsActive(bool active)
+{
+    if (!visible)
+        return;
+
+    setallatomactive(active);
+    emit updatedisplay();
+}
+
+void molecule::changeOnlySelectedAtoms(bool selectedOnly)
+{
+    if (onlyatomactive == selectedOnly)
+        return;
+
+    setonlyatomactive(selectedOnly);
+
+    if (visible)
+        emit updatedisplay();
 }
 
 void molecule::CHKactiveonly_changed(int a){
@@ -4449,13 +4506,9 @@ void molecule::RBTbohr_changed(){
     }
 }
 
-void molecule::RBTbohrcoor_changed(){
-    if (RBTbohrcoor->isChecked()){
-        angstromcoor = false;
-    }
-    else{
-        angstromcoor = true;
-    }
+void molecule::RBTbohrcoor_changed()
+{
+    setangstromcoor(!RBTbohrcoor->isChecked());
     emit updatedisplay();
 }
 
@@ -4498,6 +4551,35 @@ void molecule::setballradius(qreal a){
     ballradius = a;
 };
 
+void molecule::setcoordprecision(int precision)
+{
+    if (coordprecision == precision)
+        return;
+
+    coordprecision = precision;
+    emit coordPrecisionChanged();
+}
+
+void molecule::setangstromcoor(bool angstrom)
+{
+    if (angstromcoor == angstrom)
+        return;
+
+    angstromcoor = angstrom;
+    emit coordinateUnitsChanged();
+}
+
+void molecule::changeAtomCoordinateUnits(bool angstrom)
+{
+    if (angstromcoor == angstrom)
+        return;
+
+    setangstromcoor(angstrom);
+
+    if (visible)
+        emit updatedisplay();
+}
+
 void molecule::setcylradius(qreal a){
     cylradius = a;
 };
@@ -4506,8 +4588,13 @@ void molecule::setdisthressq(qreal a){
     disthressq = a;
 }
 
-void molecule::setdrawatomcoords(bool a){
+void molecule::setdrawatomcoords(bool a)
+{
+    if (drawatomcoords == a)
+        return;
+
     drawatomcoords = a;
+    emit labelsVisibilityChanged();
 }
 
 void molecule::setdrawatomindices(bool a)
@@ -4516,6 +4603,7 @@ void molecule::setdrawatomindices(bool a)
         return;
 
     drawatomindices = a;
+
     emit labelsVisibilityChanged();
 }
 
@@ -4589,8 +4677,13 @@ void molecule::setname(QString a){
     name = a;
 }
 
-void molecule::setonlyatomactive(bool a){
+void molecule::setonlyatomactive(bool a)
+{
+    if (onlyatomactive == a)
+        return;
+
     onlyatomactive = a;
+    emit onlySelectedAtomsChanged();
 }
 
 void molecule::setparentposition(QPoint a){
@@ -4703,6 +4796,17 @@ void molecule::showAtomIndices(bool show)
         emit updatedisplay();
 }
 
+void molecule::showAtomCoordinates(bool show)
+{
+    if (getdrawatomcoords() == show)
+        return;
+
+    setdrawatomcoords(show);
+
+    if (visible)
+        emit updatedisplay();
+}
+
 void molecule::toggleactive(){
     setactive(!isactive());
 }
@@ -4741,7 +4845,7 @@ void molecule::SPBaxesthickness_changed(int i){
 
 // Changes precision for coordinates display
 void molecule::SPBcoordprecision_changed(int i){
-    coordprecision = i;
+    setcoordprecision(i);
     emitupdatedisplay();
 }
 
@@ -4848,16 +4952,31 @@ void molecule::SPBlabelsvshift_changed(int i){
 
 void molecule::updateLabelsEditorControls()
 {
-    if (!QDLeditMolecule || !CHKshowsymbols || !CHKshowindices ||
-        !CHKactiveonly || !LBLselect || !BTNselectall || !BTNselectnone)
+    if (!QDLeditMolecule ||
+        !CHKshowsymbols || !CHKshowindices || !CHKshowcoords ||
+        !CHKactiveonly || !LBLselect || !BTNselectall || !BTNselectnone ||
+        !LBLcoordprecision || !SPBcoordprecision ||
+        !RBTangstromcoor || !RBTbohrcoor)
         return;
 
     QSignalBlocker blockSymbols(CHKshowsymbols);
     QSignalBlocker blockIndices(CHKshowindices);
+    QSignalBlocker blockCoords(CHKshowcoords);
+    QSignalBlocker blockActiveOnly(CHKactiveonly);
 
     CHKshowsymbols->setChecked(drawatomsymbols);
     CHKshowindices->setChecked(drawatomindices);
+    CHKshowcoords->setChecked(drawatomcoords);
+    CHKactiveonly->setChecked(getonlyatomactive());
 
+    // Coordinate options
+    LBLcoordprecision->setVisible(drawatomcoords);
+    SPBcoordprecision->setVisible(drawatomcoords);
+
+    RBTangstromcoor->setVisible(drawatomcoords);
+    RBTbohrcoor->setVisible(drawatomcoords);
+
+    // Atom selection options
     const bool showSelectionControls =
         drawatomcoords || drawatomindices || drawatomsymbols;
 

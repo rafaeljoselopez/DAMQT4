@@ -172,9 +172,13 @@ public:
     int  getnumcps(int);
     int  getznuc(int);
 
+    void changeAllAtomsActive(bool active);
+    void changeAtomCoordinatePrecision(int precision);
+    void changeOnlySelectedAtoms(bool selectedOnly);
     void setlabelsvshift(int);
     void set_ProjectFolder(QString);
     void set_ProjectName(QString);
+    void setcoordprecision(int);
     void sethideatoms(bool hide);
     void sethidebonds(bool hide);
     void sethidehydrogens(bool hide);
@@ -254,6 +258,9 @@ public:
     void setvisible(bool);
     void showAtomSymbols(bool show);
     void showAtomIndices(bool show);
+    void showAtomCoordinates(bool show);
+    void setangstromcoor(bool angstrom);
+    void changeAtomCoordinateUnits(bool angstrom);
 
 signals:
     void animate(bool);
@@ -262,6 +269,9 @@ signals:
     void updateRightMenu();
     void geometryVisibilityChanged();
     void labelsVisibilityChanged();
+    void coordPrecisionChanged();
+    void coordinateUnitsChanged();
+    void onlySelectedAtomsChanged();
 
 public slots:
     bool QDLeditMolecule_isVisible();

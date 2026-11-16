@@ -41,11 +41,13 @@
 #include <QDoubleSpinBox>
 #include <QGroupBox>
 #include <QFileSystemWatcher>
+#include <QLabel>
 #include <QMainWindow>
 #include <QMenu>
 #include <QPushButton>
 #include <QQuaternion>
 #include <QRadioButton>
+#include <QSpinBox>
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QStatusBar>
@@ -402,8 +404,11 @@ private:
     QCheckBox *geometryHideAtoms = nullptr;
     QCheckBox *geometryHideBonds = nullptr;
     QCheckBox *geometryHideHydrogens = nullptr;
+    QSpinBox *labelsCoordinatePrecision = nullptr;
     QCheckBox *labelsShowSymbols = nullptr;
     QCheckBox *labelsShowIndices = nullptr;
+    QCheckBox *labelsShowCoordinates = nullptr;
+    QCheckBox *labelsOnlySelectedAtoms = nullptr;
 
     QColor ambientcolor;
     QColor bkgcolor;
@@ -438,12 +443,17 @@ private:
     QGroupBox *FRMtranslation;
     QGroupBox *FRMviewport;
 
+    QLabel *labelsCoordinatePrecisionLabel = nullptr;
+
     QList<QCheckBox*> activateboxes;
     QList<QMetaObject::Connection> connections;         // Stores connections to release in destructor
     QList<QCheckBox*> visibilityBoxes;          // Stores boxes for hide/show molecules
 
     QMetaObject::Connection geometryVisibilityConnection;
+    QMetaObject::Connection labelsPrecisionConnection;
+    QMetaObject::Connection labelsUnitsConnection;
     QMetaObject::Connection labelsVisibilityConnection;
+    QMetaObject::Connection labelsOnlySelectedConnection;
 
     QPoint position;
 
@@ -462,8 +472,13 @@ private:
     QPushButton *BTNsettings;
     QPushButton *BTNtranslation;
     QPushButton *BTNviewport;
+    ColorButton *labelsSelectAll = nullptr;
+    ColorButton *labelsSelectNone = nullptr;
 
     QQuaternion rotation;                   // Quaternion for rotation
+
+    QRadioButton *labelsAngstromUnits = nullptr;
+    QRadioButton *labelsBohrUnits = nullptr;
 
     QScrollArea *windowArea;
 

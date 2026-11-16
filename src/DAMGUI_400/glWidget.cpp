@@ -266,8 +266,13 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     sceneSplitter = new QSplitter(Qt::Vertical, QDLwindow);
 
-    propertiesStack = new QStackedWidget(sceneSplitter);
-    propertiesStack->setMinimumHeight(100);
+    QScrollArea *propertiesScrollArea = new QScrollArea(sceneSplitter);
+    propertiesScrollArea->setWidgetResizable(true);
+    propertiesScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    propertiesScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    propertiesStack = new QStackedWidget();
+    propertiesScrollArea->setWidget(propertiesStack);
 
     connect(sceneTree, &QTreeWidget::itemSelectionChanged,
             this, &glWidget::updateSelectedMoleculeProperties);
@@ -354,6 +359,9 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     labelsShowIndices =
         new QCheckBox(tr("Atom indices"), atomLabelsGroup);
 
+    labelsShowCoordinates =
+        new QCheckBox(tr("Atom coordinates"), atomLabelsGroup);
+
     connect(labelsShowSymbols, &QCheckBox::toggled,
             this, [this](bool checked) {
         if (labelsPropertiesMolecule)
@@ -366,8 +374,110 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
             labelsPropertiesMolecule->showAtomIndices(checked);
     });
 
+    connect(labelsShowCoordinates, &QCheckBox::toggled,
+            this, [this](bool checked) {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->showAtomCoordinates(checked);
+    });
+
+    // Coordinate precision
+
+    QGridLayout *precisionLayout = new QGridLayout();
+
+    labelsCoordinatePrecisionLabel =
+        new QLabel(tr("Precision"), atomLabelsGroup);
+
+    labelsCoordinatePrecision = new QSpinBox(atomLabelsGroup);
+    labelsCoordinatePrecision->setRange(0, 7);
+    labelsCoordinatePrecision->setFixedWidth(50);
+    labelsCoordinatePrecision->setMinimumHeight(28);
+
+    precisionLayout->addWidget(labelsCoordinatePrecisionLabel, 0, 0,
+                               Qt::AlignVCenter);
+    precisionLayout->addWidget(labelsCoordinatePrecision, 0, 1,
+                               Qt::AlignVCenter);
+
+    precisionLayout->setColumnStretch(2, 1);
+
+    connect(labelsCoordinatePrecision,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int precision) {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->changeAtomCoordinatePrecision(precision);
+    });
+
+    // Coordinate units
+
+    QHBoxLayout *unitsLayout = new QHBoxLayout();
+
+    labelsAngstromUnits =
+        new QRadioButton(tr("angstrom"), atomLabelsGroup);
+
+    labelsBohrUnits =
+        new QRadioButton(tr("bohr"), atomLabelsGroup);
+
+    unitsLayout->addWidget(labelsAngstromUnits);
+    unitsLayout->addWidget(labelsBohrUnits);
+    unitsLayout->addStretch();
+
+    connect(labelsAngstromUnits, &QRadioButton::toggled,
+            this, [this](bool checked) {
+        if (checked && labelsPropertiesMolecule)
+            labelsPropertiesMolecule->changeAtomCoordinateUnits(true);
+    });
+
+    connect(labelsBohrUnits, &QRadioButton::toggled,
+            this, [this](bool checked) {
+        if (checked && labelsPropertiesMolecule)
+            labelsPropertiesMolecule->changeAtomCoordinateUnits(false);
+    });
+
+    // Only selected atoms
+
+    labelsOnlySelectedAtoms =
+        new QCheckBox(tr("Only selected atoms"), atomLabelsGroup);
+
+    connect(labelsOnlySelectedAtoms, &QCheckBox::toggled,
+            this, [this](bool checked) {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->changeOnlySelectedAtoms(checked);
+    });
+
+    // Atom selection buttons
+
+    labelsSelectAll = new ColorButton(tr("All"), atomLabelsGroup);
+    labelsSelectNone = new ColorButton(tr("None"), atomLabelsGroup);
+    QColor allColor(29, 124, 31);
+    QColor noneColor(255, 0, 0);
+
+    labelsSelectAll->setColor(&allColor);
+    labelsSelectNone->setColor(&noneColor);
+
+    QHBoxLayout *selectionLayout = new QHBoxLayout();
+
+    selectionLayout->addWidget(labelsSelectAll);
+    selectionLayout->addWidget(labelsSelectNone);
+    selectionLayout->addStretch();
+
+    connect(labelsSelectAll, &QPushButton::clicked,
+            this, [this]() {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->changeAllAtomsActive(true);
+    });
+
+    connect(labelsSelectNone, &QPushButton::clicked,
+            this, [this]() {
+        if (labelsPropertiesMolecule)
+            labelsPropertiesMolecule->changeAllAtomsActive(false);
+    });
+
     atomLabelsLayout->addWidget(labelsShowSymbols);
     atomLabelsLayout->addWidget(labelsShowIndices);
+    atomLabelsLayout->addWidget(labelsShowCoordinates);
+    atomLabelsLayout->addLayout(precisionLayout);
+    atomLabelsLayout->addLayout(unitsLayout);
+    atomLabelsLayout->addWidget(labelsOnlySelectedAtoms);
+    atomLabelsLayout->addLayout(selectionLayout);
 
     labelsLayout->addWidget(labelsTitle);
     labelsLayout->addWidget(atomLabelsGroup);
@@ -388,7 +498,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     // Add scene explorer and properties panel to splitter
 
     sceneSplitter->addWidget(sceneTree);
-    sceneSplitter->addWidget(propertiesStack);
+    sceneSplitter->addWidget(propertiesScrollArea);
 
     // Initial proportions
 
@@ -4928,6 +5038,15 @@ void glWidget::updateWindowDialog(MyDockWidget *gdock){
         disconnect(labelsVisibilityConnection);
         labelsVisibilityConnection = QMetaObject::Connection();
 
+        disconnect(labelsPrecisionConnection);
+        labelsPrecisionConnection = QMetaObject::Connection();
+
+        disconnect(labelsUnitsConnection);
+        labelsUnitsConnection = QMetaObject::Connection();
+
+        disconnect(labelsOnlySelectedConnection);
+        labelsOnlySelectedConnection = QMetaObject::Connection();
+
         labelsPropertiesMolecule = nullptr;
 
         delete QDLwindow;
@@ -5604,6 +5723,15 @@ void glWidget::updateSelectedMoleculeProperties()
     disconnect(labelsVisibilityConnection);
     labelsVisibilityConnection = QMetaObject::Connection();
 
+    disconnect(labelsPrecisionConnection);
+    labelsPrecisionConnection = QMetaObject::Connection();
+
+    disconnect(labelsUnitsConnection);
+    labelsUnitsConnection = QMetaObject::Connection();
+
+    disconnect(labelsOnlySelectedConnection);
+    labelsOnlySelectedConnection = QMetaObject::Connection();
+
     labelsPropertiesMolecule = nullptr;
 
     QList<QTreeWidgetItem*> selectedItems =
@@ -5675,6 +5803,18 @@ void glWidget::updateSelectedMoleculeProperties()
             connect(mol, &molecule::labelsVisibilityChanged,
                     this, &glWidget::updateLabelsProperties);
 
+        labelsPrecisionConnection =
+            connect(mol, &molecule::coordPrecisionChanged,
+                    this, &glWidget::updateLabelsProperties);
+
+        labelsUnitsConnection =
+            connect(mol, &molecule::coordinateUnitsChanged,
+                    this, &glWidget::updateLabelsProperties);
+
+        labelsOnlySelectedConnection =
+            connect(mol, &molecule::onlySelectedAtomsChanged,
+                    this, &glWidget::updateLabelsProperties);
+
         propertiesStack->setCurrentWidget(labelsPropertiesPage);
 
         break;
@@ -5742,11 +5882,22 @@ void glWidget::updateLabelsProperties()
 {
     if (!labelsPropertiesMolecule ||
         !labelsShowSymbols ||
-        !labelsShowIndices)
+        !labelsShowIndices ||
+        !labelsShowCoordinates ||
+        !labelsCoordinatePrecision ||
+        !labelsCoordinatePrecisionLabel ||
+        !labelsAngstromUnits ||
+        !labelsBohrUnits ||
+        !labelsOnlySelectedAtoms)
         return;
 
     QSignalBlocker blockSymbols(labelsShowSymbols);
     QSignalBlocker blockIndices(labelsShowIndices);
+    QSignalBlocker blockCoordinates(labelsShowCoordinates);
+    QSignalBlocker blockPrecision(labelsCoordinatePrecision);
+    QSignalBlocker blockAngstrom(labelsAngstromUnits);
+    QSignalBlocker blockBohr(labelsBohrUnits);
+    QSignalBlocker blockOnlySelected(labelsOnlySelectedAtoms);
 
     labelsShowSymbols->setChecked(
         labelsPropertiesMolecule->getdrawatomsymbols()
@@ -5755,6 +5906,36 @@ void glWidget::updateLabelsProperties()
     labelsShowIndices->setChecked(
         labelsPropertiesMolecule->getdrawatomindices()
     );
+
+    const bool showCoordinates =
+        labelsPropertiesMolecule->getdrawatomcoords();
+
+    labelsShowCoordinates->setChecked(showCoordinates);
+
+    labelsCoordinatePrecision->setValue(
+        labelsPropertiesMolecule->getcoordprecision()
+    );
+
+    const bool angstrom = labelsPropertiesMolecule->getangstromcoor();
+
+    labelsAngstromUnits->setChecked(angstrom);
+    labelsBohrUnits->setChecked(!angstrom);
+    labelsOnlySelectedAtoms->setChecked(
+        labelsPropertiesMolecule->getonlyatomactive()
+    );
+
+    // Show precision controls only when coordinates are enabled
+    labelsCoordinatePrecisionLabel->setVisible(showCoordinates);
+    labelsCoordinatePrecision->setVisible(showCoordinates);
+    labelsAngstromUnits->setVisible(showCoordinates);
+    labelsBohrUnits->setVisible(showCoordinates);
+
+    const bool showSelectionControls =
+        labelsPropertiesMolecule->getdrawatomsymbols() ||
+        labelsPropertiesMolecule->getdrawatomindices() ||
+        labelsPropertiesMolecule->getdrawatomcoords();
+
+    labelsOnlySelectedAtoms->setVisible(showSelectionControls);
 }
 
 
