@@ -383,6 +383,7 @@ private:
     int windownumber;
 
     ColorButton *labelsFontColor = nullptr;
+    ColorButton *forcesColorButton[5] = {nullptr};
 
     DoubleSpinBox *SPBbondthres;
 
@@ -411,6 +412,7 @@ private:
     QCheckBox *labelsShowIndices = nullptr;
     QCheckBox *labelsShowCoordinates = nullptr;
     QCheckBox *labelsOnlySelectedAtoms = nullptr;
+    QCheckBox *forcesVisibleCheck[5] = {nullptr};
 
     QColor ambientcolor;
     QColor bkgcolor;
@@ -422,6 +424,7 @@ private:
     MyDockWidget *gdock;
 
     molecule *geometryPropertiesMolecule = nullptr;
+    molecule *forcesPropertiesMolecule = nullptr;
 
     // QGridLayout *layoutmolecules;
     QTreeWidget *sceneTree;
@@ -448,6 +451,8 @@ private:
     QLabel *labelsCoordinatePrecisionLabel = nullptr;
     QLabel *labelsVerticalShiftLabel = nullptr;
 
+    QLineEdit *forcesFile = nullptr;
+
     QList<QCheckBox*> activateboxes;
     QList<QMetaObject::Connection> connections;         // Stores connections to release in destructor
     QList<QCheckBox*> visibilityBoxes;          // Stores boxes for hide/show molecules
@@ -459,6 +464,10 @@ private:
     QMetaObject::Connection labelsOnlySelectedConnection;
     QMetaObject::Connection labelsVerticalShiftConnection;
     QMetaObject::Connection labelsFontColorConnection;
+    QMetaObject::Connection forcesFileConnection;
+    QMetaObject::Connection forcesVisibilityConnection;
+    QMetaObject::Connection forcesColorsConnection;
+    QMetaObject::Connection forcesGeometryConnection;
 
     QPoint position;
 
@@ -480,6 +489,7 @@ private:
     ColorButton *labelsSelectAll = nullptr;
     ColorButton *labelsSelectNone = nullptr;
     QPushButton *labelsFont = nullptr;
+    QToolButton *forcesBrowse = nullptr;
 
     QQuaternion rotation;                   // Quaternion for rotation
 
@@ -491,6 +501,10 @@ private:
     QSize size;
 
     QSpinBox *labelsVerticalShift = nullptr;
+    QSpinBox *forcesThickness = nullptr;
+    QSpinBox *forcesLength = nullptr;
+    QSpinBox *forcesArrowLength = nullptr;
+    QSpinBox *forcesArrowWidth = nullptr;
 
     QString CaptureFolder;
     QString clustername;
@@ -523,6 +537,7 @@ private:
 
     QWidget *geometryPropertiesPage = nullptr;
     QWidget *labelsPropertiesPage = nullptr;
+    QWidget *forcesPropertiesPage = nullptr;
 
     qreal ballradius;                       // Radius of atom spheres
     qreal cylradius;                        // Radius of bond cylinders

@@ -27,7 +27,7 @@
 //
 #include "forces.h"
 #include <cmath>
-
+#include <utility>
 
 forces::forces(QString parentpath, QWidget *parent) : QWidget(parent)
 {
@@ -77,55 +77,111 @@ forces::~forces(){
 }
 
 bool forces::readforcesfile(QString filename)
-{	
+{
     QFile file(filename);
+
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
         QMessageBox msgBox;
         msgBox.setText(tr("readforcesfile"));
-        msgBox.setInformativeText(tr("File %1 cannot be read").arg(filename)+QString(":\n%1.").arg(file.errorString()));
+        msgBox.setInformativeText(
+            tr("File %1 cannot be read").arg(filename)
+            + QString(":\n%1.").arg(file.errorString())
+            );
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
         return false;
     }
-    forcesfilename = filename;
+
     QApplication::setOverrideCursor(Qt::WaitCursor);
+
     QTextStream in(&file);
-    QString line;
-    line = in.readLine();      // The first line contains the number of critical points
-    numcenters = line.toInt();
-    QVector3D auxvec;
-    for (int i=0 ; i<MAX_FORCES ; i++){
-        forcesval[i].clear();
-        forcesorig[i].clear();
-        forcesxyz[i].clear();
-        for (int j=0 ; j < numcenters ; j++){
-            line = in.readLine();
-            line=line.trimmed();
+
+    QVector<qreal> newforcesval[MAX_FORCES];
+    QVector<QVector3D> newforcesorig[MAX_FORCES];
+    QVector<QVector3D> newforcesxyz[MAX_FORCES];
+
+    QString line = in.readLine();
+
+    bool validNumber = false;
+    int newNumCenters = line.trimmed().toInt(&validNumber);
+
+    bool valid = validNumber && newNumCenters > 0;
+
+    for (int i = 0; i < MAX_FORCES && valid; i++) {
+
+        for (int j = 0; j < newNumCenters; j++) {
+
+            line = in.readLine().trimmed();
+
 #if QT_VERSION < 0x050E00
-        QStringList fields = line.split(' ',QString::SkipEmptyParts);
+            QStringList fields = line.split(' ', QString::SkipEmptyParts);
 #else
-        QStringList fields = line.split(' ',Qt::SkipEmptyParts);
+            QStringList fields = line.split(' ', Qt::SkipEmptyParts);
 #endif
-            if (fields.count() != 6){
-                QMessageBox msgBox;
-                msgBox.setText(tr("readforcesfile"));
-                msgBox.setInformativeText(tr("Error reading file %1: insufficient number of entries in forces").arg(filename));
-                msgBox.setIcon(QMessageBox::Warning);
-                msgBox.exec();
-                return false;
+
+            if (fields.count() != 6) {
+                valid = false;
+                break;
             }
-            auxvec.setX(fields.takeFirst().toDouble() * ANGSTROM_TO_BOHR);
-            auxvec.setY(fields.takeFirst().toDouble() * ANGSTROM_TO_BOHR);
-            auxvec.setZ(fields.takeFirst().toDouble() * ANGSTROM_TO_BOHR);
-            forcesorig[i].append(auxvec);
-            auxvec.setX(fields.takeFirst().toDouble());
-            auxvec.setY(fields.takeFirst().toDouble());
-            auxvec.setZ(fields.takeFirst().toDouble());
-            forcesxyz[i].append(auxvec);
-            forcesval[i].append(auxvec.length());
+
+            double values[6];
+
+            for (int k = 0; k < 6; k++) {
+                bool ok = false;
+                values[k] = fields[k].toDouble(&ok);
+
+                if (!ok || !std::isfinite(values[k])) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            if (!valid)
+                break;
+
+            QVector3D origin(
+                values[0] * ANGSTROM_TO_BOHR,
+                values[1] * ANGSTROM_TO_BOHR,
+                values[2] * ANGSTROM_TO_BOHR
+                );
+
+            QVector3D force(
+                values[3],
+                values[4],
+                values[5]
+                );
+
+            newforcesorig[i].append(origin);
+            newforcesxyz[i].append(force);
+            newforcesval[i].append(force.length());
         }
     }
+
     QApplication::restoreOverrideCursor();
+
+    if (!valid) {
+        QMessageBox msgBox;
+        msgBox.setText(tr("readforcesfile"));
+        msgBox.setInformativeText(
+            tr("Invalid or incomplete forces file: %1").arg(filename)
+            );
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.exec();
+        return false;
+    }
+
+    // Commit the new data only after successful validation
+
+    numcenters = newNumCenters;
+
+    for (int i = 0; i < MAX_FORCES; i++) {
+        forcesval[i] = std::move(newforcesval[i]);
+        forcesorig[i] = std::move(newforcesorig[i]);
+        forcesxyz[i] = std::move(newforcesxyz[i]);
+    }
+
+    forcesfilename = filename;
+
     return true;
 }
 

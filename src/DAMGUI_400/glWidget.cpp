@@ -554,6 +554,176 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     propertiesStack->addWidget(geometryPropertiesPage);
 
+    // Forces properties page
+
+    forcesPropertiesPage = new QWidget(propertiesStack);
+
+    QVBoxLayout *forcesLayout = new QVBoxLayout(forcesPropertiesPage);
+
+    QLabel *forcesTitle = new QLabel(tr("Hellmann-Feynman forces"),
+                                     forcesPropertiesPage);
+
+    QLabel *forcesFileLabel = new QLabel(
+        tr("File:"), forcesPropertiesPage
+    );
+
+    forcesFile = new QLineEdit(forcesPropertiesPage);
+
+    forcesBrowse = new QToolButton(forcesPropertiesPage);
+    forcesBrowse->setText(tr("..."));
+    forcesBrowse->setToolTip(
+        tr("Open file with Hellmann-Feynman forces ...")
+    );
+
+    connect(forcesBrowse, &QToolButton::clicked,
+            this, [this]() {
+        if (forcesPropertiesMolecule)
+            forcesPropertiesMolecule->selectForcesFile();
+    });
+
+    connect(forcesFile, &QLineEdit::returnPressed,
+            this, [this]() {
+        if (forcesPropertiesMolecule)
+            forcesPropertiesMolecule->readForcesFile(
+                forcesFile->text(), false
+            );
+    });
+
+    QHBoxLayout *forcesFileLayout = new QHBoxLayout();
+
+    forcesFileLayout->addWidget(forcesFileLabel);
+    forcesFileLayout->addWidget(forcesFile);
+    forcesFileLayout->addWidget(forcesBrowse);
+
+    forcesLayout->addWidget(forcesTitle);
+    forcesLayout->addLayout(forcesFileLayout);
+
+    // Force components
+
+    const QString forceNames[5] = {
+        tr("External"),
+        tr("Internal"),
+        tr("Total"),
+        tr("Non-conformational"),
+        tr("Conformational")
+    };
+
+    for (int i = 0; i < 5; ++i) {
+
+        QHBoxLayout *row = new QHBoxLayout();
+
+        forcesVisibleCheck[i] =
+            new QCheckBox(forceNames[i], forcesPropertiesPage);
+
+        forcesColorButton[i] =
+            new ColorButton(forcesPropertiesPage);
+
+        forcesColorButton[i]->setText(tr("Color"));
+        forcesColorButton[i]->setIcon(
+            QIcon(":/images/colores48.png")
+        );
+
+        row->addWidget(forcesVisibleCheck[i]);
+        row->addStretch();
+        row->addWidget(forcesColorButton[i]);
+
+        forcesLayout->addLayout(row);
+
+        connect(forcesVisibleCheck[i], &QCheckBox::toggled,
+                this, [this, i](bool checked) {
+            if (forcesPropertiesMolecule)
+                forcesPropertiesMolecule->setForceVisible(i, checked);
+        });
+
+        connect(forcesColorButton[i], &QPushButton::clicked,
+                this, [this, i]() {
+
+            if (!forcesPropertiesMolecule)
+                return;
+
+            QColor color = QColorDialog::getColor(
+                forcesPropertiesMolecule->getForceColor(i), this
+            );
+
+            if (color.isValid())
+                forcesPropertiesMolecule->setForceColor(i, color);
+        });
+    }
+
+    // Force geometry parameters
+
+    QGridLayout *forcesGeometryLayout = new QGridLayout();
+
+    forcesThickness = new QSpinBox(forcesPropertiesPage);
+    forcesThickness->setRange(1, 50);
+
+    forcesLength = new QSpinBox(forcesPropertiesPage);
+    forcesLength->setRange(1, 200);
+
+    forcesArrowLength = new QSpinBox(forcesPropertiesPage);
+    forcesArrowLength->setRange(1, 50);
+
+    forcesArrowWidth = new QSpinBox(forcesPropertiesPage);
+    forcesArrowWidth->setRange(1, 50);
+
+    QSpinBox *geometrySpinBoxes[4] = {
+        forcesThickness,
+        forcesLength,
+        forcesArrowLength,
+        forcesArrowWidth
+    };
+
+    const QString geometryLabels[4] = {
+        tr("Thickness:"),
+        tr("Length:"),
+        tr("Arrow length:"),
+        tr("Arrow width:")
+    };
+
+    for (int i = 0; i < 4; ++i) {
+        geometrySpinBoxes[i]->setFixedWidth(60);
+
+        forcesGeometryLayout->addWidget(
+            new QLabel(geometryLabels[i], forcesPropertiesPage),
+            i, 0
+        );
+
+        forcesGeometryLayout->addWidget(
+            geometrySpinBoxes[i], i, 1, Qt::AlignRight
+        );
+    }
+
+    forcesLayout->addLayout(forcesGeometryLayout);
+
+    connect(forcesThickness, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+        if (forcesPropertiesMolecule)
+            forcesPropertiesMolecule->setForceThickness(value);
+    });
+
+    connect(forcesLength, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+        if (forcesPropertiesMolecule)
+            forcesPropertiesMolecule->setForceLength(value);
+    });
+
+    connect(forcesArrowLength, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+        if (forcesPropertiesMolecule)
+            forcesPropertiesMolecule->setForceArrowLength(value);
+    });
+
+    connect(forcesArrowWidth, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+        if (forcesPropertiesMolecule)
+            forcesPropertiesMolecule->setForceArrowWidth(value);
+    });
+
+
+    forcesLayout->addStretch();
+
+    propertiesStack->addWidget(forcesPropertiesPage);
+
     // Add scene explorer and properties panel to splitter
 
     sceneSplitter->addWidget(sceneTree);
@@ -5112,6 +5282,18 @@ void glWidget::updateWindowDialog(MyDockWidget *gdock){
         disconnect(labelsFontColorConnection);
         labelsFontColorConnection = QMetaObject::Connection();
 
+        disconnect(forcesFileConnection);
+        forcesFileConnection = QMetaObject::Connection();
+
+        disconnect(forcesVisibilityConnection);
+        forcesVisibilityConnection = QMetaObject::Connection();
+
+        disconnect(forcesColorsConnection);
+        forcesColorsConnection = QMetaObject::Connection();
+
+        disconnect(forcesGeometryConnection);
+        forcesGeometryConnection = QMetaObject::Connection();
+
         labelsPropertiesMolecule = nullptr;
 
         delete QDLwindow;
@@ -5803,7 +5985,20 @@ void glWidget::updateSelectedMoleculeProperties()
     disconnect(labelsFontColorConnection);
     labelsFontColorConnection = QMetaObject::Connection();
 
+    disconnect(forcesFileConnection);
+    forcesFileConnection = QMetaObject::Connection();
+
+    disconnect(forcesVisibilityConnection);
+    forcesVisibilityConnection = QMetaObject::Connection();
+
+    disconnect(forcesColorsConnection);
+    forcesColorsConnection = QMetaObject::Connection();
+
+    disconnect(forcesGeometryConnection);
+    forcesGeometryConnection = QMetaObject::Connection();
+
     labelsPropertiesMolecule = nullptr;
+    forcesPropertiesMolecule = nullptr;
 
     QList<QTreeWidgetItem*> selectedItems =
         sceneTree->selectedItems();
@@ -5899,9 +6094,118 @@ void glWidget::updateSelectedMoleculeProperties()
         break;
 
     case SceneNodeType::Forces:
-        label->setText(
-            tr("Forces\n\nMolecule: %1").arg(mol->getname())
-        );
+
+        forcesPropertiesMolecule = mol;
+
+        mol->addforces();
+
+        forcesFile->setText(mol->getForcesFilename());
+
+        forcesFileConnection =
+            connect(mol, &molecule::forcesFileChanged,
+                    this, [this]() {
+                if (forcesPropertiesMolecule)
+                    forcesFile->setText(
+                        forcesPropertiesMolecule->getForcesFilename()
+                    );
+            });
+
+        // Initialize force visibility checkboxes
+
+        for (int i = 0; i < 5; ++i) {
+
+            QSignalBlocker blocker(forcesVisibleCheck[i]);
+
+            forcesVisibleCheck[i]->setChecked(
+                mol->getForceVisible(i)
+            );
+        }
+
+        for (int i = 0; i < 5; ++i) {
+
+            QColor color = mol->getForceColor(i);
+
+            forcesColorButton[i]->setColor(&color);
+        }
+
+        {
+            QSignalBlocker b1(forcesThickness);
+            QSignalBlocker b2(forcesLength);
+            QSignalBlocker b3(forcesArrowLength);
+            QSignalBlocker b4(forcesArrowWidth);
+
+            forcesThickness->setValue(mol->getForceThickness());
+            forcesLength->setValue(mol->getForceLength());
+            forcesArrowLength->setValue(mol->getForceArrowLength());
+            forcesArrowWidth->setValue(mol->getForceArrowWidth());
+        }
+
+        // Synchronize changes from the traditional editor
+
+        forcesVisibilityConnection =
+            connect(mol, &molecule::forcesVisibilityChanged,
+                    this, [this]() {
+
+                if (!forcesPropertiesMolecule)
+                    return;
+
+                for (int i = 0; i < 5; ++i) {
+
+                    QSignalBlocker blocker(forcesVisibleCheck[i]);
+
+                    forcesVisibleCheck[i]->setChecked(
+                        forcesPropertiesMolecule->getForceVisible(i)
+                    );
+                }
+            });
+
+        forcesColorsConnection =
+            connect(mol, &molecule::forcesColorsChanged,
+                    this, [this]() {
+
+                if (!forcesPropertiesMolecule)
+                    return;
+
+                for (int i = 0; i < 5; ++i) {
+
+                    QColor color =
+                        forcesPropertiesMolecule->getForceColor(i);
+
+                    forcesColorButton[i]->setColor(&color);
+                }
+            });
+
+        forcesGeometryConnection =
+            connect(mol, &molecule::forcesGeometryChanged,
+                    this, [this]() {
+
+                if (!forcesPropertiesMolecule)
+                    return;
+
+                QSignalBlocker b1(forcesThickness);
+                QSignalBlocker b2(forcesLength);
+                QSignalBlocker b3(forcesArrowLength);
+                QSignalBlocker b4(forcesArrowWidth);
+
+                forcesThickness->setValue(
+                    forcesPropertiesMolecule->getForceThickness()
+                );
+
+                forcesLength->setValue(
+                    forcesPropertiesMolecule->getForceLength()
+                );
+
+                forcesArrowLength->setValue(
+                    forcesPropertiesMolecule->getForceArrowLength()
+                );
+
+                forcesArrowWidth->setValue(
+                    forcesPropertiesMolecule->getForceArrowWidth()
+                );
+            });
+
+        propertiesStack->setCurrentWidget(forcesPropertiesPage);
+
         break;
 
     case SceneNodeType::FieldLines:

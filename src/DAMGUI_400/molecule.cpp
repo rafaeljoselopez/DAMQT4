@@ -876,6 +876,11 @@ void molecule::create_forces_widgets_and_layouts(){
     connect(TXTforces, &QLineEdit::returnPressed,
             this, &molecule::TXTforces_changed);
 
+    connect(this, &molecule::forcesFileChanged,
+            TXTforces, [this]() {
+                TXTforces->setText(hfforces->getforcesfilename());
+            });
+
     BTNforces = new QToolButton();
     BTNforces->setText(tr("..."));
     BTNforces->setToolTip(tr("Open file with Hellmann-Feynman forces ..."));
@@ -907,6 +912,33 @@ void molecule::create_forces_widgets_and_layouts(){
                 this, &molecule::BTNforcescolor_changed);
 
     }
+
+    connect(this, &molecule::forcesVisibilityChanged,
+            this, [this]() {
+                for (int i = 0; i < MAX_FORCES; ++i) {
+                    if (!CHKforces[i])
+                        continue;
+
+                    QSignalBlocker blocker(CHKforces[i]);
+
+                    CHKforces[i]->setChecked(
+                        getForceVisible(i)
+                        );
+                }
+            });
+
+    connect(this, &molecule::forcesColorsChanged,
+            this, [this]() {
+
+                for (int i = 0; i < MAX_FORCES; ++i) {
+
+                    if (!BTNforcecolors[i])
+                        continue;
+
+                    QColor color = getForceColor(i);
+                    BTNforcecolors[i]->setColor(&color);
+                }
+            });
 
 //         Vectors thickness
 
@@ -962,6 +994,20 @@ void molecule::create_forces_widgets_and_layouts(){
 
     connect(SPBforcesarrowwidth, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBforcesarrowwidth_changed);
+
+    connect(this, &molecule::forcesGeometryChanged,
+            this, [this]() {
+
+                QSignalBlocker b1(SPBforcesthickness);
+                QSignalBlocker b2(SPBforceslength);
+                QSignalBlocker b3(SPBforcesarrowlength);
+                QSignalBlocker b4(SPBforcesarrowwidth);
+
+                SPBforcesthickness->setValue(getForceThickness());
+                SPBforceslength->setValue(getForceLength());
+                SPBforcesarrowlength->setValue(getForceArrowLength());
+                SPBforcesarrowwidth->setValue(getForceArrowWidth());
+            });
 
 //    Layouts
     QLabel *LBLforces = new QLabel(tr("File")+":");
@@ -2556,23 +2602,22 @@ void molecule::BTNfontaxeslabels_clicked(){
 //    Connects push button with CPs colors
 void molecule::BTNforcescolor_changed()
 {
-    QPushButton *BTNp = (QPushButton *)sender();
-    int tipo=-1;
-    for(int i = 0; i < MAX_FORCES; ++i){
-        if(BTNforcecolors[i] == BTNp){
-                tipo = i;
-                break;
-        }
+    QPushButton *button = qobject_cast<QPushButton *>(sender());
+
+    for (int i = 0; i < MAX_FORCES; ++i) {
+
+        if (BTNforcecolors[i] != button)
+            continue;
+
+        QColor color = QColorDialog::getColor(
+            getForceColor(i), this
+            );
+
+        if (color.isValid())
+            setForceColor(i, color);
+
+        break;
     }
-    if (tipo>-1){
-        QColor colact = hfforces->getcolor(tipo);
-        QColor col = QColorDialog::getColor(colact, this);
-        if(col.isValid()) {
-            hfforces->setcolor(tipo,col);
-            BTNforcecolors[tipo]->setColor(&col);
-        }
-    }
-    hfforces->createforces();
 }
 
 //  Function BTNrotation_clicked: open menu for rotations
@@ -2902,28 +2947,16 @@ void molecule::CHKflines_changed(){
 }
 
 //    Connects Checkbox with show/hide critical points
-void molecule::CHKforces_changed(){
-    QCheckBox *CHKp = (QCheckBox *)sender();
-    int tipo=-1;
-    for(int i = 0; i < MAX_FORCES; ++i){
-        if(CHKforces[i] == CHKp){
-                tipo = i;
-                break;
-        }
-    }
-    if(CHKforces[tipo]->isChecked()){
-        hfforces->setvisibleforces(tipo,true);
-    }else{
-        hfforces->setvisibleforces(tipo,false);
-    }
-    hfforces->setvisible(false);
-    for (int i = 0 ; i < MAX_FORCES ; i++){
-        if (CHKforces[i]->isChecked()){
-            hfforces->setvisible(true);
+void molecule::CHKforces_changed()
+{
+    QCheckBox *checkbox = qobject_cast<QCheckBox *>(sender());
+
+    for (int i = 0; i < MAX_FORCES; ++i) {
+        if (CHKforces[i] == checkbox) {
+            setForceVisible(i, checkbox->isChecked());
             break;
         }
     }
-    hfforces->createforces();
 }
 
 void molecule::CHKhideatoms_changed()
@@ -3341,8 +3374,20 @@ void molecule::readforcefiles_dialog()
             + " *.forces " + " (*.forces);;"+tr("All files")+" (*)");
     if (fileName.length()==0) return;
     TXTforces->setText(fileName.trimmed());
-    if (hfforces->readforcesfile(TXTforces->text()))
+    readForcesFile(TXTforces->text(), true);
+}
+
+bool molecule::readForcesFile(const QString &filename, bool createGeometry)
+{
+    bool success = hfforces->readforcesfile(filename);
+
+    if (success && createGeometry)
         hfforces->createforces();
+
+    if (success)
+        emit forcesFileChanged();
+
+    return success;
 }
 
 void molecule::resetinterval(){
@@ -3543,7 +3588,7 @@ void molecule::TXTfieldlines_changed(){
 
 void molecule::TXTforces_changed(){
 //    if (!TXTforces->text().isEmpty())
-        hfforces->readforcesfile(TXTforces->text());
+        readForcesFile(TXTforces->text(), false);
 }
 
 void molecule::updateeditMoleculeDialog(){
@@ -4009,6 +4054,22 @@ bool molecule::getdrawatomsymbols(){
     return drawatomsymbols;
 }
 
+bool molecule::getForceVisible(int i)
+{
+    if (!hfforces || i < 0 || i >= MAX_FORCES)
+        return false;
+
+    return hfforces->getvisibleforces(i);
+}
+
+QColor molecule::getForceColor(int i)
+{
+    if (!hfforces || i < 0 || i >= MAX_FORCES)
+        return QColor();
+
+    return hfforces->getcolor(i);
+}
+
 bool molecule::gethideatoms(){
     return hideatoms;
 }
@@ -4027,6 +4088,26 @@ bool molecule::getiscluster(){
 
 int molecule::getcoordprecision(){
     return coordprecision;
+}
+
+int molecule::getForceThickness()
+{
+    return hfforces ? hfforces->getforcesthickness() : 0;
+}
+
+int molecule::getForceLength()
+{
+    return hfforces ? hfforces->getforceslength() : 0;
+}
+
+int molecule::getForceArrowLength()
+{
+    return hfforces ? hfforces->getarrowlength() : 0;
+}
+
+int molecule::getForceArrowWidth()
+{
+    return hfforces ? hfforces->getarrowwidth() : 0;
 }
 
 int molecule::getlabelsvshift(){
@@ -4099,6 +4180,13 @@ QString molecule::getname(){
 
 QString molecule::getpath(){
     return path;
+}
+
+QString molecule::getForcesFilename()
+{
+    qDebug() << "molecule:" << this;
+    qDebug() << "hfforces:" << hfforces;
+    return hfforces->getforcesfilename();
 }
 
 QVector<QVector3D> molecule::getpositionaxeslabels(){
@@ -4663,6 +4751,89 @@ void molecule::setfontaxeslabels(QFont a){
     fontaxeslabels = a;
 }
 
+void molecule::setForceVisible(int i, bool visible)
+{
+    if (!hfforces || i < 0 || i >= MAX_FORCES)
+        return;
+
+    if (hfforces->getvisibleforces(i) == visible)
+        return;
+
+    hfforces->setvisibleforces(i, visible);
+
+    bool anyVisible = false;
+
+    for (int j = 0; j < MAX_FORCES; ++j) {
+        if (hfforces->getvisibleforces(j)) {
+            anyVisible = true;
+            break;
+        }
+    }
+
+    hfforces->setvisible(anyVisible);
+    hfforces->createforces();
+
+    emit forcesVisibilityChanged();
+}
+
+void molecule::setForceColor(int i, const QColor &color)
+{
+    if (!hfforces || i < 0 || i >= MAX_FORCES || !color.isValid())
+        return;
+
+    if (hfforces->getcolor(i) == color)
+        return;
+
+    hfforces->setcolor(i, color);
+    hfforces->createforces();
+
+    emit forcesColorsChanged();
+}
+
+void molecule::setForceThickness(int value)
+{
+    if (!hfforces || hfforces->getforcesthickness() == value)
+        return;
+
+    hfforces->setforcesthickness(value);
+    hfforces->createforces();
+
+    emit forcesGeometryChanged();
+}
+
+void molecule::setForceLength(int value)
+{
+    if (!hfforces || hfforces->getforceslength() == value)
+        return;
+
+    hfforces->setforceslength(value);
+    hfforces->createforces();
+
+    emit forcesGeometryChanged();
+}
+
+void molecule::setForceArrowLength(int value)
+{
+    if (!hfforces || hfforces->getarrowlength() == value)
+        return;
+
+    hfforces->setarrowlength(value);
+    hfforces->createforces();
+
+    emit forcesGeometryChanged();
+}
+
+void molecule::setForceArrowWidth(int value)
+{
+    if (!hfforces || hfforces->getarrowwidth() == value)
+        return;
+
+    hfforces->setarrowwidth(value);
+    hfforces->createforces();
+
+    emit forcesGeometryChanged();
+}
+
 void molecule::setfullname(QString a){
     fullname = a;
 }
@@ -4961,27 +5132,27 @@ void molecule::SPBflinesarrowswidth_changed(int i){
 }
 
 // Changes length of force arrows
-void molecule::SPBforcesarrowlength_changed(int i){
-    hfforces->setarrowlength(i);
-    hfforces->createforces();
+void molecule::SPBforcesarrowlength_changed(int i)
+{
+    setForceArrowLength(i);
 }
 
 // Changes width of force arrows
-void molecule::SPBforcesarrowwidth_changed(int i){
-    hfforces->setarrowwidth(i);
-    hfforces->createforces();
+void molecule::SPBforcesarrowwidth_changed(int i)
+{
+    setForceArrowWidth(i);
 }
 
 // Changes length of force vectors
-void molecule::SPBforceslength_changed(int i){
-    hfforces->setforceslength(i);
-    hfforces->createforces();
+void molecule::SPBforceslength_changed(int i)
+{
+    setForceLength(i);
 }
 
 // Changes thickness of force vectors
-void molecule::SPBforcesthickness_changed(int i){
-    hfforces->setforcesthickness(i);
-    hfforces->createforces();
+void molecule::SPBforcesthickness_changed(int i)
+{
+    setForceThickness(i);
 }
 
 // Changes vertical display for critical points labels
@@ -5032,6 +5203,22 @@ void molecule::updateLabelsEditorControls()
 
     QDLeditMolecule->update();
     QDLeditMolecule->adjustSize();
+}
+
+void molecule::selectForcesFile()
+{
+    QString filename = QFileDialog::getOpenFileName(
+        this,
+        tr("Open file with HF forces"),
+        path,
+        tr("Allowed files") + " *.forces (*.forces);;" +
+            tr("All files") + " (*)"
+        );
+
+    if (filename.isEmpty())
+        return;
+
+    readForcesFile(filename.trimmed(), true);
 }
 
 QVector <GLuint> molecule::getallindices(){
