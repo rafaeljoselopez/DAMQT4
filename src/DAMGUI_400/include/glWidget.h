@@ -382,17 +382,25 @@ private:
     int speed;
     int windownumber;
 
-    ColorButton *labelsFontColor = nullptr;
+    ColorButton *fieldLinesColor = nullptr;
     ColorButton *forcesColorButton[5] = {nullptr};
+    ColorButton *labelsFontColor = nullptr;
 
     DoubleSpinBox *SPBbondthres;
 
     MainWindow3DViewer *mainWin;
 
+    MyDockWidget *gdock;
+
     myScrollArea *scrollArea;
 
-    moleculeDialog *QDLwindow;
+    molecule *geometryPropertiesMolecule = nullptr;
+    molecule *fieldLinesPropertiesMolecule = nullptr;
+    molecule *forcesPropertiesMolecule = nullptr;
     molecule *labelsPropertiesMolecule = nullptr;
+
+
+    moleculeDialog *QDLwindow;
 
     QCheckBox *CHKsettingsballs;
     QCheckBox *CHKsettingsbkg;
@@ -404,15 +412,16 @@ private:
     QCheckBox *CHKsettingsrot;
     QCheckBox *CHKsettingssurf;
     QCheckBox *CHKsettingsviewport;
+    QCheckBox *fieldLinesArrowsVisible = nullptr;
+    QCheckBox *fieldLinesVisible = nullptr;
+    QCheckBox *forcesVisibleCheck[5] = {nullptr};
     QCheckBox *geometryHideAtoms = nullptr;
     QCheckBox *geometryHideBonds = nullptr;
     QCheckBox *geometryHideHydrogens = nullptr;
-    QSpinBox *labelsCoordinatePrecision = nullptr;
-    QCheckBox *labelsShowSymbols = nullptr;
-    QCheckBox *labelsShowIndices = nullptr;
-    QCheckBox *labelsShowCoordinates = nullptr;
     QCheckBox *labelsOnlySelectedAtoms = nullptr;
-    QCheckBox *forcesVisibleCheck[5] = {nullptr};
+    QCheckBox *labelsShowCoordinates = nullptr;
+    QCheckBox *labelsShowIndices = nullptr;
+    QCheckBox *labelsShowSymbols = nullptr;
 
     QColor ambientcolor;
     QColor bkgcolor;
@@ -421,10 +430,7 @@ private:
     QColor lightcolor;
     QColor specularcolor;
 
-    MyDockWidget *gdock;
 
-    molecule *geometryPropertiesMolecule = nullptr;
-    molecule *forcesPropertiesMolecule = nullptr;
 
     // QGridLayout *layoutmolecules;
     QTreeWidget *sceneTree;
@@ -451,23 +457,30 @@ private:
     QLabel *labelsCoordinatePrecisionLabel = nullptr;
     QLabel *labelsVerticalShiftLabel = nullptr;
 
+    QLineEdit *fieldLinesFile = nullptr;
     QLineEdit *forcesFile = nullptr;
 
     QList<QCheckBox*> activateboxes;
     QList<QMetaObject::Connection> connections;         // Stores connections to release in destructor
     QList<QCheckBox*> visibilityBoxes;          // Stores boxes for hide/show molecules
 
+    QMetaObject::Connection fieldLinesArrowsVisibilityConnection;
+    QMetaObject::Connection fieldLinesArrowsGeometryConnection;
+    QMetaObject::Connection fieldLinesColorConnection;
+    QMetaObject::Connection fieldLinesFileConnection;
+    QMetaObject::Connection fieldLinesVisibilityConnection;
+    QMetaObject::Connection fieldLinesWidthConnection;
+    QMetaObject::Connection forcesColorsConnection;
+    QMetaObject::Connection forcesFileConnection;
+    QMetaObject::Connection forcesGeometryConnection;
+    QMetaObject::Connection forcesVisibilityConnection;
     QMetaObject::Connection geometryVisibilityConnection;
+    QMetaObject::Connection labelsFontColorConnection;
+    QMetaObject::Connection labelsOnlySelectedConnection;
     QMetaObject::Connection labelsPrecisionConnection;
     QMetaObject::Connection labelsUnitsConnection;
-    QMetaObject::Connection labelsVisibilityConnection;
-    QMetaObject::Connection labelsOnlySelectedConnection;
     QMetaObject::Connection labelsVerticalShiftConnection;
-    QMetaObject::Connection labelsFontColorConnection;
-    QMetaObject::Connection forcesFileConnection;
-    QMetaObject::Connection forcesVisibilityConnection;
-    QMetaObject::Connection forcesColorsConnection;
-    QMetaObject::Connection forcesGeometryConnection;
+    QMetaObject::Connection labelsVisibilityConnection;
 
     QPoint position;
 
@@ -501,10 +514,15 @@ private:
     QSize size;
 
     QSpinBox *labelsVerticalShift = nullptr;
+    QSpinBox *fieldLinesArrowsLength = nullptr;
+    QSpinBox *fieldLinesArrowsSpacing = nullptr;
+    QSpinBox *fieldLinesArrowsWidth = nullptr;
+    QSpinBox *fieldLinesWidth = nullptr;
     QSpinBox *forcesThickness = nullptr;
     QSpinBox *forcesLength = nullptr;
     QSpinBox *forcesArrowLength = nullptr;
     QSpinBox *forcesArrowWidth = nullptr;
+    QSpinBox *labelsCoordinatePrecision = nullptr;
 
     QString CaptureFolder;
     QString clustername;
@@ -526,6 +544,8 @@ private:
 
     QTimer *timer;
 
+    QToolButton *fieldLinesBrowse = nullptr;
+
     QVector < QVector <double> *> *chargescanvas;  // charges for EPIC optimization (mespimizer)
     QVector<QVector3D > xyz;                // Cartesian coordinates of centers
     QVector<QVector3D > xyzinit;            // Initial cartesian coordinates of centers for cluster optimization
@@ -535,9 +555,10 @@ private:
     QVector3D lightPosition;                // Light position in world space
     QVector3D rotationAxis;                 // Rotation axis
 
+    QWidget *fieldLinesPropertiesPage = nullptr;
+    QWidget *forcesPropertiesPage = nullptr;
     QWidget *geometryPropertiesPage = nullptr;
     QWidget *labelsPropertiesPage = nullptr;
-    QWidget *forcesPropertiesPage = nullptr;
 
     qreal ballradius;                       // Radius of atom spheres
     qreal cylradius;                        // Radius of bond cylinders

@@ -27,6 +27,7 @@
 //
 #include "fieldlines.h"
 #include <cmath>
+#include <QRegularExpression>
 
 fieldlines::fieldlines(QString parentpath, QWidget *parent) : QWidget(parent)
 {
@@ -66,64 +67,140 @@ fieldlines::~fieldlines(){
 
 //  Reads file with field lines
 //
-bool fieldlines::readfieldlines(QString filename){
+bool fieldlines::readfieldlines(QString filename)
+{
     QFile file(filename);
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
         QMessageBox msgBox;
         msgBox.setText(tr("readfieldlines"));
-        msgBox.setInformativeText(tr("File %1 cannot be read").arg(filename)+QString(":\n%1.").arg(file.errorString()));
+        msgBox.setInformativeText(
+            tr("File %1 cannot be read").arg(filename)
+            + QString(":\n%1.").arg(file.errorString()));
         msgBox.setIcon(QMessageBox::Critical);
         msgBox.exec();
         return false;
     }
-    fieldfilename = filename;
+
     QApplication::setOverrideCursor(Qt::WaitCursor);
+
     QTextStream in(&file);
-    QString line;
-    GLuint indices = 0;
+
+    QVector<GLuint> newIndices;
+    QVector<GLuint> newIndicesOffset;
+    QVector<VertexNormalData> newVertices;
+
+    newIndicesOffset.append(0);
+
+    VertexNormalData v;
+    v.normal = QVector3D(0.5, 0.5, 0.5);
+    v.color = QVector4D(linescolor.redF(),
+                        linescolor.greenF(),
+                        linescolor.blueF(), 1.);
+
+    const QRegularExpression separator("\\s+");
+
+    int pointsInLine = 0;
+    int lineNumber = 0;
+    QString error;
+
+    while (!in.atEnd()) {
+        QString line = in.readLine().trimmed();
+        ++lineNumber;
+
+        // End of a field line
+        if (line.isEmpty()) {
+            if (pointsInLine == 1) {
+                error = tr("Incomplete field line at record %1.")
+                .arg(lineNumber);
+                break;
+            }
+
+            if (pointsInLine > 1)
+                newIndicesOffset.append(newIndices.count());
+
+            pointsInLine = 0;
+            continue;
+        }
+
+        // Read Cartesian coordinates
+#if QT_VERSION < 0x050E00
+        QStringList xy = line.split(separator, QString::SkipEmptyParts);
+#else
+        QStringList xy = line.split(separator, Qt::SkipEmptyParts);
+#endif
+
+        if (xy.count() != 3) {
+            error = tr("Invalid number of coordinates at record %1.")
+            .arg(lineNumber);
+            break;
+        }
+
+        bool okx, oky, okz;
+
+        float x = xy.at(0).toFloat(&okx);
+        float y = xy.at(1).toFloat(&oky);
+        float z = xy.at(2).toFloat(&okz);
+
+        if (!okx || !oky || !okz ||
+            !std::isfinite(x) ||
+            !std::isfinite(y) ||
+            !std::isfinite(z)) {
+
+            error = tr("Invalid coordinates at record %1.")
+            .arg(lineNumber);
+            break;
+        }
+
+        GLuint index = newVertices.count();
+
+        v.position = QVector3D(x, y, z);
+        newVertices.append(v);
+
+        // Add a segment connecting consecutive vertices
+        if (pointsInLine > 0) {
+            newIndices.append(index - 1);
+            newIndices.append(index);
+        }
+
+        ++pointsInLine;
+    }
+
+    // Handle files without a trailing blank line
+    if (error.isEmpty()) {
+        if (pointsInLine == 1) {
+            error = tr("Incomplete field line at end of file.");
+        }
+        else if (pointsInLine > 1) {
+            newIndicesOffset.append(newIndices.count());
+        }
+
+        if (error.isEmpty() && newIndices.isEmpty())
+            error = tr("No valid field lines found.");
+    }
+
+    file.close();
+    QApplication::restoreOverrideCursor();
+
+    if (!error.isEmpty()) {
+        QMessageBox msgBox;
+        msgBox.setText(tr("readfieldlines"));
+        msgBox.setInformativeText(filename + ":\n" + error);
+        msgBox.setIcon(QMessageBox::Critical);
+        msgBox.exec();
+        return false;
+    }
+
+    // Replace previous data only after successful reading
+    allindices.swap(newIndices);
+    allindicesoffset.swap(newIndicesOffset);
+    allvertices.swap(newVertices);
+
     allarrowsindices.clear();
     allarrowsindicesoffset.clear();
     allarrowsvertices.clear();
-    allindices.clear();
-    allvertices.clear();
-    allindicesoffset.clear();
-    allindicesoffset.append(0);
-    VertexNormalData v;
-    bool linestart = true;
-    bool previousblank = false;
-    while (!in.atEnd()){
-        line = in.readLine();
-#if QT_VERSION < 0x050E00
-        QStringList xy = line.split(' ',QString::SkipEmptyParts);
-#else
-        QStringList xy = line.split(' ',Qt::SkipEmptyParts);
-#endif
-        if (xy.count() == 3){
-            if (!linestart){
-                allindices.append(indices);
-            }
-            allindices.append(indices++);
-            v.position.setX(xy.at(0).toFloat());
-            v.position.setY(xy.at(1).toFloat());
-            v.position.setZ(xy.at(2).toFloat());
-            v.normal.setX(0.5);
-            v.normal.setY(0.5);
-            v.normal.setZ(0.5);
-            v.color = QVector4D(linescolor.redF(), linescolor.greenF(), linescolor.blueF(), 1.);
-            allvertices.append(v);
-            linestart = false;
-            previousblank = false;
-        }
-        else if(!previousblank){
-            allindices.removeLast();
-            allindicesoffset.append(allindices.count());
-            linestart = true;
-            previousblank = true;
-        }
-    }
-    allindicesoffset.append(allindices.count());
-    file.close();
-    QApplication::restoreOverrideCursor();
+
+    fieldfilename = filename;
+
     return true;
 }
 

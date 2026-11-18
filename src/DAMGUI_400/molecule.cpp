@@ -27,6 +27,7 @@
 //
 #include <QtCore/qmath.h>
 #include <QDialog>
+#include <QDir>
 #include <QCheckBox>
 #include <QColorDialog>
 #include <QFileDialog>
@@ -901,7 +902,6 @@ void molecule::create_forces_widgets_and_layouts(){
         connect(CHKforces[i], QOverload<int>::of(&QCheckBox::stateChanged),
                 this, &molecule::CHKforces_changed);
 
-        hfforces->setvisibleforces(i,true);
         BTNforcecolors[i] = new ColorButton();
         BTNforcecolors[i]->setIcon(QIcon(":/images/colores48.png"));
         BTNforcecolors[i]->setText(tr("Color"));
@@ -1082,36 +1082,74 @@ void molecule::create_field_lines_widgets_and_layouts(){
             this, &molecule::readfieldlines_dialog);
 
     CHKflines = new QCheckBox(tr("Show lines"));
-    CHKflines->setChecked(flines->isvisible());
+    CHKflines->setChecked(getFieldLinesVisible());
 
     connect(CHKflines, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKflines_changed);
 
+    connect(this, &molecule::fieldLinesVisibilityChanged,
+            CHKflines, [this](){
+
+                const QSignalBlocker blocker(CHKflines);
+                CHKflines->setChecked(getFieldLinesVisible());
+            });
+
     BTNflinescolor = new ColorButton(QIcon(":/images/colores48.png"),tr("Color"));
-    QColor currcolor = flines->getlinescolor();
+    QColor currcolor = getFieldLinesColor();
     BTNflinescolor->setColor(&currcolor);
 
     connect(BTNflinescolor, &QPushButton::clicked,
             this, &molecule::BTNflinescolor_clicked);
+
+    connect(this, &molecule::fieldLinesColorChanged,
+            BTNflinescolor, [this](){
+
+                QColor color = getFieldLinesColor();
+
+                int r = color.red();
+                int g = color.green();
+                int b = color.blue();
+
+                QColor textcolor =
+                    ((r > 210 || b > 0) && g > 210)
+                        ? QColor(0, 0, 0)
+                        : QColor(255, 255, 255);
+
+                BTNflinescolor->setColor(&color, &textcolor);
+            });
 
     QLabel *LBLlinewidth = new QLabel(tr("Width"));
     SPBflineslinewidth = new QSpinBox();
     SPBflineslinewidth->setMinimum(1);
     SPBflineslinewidth->setMaximum(20);
     SPBflineslinewidth->setMaximumWidth(50);
-    SPBflineslinewidth->setValue(flines->getlineswidth());
+    SPBflineslinewidth->setValue(getFieldLinesWidth());
 
     connect(SPBflineslinewidth, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBflineslinewidth_changed);
+
+    connect(this, &molecule::fieldLinesWidthChanged,
+            SPBflineslinewidth, [this](){
+
+                const QSignalBlocker blocker(SPBflineslinewidth);
+                SPBflineslinewidth->setValue(getFieldLinesWidth());
+            });
 
     FRMflinesarrows = new QGroupBox();
     FRMflinesarrows->setTitle(tr("Arrows"));
 
     CHKflinesarrows = new QCheckBox(tr("Show arrows"));
-    CHKflinesarrows->setChecked(flines->getshowarrows());
+    CHKflinesarrows->setChecked(getFieldLinesArrowsVisible());
 
     connect(CHKflinesarrows, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKflinesarrows_changed);
+
+    connect(this, &molecule::fieldLinesArrowsVisibilityChanged,
+            CHKflinesarrows, [this](){
+
+                const QSignalBlocker blocker(CHKflinesarrows);
+                CHKflinesarrows->setChecked(getFieldLinesArrowsVisible());
+            });
 
     QLabel *LBLarrowssep = new QLabel(tr("Arrows spacing"));
     SPBflinesarrowssep = new QSpinBox();
@@ -1119,7 +1157,7 @@ void molecule::create_field_lines_widgets_and_layouts(){
     SPBflinesarrowssep->setMaximum(500);
     SPBflinesarrowssep->setMaximumWidth(100);
     SPBflinesarrowssep->setSingleStep(5);
-    SPBflinesarrowssep->setValue(flines->getarrowsseparation());
+    SPBflinesarrowssep->setValue(getFieldLinesArrowsSpacing());
 
     connect(SPBflinesarrowssep, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBflinesarrowssep_changed);
@@ -1131,7 +1169,7 @@ void molecule::create_field_lines_widgets_and_layouts(){
     SPBflinesarrowssize->setMaximumWidth(100);
     SPBflinesarrowssize->setSingleStep(1);
     SPBflinesarrowssize->setValue(flines->getarrowssize());
-    flines->setarrowssize(SPBflinesarrowssize->value());
+    SPBflinesarrowssize->setValue(getFieldLinesArrowsLength());
 
     connect(SPBflinesarrowssize,  QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBflinesarrowssize_changed);
@@ -1143,10 +1181,22 @@ void molecule::create_field_lines_widgets_and_layouts(){
     SPBflinesarrowswidth->setMaximumWidth(100);
     SPBflinesarrowswidth->setSingleStep(1);
     SPBflinesarrowswidth->setValue(flines->getarrowswidth());
-    flines->setarrowswidth(SPBflinesarrowswidth->value());
+    SPBflinesarrowswidth->setValue(getFieldLinesArrowsWidth());
 
     connect(SPBflinesarrowswidth, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBflinesarrowswidth_changed);
+
+    connect(this, &molecule::fieldLinesArrowsGeometryChanged,
+            SPBflinesarrowswidth, [this](){
+
+                const QSignalBlocker blockerSpacing(SPBflinesarrowssep);
+                const QSignalBlocker blockerLength(SPBflinesarrowssize);
+                const QSignalBlocker blockerWidth(SPBflinesarrowswidth);
+
+                SPBflinesarrowssep->setValue(getFieldLinesArrowsSpacing());
+                SPBflinesarrowssize->setValue(getFieldLinesArrowsLength());
+                SPBflinesarrowswidth->setValue(getFieldLinesArrowsWidth());
+            });
 
     QHBoxLayout *Layout1 = new QHBoxLayout();
     Layout1->addWidget(LBLfieldlines);
@@ -1182,6 +1232,14 @@ void molecule::create_field_lines_widgets_and_layouts(){
     Layout->addLayout(Layout2);
     Layout->addLayout(Layout3);
     Layout->addWidget(FRMflinesarrows);
+
+    connect(this, &molecule::fieldLinesFileChanged,
+            TXTfieldlines, [this](){
+
+                TXTfieldlines->setText(
+                    QFileInfo(getFieldLinesFilename()).fileName()
+                    );
+            });
 }
 
 void molecule::create_critical_points_widgets_and_layouts(){
@@ -2529,24 +2587,13 @@ void molecule::BTNcpselectnone_clicked(){
     emit updatedisplay();
 }
 
-void molecule::BTNflinescolor_clicked(){
-    QColor currcolor = flines->getlinescolor();
-    QColor newcolor = QColorDialog::getColor(currcolor, this);
-    if(newcolor.isValid()) {
-        flines->setlinescolor(newcolor);
-        int r = newcolor.red();
-        int g = newcolor.green();
-        int b = newcolor.blue();
-        if ((r > 210 || b > 0)&& g > 210 ){
-            QColor textcolor(0,0,0);
-            BTNflinescolor->setColor(&newcolor, &textcolor);
-        }
-        else{
-            QColor textcolor(255,255,255);
-            BTNflinescolor->setColor(&newcolor, &textcolor);
-        }
-    }
-    emit updatedisplay();
+void molecule::BTNflinescolor_clicked()
+{
+    QColor color = QColorDialog::getColor(
+        getFieldLinesColor(), this
+        );
+
+    setFieldLinesColor(color);
 }
 
 void molecule::BTNfontcolor_clicked()
@@ -2925,25 +2972,15 @@ void molecule::CHKcpvalues_changed(int a){
 }
 
 //	Connects Checkbox with show/hide arrows in electric field lines
-void molecule::CHKflinesarrows_changed(){
-    if(CHKflinesarrows->isChecked()){
-        if (flines->allarrowsvertices.isEmpty())
-            flines->createarrows();
-        flines->setshowarrows(true);
-    }
-    else{
-        flines->setshowarrows(false);
-    }
-    emit updatedisplay();
+void molecule::CHKflinesarrows_changed()
+{
+    setFieldLinesArrowsVisible(CHKflinesarrows->isChecked());
 }
 
 //	Connects Checkbox with show/hide electric field lines
-void molecule::CHKflines_changed(){
-    if(CHKflines->isChecked())
-        flines->setvisible(true);
-    else
-        flines->setvisible(false);
-    emit updatedisplay();
+void molecule::CHKflines_changed()
+{
+    setFieldLinesVisible(CHKflines->isChecked());
 }
 
 //    Connects Checkbox with show/hide critical points
@@ -3349,19 +3386,32 @@ void molecule::readcpsfiles_dialog()
 //	Imports a file with field lines
 void molecule::readfieldlines_dialog()
 {
-    QFileDialog filedialog(this);
-    filedialog.setWindowFlags(Qt::WindowStaysOnTopHint);
-    filedialog.setDirectory(ProjectFolder);
-    QString fileName = filedialog.getOpenFileName(this,tr("Open file with field lines"),path, tr("Allowed files")
-            + " (*.field3D *.dengr3D *.gpdat);; *.field3D;; *.dengr3D;; *gpdat;;"+tr("All files")+" (*)");
-    if (fileName.length()==0) return;
-    ProjectFolder = QFileInfo(fileName).path();
-    TXTfieldlines->setText(QFileInfo(fileName).fileName());
-    if (flines->readfieldlines(fileName)){
-        if (CHKflinesarrows)
-            CHKflinesarrows->setChecked(false);
+    selectFieldLinesFile();
+}
+
+bool molecule::readFieldLinesFile(const QString &filename)
+{
+    addfield();
+
+    QString resolvedFilename = filename.trimmed();
+
+    if (QDir::isRelativePath(resolvedFilename))
+        resolvedFilename = QDir(ProjectFolder).absoluteFilePath(resolvedFilename);
+
+    if (!flines->readfieldlines(resolvedFilename))
+        return false;
+
+    ProjectFolder = QFileInfo(resolvedFilename).absolutePath();
+
+    if (flines->getshowarrows()) {
+        flines->setshowarrows(false);
+        emit fieldLinesArrowsVisibilityChanged();
     }
-    emitupdatedisplay();
+
+    emit fieldLinesFileChanged();
+    emit updatedisplay();
+
+    return true;
 }
 
 //	Imports a file with HF forces
@@ -3581,9 +3631,11 @@ void molecule::TXTcps_changed(){
         cps->readcpsfile(TXTcps->text());
 }
 
-void molecule::TXTfieldlines_changed(){
-//    if (!TXTfieldlines->text().isEmpty())
-        flines->readfieldlines(TXTfieldlines->text());
+void molecule::TXTfieldlines_changed()
+{
+    if (!readFieldLinesFile(TXTfieldlines->text()))
+        TXTfieldlines->setText(
+            QFileInfo(getFieldLinesFilename()).fileName());
 }
 
 void molecule::TXTforces_changed(){
@@ -4052,6 +4104,46 @@ bool molecule::getdrawatomindices(){
 
 bool molecule::getdrawatomsymbols(){
     return drawatomsymbols;
+}
+
+int molecule::getFieldLinesArrowsLength()
+{
+    return flines ? flines->getarrowssize() : 1;
+}
+
+int molecule::getFieldLinesArrowsSpacing()
+{
+    return flines ? flines->getarrowsseparation() : 50;
+}
+
+bool molecule::getFieldLinesArrowsVisible()
+{
+    return flines ? flines->getshowarrows() : false;
+}
+
+int molecule::getFieldLinesArrowsWidth()
+{
+    return flines ? flines->getarrowswidth() : 1;
+}
+
+QColor molecule::getFieldLinesColor()
+{
+    return flines ? flines->getlinescolor() : QColor();
+}
+
+QString molecule::getFieldLinesFilename()
+{
+    return flines ? flines->getfieldfilename() : QString();
+}
+
+bool molecule::getFieldLinesVisible()
+{
+    return flines ? flines->isvisible() : false;
+}
+
+int molecule::getFieldLinesWidth()
+{
+    return flines ? flines->getlineswidth() : 1;
 }
 
 bool molecule::getForceVisible(int i)
@@ -4734,6 +4826,90 @@ void molecule::setdrawatomsymbols(bool a)
     emit labelsVisibilityChanged();
 }
 
+void molecule::setFieldLinesArrowsLength(int length)
+{
+    if (!flines || flines->getarrowssize() == length)
+        return;
+
+    flines->setarrowssize(length);
+    flines->createarrows();
+
+    emit fieldLinesArrowsGeometryChanged();
+    emit updatedisplay();
+}
+
+void molecule::setFieldLinesArrowsSpacing(int spacing)
+{
+    if (!flines || flines->getarrowsseparation() == spacing)
+        return;
+
+    flines->setarrowsseparation(spacing);
+    flines->createarrows();
+
+    emit fieldLinesArrowsGeometryChanged();
+    emit updatedisplay();
+}
+
+void molecule::setFieldLinesArrowsVisible(bool visible)
+{
+    if (!flines || flines->getshowarrows() == visible)
+        return;
+
+    if (visible && flines->allarrowsvertices.isEmpty())
+        flines->createarrows();
+
+    flines->setshowarrows(visible);
+
+    emit fieldLinesArrowsVisibilityChanged();
+    emit updatedisplay();
+}
+
+void molecule::setFieldLinesArrowsWidth(int width)
+{
+    if (!flines || flines->getarrowswidth() == width)
+        return;
+
+    flines->setarrowswidth(width);
+    flines->createarrows();
+
+    emit fieldLinesArrowsGeometryChanged();
+    emit updatedisplay();
+}
+
+void molecule::setFieldLinesColor(const QColor &color)
+{
+    if (!flines || !color.isValid() ||
+        flines->getlinescolor() == color)
+        return;
+
+    flines->setlinescolor(color);
+
+    emit fieldLinesColorChanged();
+    emit updatedisplay();
+}
+
+void molecule::setFieldLinesVisible(bool visible)
+{
+    if (!flines || flines->isvisible() == visible)
+        return;
+
+    flines->setvisible(visible);
+
+    emit fieldLinesVisibilityChanged();
+    emit updatedisplay();
+}
+
+void molecule::setFieldLinesWidth(int width)
+{
+    if (!flines || flines->getlineswidth() == width)
+        return;
+
+    flines->setlineswidth(width);
+
+    emit fieldLinesWidthChanged();
+    emit updatedisplay();
+}
+
 void molecule::setfontcolor(QColor a)
 {
     if (fontcolor == a)
@@ -5108,27 +5284,24 @@ void molecule::SPBcpvshift_changed(int i){
     emitupdatedisplay();
 }
 
-void molecule::SPBflineslinewidth_changed(int i){
-    flines->setlineswidth(i);
-    emitupdatedisplay();
+void molecule::SPBflineslinewidth_changed(int i)
+{
+    setFieldLinesWidth(i);
 }
 
-void molecule::SPBflinesarrowssep_changed(int i){
-    flines->setarrowsseparation(i);
-    flines->createarrows();
-    emitupdatedisplay();
+void molecule::SPBflinesarrowssep_changed(int i)
+{
+    setFieldLinesArrowsSpacing(i);
 }
 
-void molecule::SPBflinesarrowssize_changed(int i){
-    flines->setarrowssize(i);
-    flines->createarrows();
-    emitupdatedisplay();
+void molecule::SPBflinesarrowssize_changed(int i)
+{
+    setFieldLinesArrowsLength(i);
 }
 
-void molecule::SPBflinesarrowswidth_changed(int i){
-    flines->setarrowswidth(i);
-    flines->createarrows();
-    emitupdatedisplay();
+void molecule::SPBflinesarrowswidth_changed(int i)
+{
+    setFieldLinesArrowsWidth(i);
 }
 
 // Changes length of force arrows
@@ -5203,6 +5376,27 @@ void molecule::updateLabelsEditorControls()
 
     QDLeditMolecule->update();
     QDLeditMolecule->adjustSize();
+}
+
+void molecule::selectFieldLinesFile()
+{
+    QFileDialog filedialog(this);
+    filedialog.setWindowFlags(Qt::WindowStaysOnTopHint);
+    filedialog.setDirectory(ProjectFolder);
+
+    QString fileName = filedialog.getOpenFileName(
+        this,
+        tr("Open file with field lines"),
+        path,
+        tr("Allowed files")
+            + " (*.field3D *.dengr3D *.gpdat);; *.field3D;;"
+              " *.dengr3D;; *.gpdat;;"
+            + tr("All files") + " (*)");
+
+    if (fileName.isEmpty())
+        return;
+
+    readFieldLinesFile(fileName);
 }
 
 void molecule::selectForcesFile()

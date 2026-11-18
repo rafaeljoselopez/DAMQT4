@@ -144,6 +144,8 @@ public:
     bool getdrawatomcoords();
     bool getdrawatomindices();
     bool getdrawatomsymbols();
+    bool getFieldLinesArrowsVisible();
+    bool getFieldLinesVisible();
     bool getForceVisible(int i);
     bool gethideatoms();
     bool gethidebonds();
@@ -158,6 +160,7 @@ public:
     bool isvisible();
     bool loadgrid();
     bool loadsurf();
+    bool readFieldLinesFile(const QString &filename);
     bool readForcesFile(const QString &filename, bool createGeometry);
     bool retrievegrid(const QString &filename);
     bool retrievesurf(const QString &filename);
@@ -168,15 +171,19 @@ public:
 
     float getstepwheel();
 
-    int  getcoordprecision();
-    int  getlabelsvshift();
-    int  getnumatoms();
-    int  getnumcps(int);
-    int  getznuc(int);
-    int  getForceThickness();
-    int  getForceLength();
-    int  getForceArrowLength();
-    int  getForceArrowWidth();
+    int getcoordprecision();
+    int getFieldLinesArrowsLength();
+    int getFieldLinesArrowsSpacing();
+    int getFieldLinesArrowsWidth();
+    int getFieldLinesWidth();
+    int getForceThickness();
+    int getForceLength();
+    int getForceArrowLength();
+    int getForceArrowWidth();
+    int getlabelsvshift();
+    int getnumatoms();
+    int getnumcps(int);
+    int getznuc(int);
 
     void changeAllAtomsActive(bool active);
     void changeAtomCoordinatePrecision(int precision);
@@ -194,11 +201,12 @@ public:
     forces *hfforces = nullptr;
     criticalpoints *cps = nullptr;
 
+    QColor getFieldLinesColor();
     QColor getfontcolor();
+    QColor getForceColor(int i);
     QColor getXaxis_color();
     QColor getYaxis_color();
     QColor getZaxis_color();
-    QColor getForceColor(int i);
 
     QFont getfont();
     QFont getfontaxeslabels();
@@ -214,6 +222,7 @@ public:
     QString getfullname();
     QString getname();
     QString getpath();
+    QString getFieldLinesFilename();
     QString getForcesFilename();
 
     QVector <QVector3D> getpositionaxeslabels();
@@ -232,6 +241,7 @@ public:
     QVector <int> getcharges();
     QVector <QVector3D> getxyz();
 
+    void changeAtomCoordinateUnits(bool angstrom);
     void changeLabelsFont();
     void changeLabelsColor();
     void createeditMoleculeDialog();
@@ -244,16 +254,28 @@ public:
     void loadallvertices(QVector<VertexNormalData>);
     void loadcharges(QVector <int>);
     void loadxyz(QVector <QVector3D>);
+    void selectFieldLinesFile();
     void setactive(bool);
     void setallatomactive(bool);
     void setatomactive(int, bool);
     void setdrawatomcoords(bool);
     void setdrawatomindices(bool);
     void setdrawatomsymbols(bool);
+    void setFieldLinesArrowsLength(int length);
+    void setFieldLinesArrowsSpacing(int spacing);
+    void setFieldLinesArrowsVisible(bool visible);
+    void setFieldLinesArrowsWidth(int width);
+    void setFieldLinesColor(const QColor &color);
+    void setFieldLinesVisible(bool visible);
+    void setFieldLinesWidth(int width);
     void setfont(QFont);
     void setfontaxeslabels(QFont);
     void setfontcolor(QColor);
+    void setForceArrowLength(int value);
+    void setForceArrowWidth(int value);
     void setForceColor(int i, const QColor &color);
+    void setForceLength(int value);
+    void setForceThickness(int value);
     void setForceVisible(int i, bool visible);
     void setfullname(QString);
     void setiscluster(bool);
@@ -273,28 +295,31 @@ public:
     void showAtomIndices(bool show);
     void showAtomCoordinates(bool show);
     void setangstromcoor(bool angstrom);
-    void changeAtomCoordinateUnits(bool angstrom);
-    void setForceThickness(int value);
-    void setForceLength(int value);
-    void setForceArrowLength(int value);
-    void setForceArrowWidth(int value);
+
+
 
 signals:
     void animate(bool);
-    void updatedisplay();
-    void updateGL();
-    void updateRightMenu();
-    void geometryVisibilityChanged();
-    void labelsVisibilityChanged();
     void coordPrecisionChanged();
     void coordinateUnitsChanged();
-    void onlySelectedAtomsChanged();
-    void labelsVerticalShiftChanged();
-    void labelsFontColorChanged();
+    void fieldLinesArrowsGeometryChanged();
+    void fieldLinesArrowsVisibilityChanged();
+    void fieldLinesColorChanged();
+    void fieldLinesFileChanged();
+    void fieldLinesVisibilityChanged();
+    void fieldLinesWidthChanged();
     void forcesFileChanged();
     void forcesVisibilityChanged();
     void forcesColorsChanged();
     void forcesGeometryChanged();
+    void geometryVisibilityChanged();
+    void labelsFontColorChanged();
+    void labelsVisibilityChanged();
+    void labelsVerticalShiftChanged();
+    void onlySelectedAtomsChanged();
+    void updatedisplay();
+    void updateGL();
+    void updateRightMenu();
 
 public slots:
     bool QDLeditMolecule_isVisible();

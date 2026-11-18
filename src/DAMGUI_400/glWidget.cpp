@@ -724,6 +724,230 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     propertiesStack->addWidget(forcesPropertiesPage);
 
+    // Field lines properties page
+    fieldLinesPropertiesPage = new QWidget(propertiesStack);
+
+    QVBoxLayout *fieldLinesLayout =
+        new QVBoxLayout(fieldLinesPropertiesPage);
+
+    QLabel *fieldLinesTitle = new QLabel(
+        tr("Field lines"), fieldLinesPropertiesPage
+    );
+
+    QLabel *fieldLinesFileLabel = new QLabel(
+        tr("File:"), fieldLinesPropertiesPage
+    );
+
+    fieldLinesFile = new QLineEdit(fieldLinesPropertiesPage);
+
+    fieldLinesBrowse = new QToolButton(fieldLinesPropertiesPage);
+    fieldLinesBrowse->setText(tr("..."));
+    fieldLinesBrowse->setToolTip(
+        tr("Open file with field lines")
+    );
+
+    connect(fieldLinesBrowse, &QToolButton::clicked,
+            this, [this](){
+
+        if (fieldLinesPropertiesMolecule)
+            fieldLinesPropertiesMolecule->selectFieldLinesFile();
+    });
+
+    connect(fieldLinesFile, &QLineEdit::returnPressed,
+            this, [this](){
+
+        if (!fieldLinesPropertiesMolecule)
+            return;
+
+        if (!fieldLinesPropertiesMolecule->readFieldLinesFile(
+                fieldLinesFile->text())) {
+
+            fieldLinesFile->setText(
+                QFileInfo(
+                    fieldLinesPropertiesMolecule->getFieldLinesFilename()
+                ).fileName()
+            );
+        }
+    });
+
+    QHBoxLayout *fieldLinesFileLayout = new QHBoxLayout();
+
+    fieldLinesFileLayout->addWidget(fieldLinesFileLabel);
+    fieldLinesFileLayout->addWidget(fieldLinesFile);
+    fieldLinesFileLayout->addWidget(fieldLinesBrowse);
+
+    fieldLinesVisible = new QCheckBox(
+        tr("Show lines"), fieldLinesPropertiesPage
+    );
+
+    connect(fieldLinesVisible, &QCheckBox::toggled,
+            this, [this](bool checked){
+
+        if (fieldLinesPropertiesMolecule)
+            fieldLinesPropertiesMolecule->setFieldLinesVisible(checked);
+    });
+
+    fieldLinesColor = new ColorButton(
+        QIcon(":/images/colores48.png"), tr("Color")
+    );
+
+    fieldLinesColor->setSizePolicy(
+        QSizePolicy::Fixed, QSizePolicy::Fixed
+    );
+    fieldLinesColor->setToolTip(tr("Change field lines color"));
+
+    connect(fieldLinesColor, &QPushButton::clicked,
+            this, [this](){
+
+        if (!fieldLinesPropertiesMolecule)
+            return;
+
+        QColor color = QColorDialog::getColor(
+            fieldLinesPropertiesMolecule->getFieldLinesColor(),
+            this
+        );
+
+        fieldLinesPropertiesMolecule->setFieldLinesColor(color);
+    });
+
+    QLabel *fieldLinesWidthLabel = new QLabel(
+        tr("Width:"), fieldLinesPropertiesPage
+    );
+
+    fieldLinesWidth = new QSpinBox(fieldLinesPropertiesPage);
+    fieldLinesWidth->setRange(1, 20);
+    fieldLinesWidth->setMaximumWidth(50);
+
+    connect(fieldLinesWidth, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value){
+
+        if (fieldLinesPropertiesMolecule)
+            fieldLinesPropertiesMolecule->setFieldLinesWidth(value);
+    });
+
+    // Arrows group
+    QGroupBox *fieldLinesArrowsGroup = new QGroupBox(
+        tr("Arrows"), fieldLinesPropertiesPage
+    );
+
+    QVBoxLayout *fieldLinesArrowsLayout =
+        new QVBoxLayout(fieldLinesArrowsGroup);
+
+    fieldLinesArrowsVisible = new QCheckBox(
+        tr("Show arrows"), fieldLinesArrowsGroup
+    );
+
+    connect(fieldLinesArrowsVisible, &QCheckBox::toggled,
+            this, [this](bool checked){
+
+        if (fieldLinesPropertiesMolecule)
+            fieldLinesPropertiesMolecule->setFieldLinesArrowsVisible(checked);
+    });
+
+    fieldLinesArrowsLayout->addWidget(
+        fieldLinesArrowsVisible, 0, Qt::AlignHCenter
+    );
+
+    QLabel *fieldLinesArrowsSpacingLabel = new QLabel(
+        tr("Arrows spacing"), fieldLinesArrowsGroup
+    );
+
+    fieldLinesArrowsSpacing = new QSpinBox(fieldLinesArrowsGroup);
+    fieldLinesArrowsSpacing->setRange(1, 500);
+    fieldLinesArrowsSpacing->setMaximumWidth(100);
+    fieldLinesArrowsSpacing->setSingleStep(5);
+
+    QLabel *fieldLinesArrowsLengthLabel = new QLabel(
+        tr("Arrows length"), fieldLinesArrowsGroup
+    );
+
+    fieldLinesArrowsLength = new QSpinBox(fieldLinesArrowsGroup);
+    fieldLinesArrowsLength->setRange(1, 25);
+    fieldLinesArrowsLength->setMaximumWidth(100);
+    fieldLinesArrowsLength->setSingleStep(1);
+
+    QLabel *fieldLinesArrowsWidthLabel = new QLabel(
+        tr("Arrows width"), fieldLinesArrowsGroup
+    );
+
+    fieldLinesArrowsWidth = new QSpinBox(fieldLinesArrowsGroup);
+    fieldLinesArrowsWidth->setRange(1, 20);
+    fieldLinesArrowsWidth->setMaximumWidth(100);
+    fieldLinesArrowsWidth->setSingleStep(1);
+
+    // Connections
+
+    connect(fieldLinesArrowsSpacing,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value){
+
+        if (fieldLinesPropertiesMolecule)
+            fieldLinesPropertiesMolecule->setFieldLinesArrowsSpacing(value);
+    });
+
+    connect(fieldLinesArrowsLength,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value){
+
+        if (fieldLinesPropertiesMolecule)
+            fieldLinesPropertiesMolecule->setFieldLinesArrowsLength(value);
+    });
+
+    connect(fieldLinesArrowsWidth,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value){
+
+        if (fieldLinesPropertiesMolecule)
+            fieldLinesPropertiesMolecule->setFieldLinesArrowsWidth(value);
+    });
+
+    // Layout
+
+    QGridLayout *fieldLinesArrowsGeometryLayout = new QGridLayout();
+
+    fieldLinesArrowsGeometryLayout->addWidget(
+        fieldLinesArrowsSpacingLabel, 0, 0, Qt::AlignLeft
+    );
+    fieldLinesArrowsGeometryLayout->addWidget(
+        fieldLinesArrowsSpacing, 0, 1, Qt::AlignRight
+    );
+
+    fieldLinesArrowsGeometryLayout->addWidget(
+        fieldLinesArrowsLengthLabel, 1, 0, Qt::AlignLeft
+    );
+    fieldLinesArrowsGeometryLayout->addWidget(
+        fieldLinesArrowsLength, 1, 1, Qt::AlignRight
+    );
+
+    fieldLinesArrowsGeometryLayout->addWidget(
+        fieldLinesArrowsWidthLabel, 2, 0, Qt::AlignLeft
+    );
+    fieldLinesArrowsGeometryLayout->addWidget(
+        fieldLinesArrowsWidth, 2, 1, Qt::AlignRight
+    );
+
+    fieldLinesArrowsLayout->addLayout(
+        fieldLinesArrowsGeometryLayout
+    );
+
+    QHBoxLayout *fieldLinesAppearanceLayout = new QHBoxLayout();
+
+    fieldLinesAppearanceLayout->addStretch();
+    fieldLinesAppearanceLayout->addWidget(fieldLinesWidthLabel);
+    fieldLinesAppearanceLayout->addWidget(fieldLinesWidth);
+    fieldLinesAppearanceLayout->addSpacing(15);
+    fieldLinesAppearanceLayout->addWidget(fieldLinesColor);
+    fieldLinesAppearanceLayout->addStretch();
+
+    fieldLinesLayout->addWidget(fieldLinesTitle);
+    fieldLinesLayout->addLayout(fieldLinesFileLayout);
+    fieldLinesLayout->addWidget(fieldLinesVisible);
+    fieldLinesLayout->addLayout(fieldLinesAppearanceLayout);
+    fieldLinesLayout->addWidget(fieldLinesArrowsGroup);
+    fieldLinesLayout->addStretch();
+
+    propertiesStack->addWidget(fieldLinesPropertiesPage);
+
     // Add scene explorer and properties panel to splitter
 
     sceneSplitter->addWidget(sceneTree);
@@ -5294,6 +5518,25 @@ void glWidget::updateWindowDialog(MyDockWidget *gdock){
         disconnect(forcesGeometryConnection);
         forcesGeometryConnection = QMetaObject::Connection();
 
+        disconnect(fieldLinesFileConnection);
+        fieldLinesFileConnection = QMetaObject::Connection();
+        fieldLinesPropertiesMolecule = nullptr;
+
+        disconnect(fieldLinesVisibilityConnection);
+        fieldLinesVisibilityConnection = QMetaObject::Connection();
+
+        disconnect(fieldLinesColorConnection);
+        fieldLinesColorConnection = QMetaObject::Connection();
+
+        disconnect(fieldLinesWidthConnection);
+        fieldLinesWidthConnection = QMetaObject::Connection();
+
+        disconnect(fieldLinesArrowsVisibilityConnection);
+        fieldLinesArrowsVisibilityConnection = QMetaObject::Connection();
+
+        disconnect(fieldLinesArrowsGeometryConnection);
+        fieldLinesArrowsGeometryConnection = QMetaObject::Connection();
+
         labelsPropertiesMolecule = nullptr;
 
         delete QDLwindow;
@@ -5997,8 +6240,27 @@ void glWidget::updateSelectedMoleculeProperties()
     disconnect(forcesGeometryConnection);
     forcesGeometryConnection = QMetaObject::Connection();
 
+    disconnect(fieldLinesFileConnection);
+    fieldLinesFileConnection = QMetaObject::Connection();
+
+    disconnect(fieldLinesVisibilityConnection);
+    fieldLinesVisibilityConnection = QMetaObject::Connection();
+
+    disconnect(fieldLinesColorConnection);
+    fieldLinesColorConnection = QMetaObject::Connection();
+
+    disconnect(fieldLinesWidthConnection);
+    fieldLinesWidthConnection = QMetaObject::Connection();
+
+    disconnect(fieldLinesArrowsVisibilityConnection);
+    fieldLinesArrowsVisibilityConnection = QMetaObject::Connection();
+
+    disconnect(fieldLinesArrowsGeometryConnection);
+    fieldLinesArrowsGeometryConnection = QMetaObject::Connection();
+
     labelsPropertiesMolecule = nullptr;
     forcesPropertiesMolecule = nullptr;
+    fieldLinesPropertiesMolecule = nullptr;
 
     QList<QTreeWidgetItem*> selectedItems =
         sceneTree->selectedItems();
@@ -6209,9 +6471,162 @@ void glWidget::updateSelectedMoleculeProperties()
         break;
 
     case SceneNodeType::FieldLines:
-        label->setText(
-            tr("Field lines\n\nMolecule: %1").arg(mol->getname())
+
+        fieldLinesPropertiesMolecule = mol;
+
+        mol->addfield();
+
+        fieldLinesFile->setText(
+            QFileInfo(mol->getFieldLinesFilename()).fileName()
         );
+
+        fieldLinesFileConnection =
+            connect(mol, &molecule::fieldLinesFileChanged,
+                    this, [this](){
+
+                if (fieldLinesPropertiesMolecule)
+                    fieldLinesFile->setText(
+                        QFileInfo(
+                            fieldLinesPropertiesMolecule->getFieldLinesFilename()
+                        ).fileName()
+                    );
+            });
+
+        {
+            const QSignalBlocker blocker(fieldLinesVisible);
+            fieldLinesVisible->setChecked(mol->getFieldLinesVisible());
+        }
+
+        fieldLinesVisibilityConnection =
+            connect(mol, &molecule::fieldLinesVisibilityChanged,
+                    this, [this](){
+
+                if (!fieldLinesPropertiesMolecule)
+                    return;
+
+                const QSignalBlocker blocker(fieldLinesVisible);
+
+                fieldLinesVisible->setChecked(
+                    fieldLinesPropertiesMolecule->getFieldLinesVisible()
+                );
+            });
+
+        {
+            QColor color = mol->getFieldLinesColor();
+
+            QColor textcolor =
+                ((color.red() > 210 || color.blue() > 0)
+                 && color.green() > 210)
+                ? QColor(0, 0, 0)
+                : QColor(255, 255, 255);
+
+            fieldLinesColor->setColor(&color, &textcolor);
+        }
+
+        fieldLinesColorConnection =
+            connect(mol, &molecule::fieldLinesColorChanged,
+                    this, [this](){
+
+                if (!fieldLinesPropertiesMolecule)
+                    return;
+
+                QColor color =
+                    fieldLinesPropertiesMolecule->getFieldLinesColor();
+
+                QColor textcolor =
+                    ((color.red() > 210 || color.blue() > 0)
+                     && color.green() > 210)
+                    ? QColor(0, 0, 0)
+                    : QColor(255, 255, 255);
+
+                fieldLinesColor->setColor(&color, &textcolor);
+            });
+
+        {
+            const QSignalBlocker blocker(fieldLinesWidth);
+            fieldLinesWidth->setValue(mol->getFieldLinesWidth());
+        }
+
+        fieldLinesWidthConnection =
+            connect(mol, &molecule::fieldLinesWidthChanged,
+                    this, [this](){
+
+                if (!fieldLinesPropertiesMolecule)
+                    return;
+
+                const QSignalBlocker blocker(fieldLinesWidth);
+
+                fieldLinesWidth->setValue(
+                    fieldLinesPropertiesMolecule->getFieldLinesWidth()
+                );
+            });
+
+        {
+            const QSignalBlocker blocker(fieldLinesArrowsVisible);
+
+            fieldLinesArrowsVisible->setChecked(
+                mol->getFieldLinesArrowsVisible()
+            );
+        }
+
+        fieldLinesArrowsVisibilityConnection =
+            connect(mol, &molecule::fieldLinesArrowsVisibilityChanged,
+                    this, [this](){
+
+                if (!fieldLinesPropertiesMolecule)
+                    return;
+
+                const QSignalBlocker blocker(fieldLinesArrowsVisible);
+
+                fieldLinesArrowsVisible->setChecked(
+                    fieldLinesPropertiesMolecule->getFieldLinesArrowsVisible()
+                );
+            });
+
+        {
+            const QSignalBlocker blockerSpacing(fieldLinesArrowsSpacing);
+            const QSignalBlocker blockerLength(fieldLinesArrowsLength);
+            const QSignalBlocker blockerWidth(fieldLinesArrowsWidth);
+
+            fieldLinesArrowsSpacing->setValue(
+                mol->getFieldLinesArrowsSpacing()
+            );
+
+            fieldLinesArrowsLength->setValue(
+                mol->getFieldLinesArrowsLength()
+            );
+
+            fieldLinesArrowsWidth->setValue(
+                mol->getFieldLinesArrowsWidth()
+            );
+        }
+
+        fieldLinesArrowsGeometryConnection =
+            connect(mol, &molecule::fieldLinesArrowsGeometryChanged,
+                    this, [this](){
+
+                if (!fieldLinesPropertiesMolecule)
+                    return;
+
+                const QSignalBlocker blockerSpacing(fieldLinesArrowsSpacing);
+                const QSignalBlocker blockerLength(fieldLinesArrowsLength);
+                const QSignalBlocker blockerWidth(fieldLinesArrowsWidth);
+
+                fieldLinesArrowsSpacing->setValue(
+                    fieldLinesPropertiesMolecule->getFieldLinesArrowsSpacing()
+                );
+
+                fieldLinesArrowsLength->setValue(
+                    fieldLinesPropertiesMolecule->getFieldLinesArrowsLength()
+                );
+
+                fieldLinesArrowsWidth->setValue(
+                    fieldLinesPropertiesMolecule->getFieldLinesArrowsWidth()
+                );
+            });
+
+        propertiesStack->setCurrentWidget(fieldLinesPropertiesPage);
+
         break;
 
     case SceneNodeType::CriticalPoints:
