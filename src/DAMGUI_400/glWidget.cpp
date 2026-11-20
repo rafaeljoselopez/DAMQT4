@@ -1684,7 +1684,11 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         tr("Surfaces"), surfacesPropertiesPage
     );
 
+    surfacesList = new QListWidget(surfacesPropertiesPage);
+    surfacesList->setSelectionMode(QAbstractItemView::SingleSelection);
+
     surfacesLayout->addWidget(surfacesTitle);
+    surfacesLayout->addWidget(surfacesList);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);
@@ -7860,7 +7864,16 @@ void glWidget::updateSelectedMoleculeProperties()
         break;
 
     case SceneNodeType::Surfaces:
+
+        surfacesList->clear();
+
+        for (surface *surf : mol->surfaces) {
+            if (surf)
+                surfacesList->addItem(surf->getname());
+        }
+
         propertiesStack->setCurrentWidget(surfacesPropertiesPage);
+
         break;
 
     case SceneNodeType::Grids:

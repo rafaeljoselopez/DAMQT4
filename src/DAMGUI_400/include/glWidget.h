@@ -42,6 +42,7 @@
 #include <QGroupBox>
 #include <QFileSystemWatcher>
 #include <QLabel>
+#include <QListWidget>
 #include <QMainWindow>
 #include <QMenu>
 #include <QPushButton>
@@ -485,6 +486,7 @@ private:
     QList<QMetaObject::Connection> connections;         // Stores connections to release in destructor
     QList<QCheckBox*> visibilityBoxes;          // Stores boxes for hide/show molecules
 
+    QListWidget *surfacesList = nullptr;
 
     QMetaObject::Connection criticalPointsColorsConnection;
     QMetaObject::Connection criticalPointsEigenvectorsColorsConnection;
