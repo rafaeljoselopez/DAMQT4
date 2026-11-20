@@ -3345,7 +3345,6 @@ bool molecule::loadsurf(){
             return true;
         }
         else{
-            surfaces.removeLast();
             return false;
         }
     }

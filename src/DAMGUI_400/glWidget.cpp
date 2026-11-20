@@ -1687,8 +1687,39 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesList = new QListWidget(surfacesPropertiesPage);
     surfacesList->setSelectionMode(QAbstractItemView::SingleSelection);
 
+    QPushButton *surfacesAddButton = new QPushButton(
+        tr("Add surface"), surfacesPropertiesPage
+    );
+
+    connect(surfacesAddButton, &QPushButton::clicked,
+            this, [this]() {
+
+        QList<QTreeWidgetItem*> selectedItems =
+            sceneTree->selectedItems();
+
+        if (selectedItems.isEmpty())
+            return;
+
+        int i = selectedItems.first()->data(0, Qt::UserRole).toInt();
+
+        if (i < 0 || i >= molecules->count())
+            return;
+
+        molecule *mol = molecules->at(i);
+
+        mol->addsurface();
+
+        surfacesList->clear();
+
+        for (surface *surf : mol->surfaces) {
+            if (surf)
+                surfacesList->addItem(surf->getname());
+        }
+    });
+
     surfacesLayout->addWidget(surfacesTitle);
     surfacesLayout->addWidget(surfacesList);
+    surfacesLayout->addWidget(surfacesAddButton);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);
