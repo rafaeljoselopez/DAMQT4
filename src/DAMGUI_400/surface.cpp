@@ -1784,7 +1784,12 @@ void surface::setshowlocalmin(bool a){
 }
 
 void surface::setsolidsurf(bool a){
+    if (solidsurf == a)
+        return;
+
     solidsurf = a;
+
+    emit solidsurfChanged(solidsurf);
     emit updatedisplay();
 }
 

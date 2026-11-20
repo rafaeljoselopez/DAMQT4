@@ -1747,9 +1747,63 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     connect(surfacesList, &QListWidget::itemSelectionChanged,
             this, [this, surfacesRemoveButton]() {
-        surfacesRemoveButton->setEnabled(
-            surfacesList->currentItem() != nullptr
-        );
+
+        disconnect(surfacesTypeConnection);
+        surfacesTypeConnection = QMetaObject::Connection();
+
+        QListWidgetItem *item = surfacesList->currentItem();
+
+        surfacesRemoveButton->setEnabled(item != nullptr);
+        surfacesTypeGroup->setEnabled(false);
+
+        if (!item)
+            return;
+
+        const QList<QTreeWidgetItem*> selectedItems =
+            sceneTree->selectedItems();
+
+        if (selectedItems.isEmpty())
+            return;
+
+        const int i =
+            selectedItems.first()->data(0, Qt::UserRole).toInt();
+
+        if (i < 0 || i >= molecules->count())
+            return;
+
+        molecule *mol = molecules->at(i);
+
+        const int j = item->data(Qt::UserRole).toInt();
+
+        if (j < 0 || j >= mol->surfaces.count())
+            return;
+
+        surface *surf = mol->surfaces.at(j);
+
+        if (!surf)
+            return;
+
+        // Update controls without modifying the surface
+
+        QSignalBlocker blockerSolid(surfacesSolidRadio);
+        QSignalBlocker blockerWire(surfacesWireRadio);
+
+        surfacesTypeConnection =
+            connect(surf, &surface::solidsurfChanged,
+                    this, [this](bool solid) {
+
+                const QSignalBlocker blockerSolid(surfacesSolidRadio);
+                const QSignalBlocker blockerWire(surfacesWireRadio);
+
+                surfacesSolidRadio->setChecked(solid);
+                surfacesWireRadio->setChecked(!solid);
+
+            });
+
+        surfacesSolidRadio->setChecked(surf->getsolidsurf());
+        surfacesWireRadio->setChecked(!surf->getsolidsurf());
+
+        surfacesTypeGroup->setEnabled(true);
     });
 
     connect(surfacesRemoveButton, &QPushButton::clicked,
@@ -1791,9 +1845,115 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesButtonsLayout->addWidget(surfacesRemoveButton);
     surfacesButtonsLayout->addStretch();
 
+    // Surface representation
+
+    surfacesTypeGroup = new QGroupBox(
+        tr("Surface type"), surfacesPropertiesPage
+    );
+
+    QVBoxLayout *surfacesTypeLayout =
+        new QVBoxLayout(surfacesTypeGroup);
+
+    surfacesSolidRadio = new QRadioButton(
+        tr("Solid surface"), surfacesTypeGroup
+    );
+
+    surfacesWireRadio = new QRadioButton(
+        tr("Wire frame"), surfacesTypeGroup
+    );
+
+    surfacesTypeLayout->addWidget(surfacesSolidRadio);
+    surfacesTypeLayout->addWidget(surfacesWireRadio);
+
+    surfacesTypeGroup->setEnabled(false);
+
+    connect(surfacesSolidRadio, &QRadioButton::toggled,
+            this, [](bool checked) {
+    });
+
+    connect(surfacesWireRadio, &QRadioButton::toggled,
+            this, [](bool checked) {
+    });
+
+    connect(surfacesSolidRadio, &QRadioButton::toggled,
+            this, [this](bool checked) {
+
+        if (!checked)
+            return;
+
+        QListWidgetItem *item = surfacesList->currentItem();
+
+        if (!item)
+            return;
+
+        const QList<QTreeWidgetItem*> selectedItems =
+            sceneTree->selectedItems();
+
+        if (selectedItems.isEmpty())
+            return;
+
+        const int i =
+            selectedItems.first()->data(0, Qt::UserRole).toInt();
+
+        if (i < 0 || i >= molecules->count())
+            return;
+
+        molecule *mol = molecules->at(i);
+
+        const int j = item->data(Qt::UserRole).toInt();
+
+        if (j < 0 || j >= mol->surfaces.count())
+            return;
+
+        surface *surf = mol->surfaces.at(j);
+
+        if (surf) {
+            surf->setsolidsurf(true);
+        }
+    });
+
+    connect(surfacesWireRadio, &QRadioButton::toggled,
+            this, [this](bool checked) {
+
+        if (!checked)
+            return;
+
+        QListWidgetItem *item = surfacesList->currentItem();
+
+        if (!item)
+            return;
+
+        const QList<QTreeWidgetItem*> selectedItems =
+            sceneTree->selectedItems();
+
+        if (selectedItems.isEmpty())
+            return;
+
+        const int i =
+            selectedItems.first()->data(0, Qt::UserRole).toInt();
+
+        if (i < 0 || i >= molecules->count())
+            return;
+
+        molecule *mol = molecules->at(i);
+
+        const int j = item->data(Qt::UserRole).toInt();
+
+        if (j < 0 || j >= mol->surfaces.count())
+            return;
+
+
+        surface *surf = mol->surfaces.at(j);
+
+        if (surf) {
+            surf->setsolidsurf(false);
+        }
+    });
+
     surfacesLayout->addWidget(surfacesTitle);
     surfacesLayout->addWidget(surfacesList);
     surfacesLayout->addLayout(surfacesButtonsLayout);
+    surfacesLayout->addWidget(surfacesTypeGroup);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);
@@ -7984,6 +8144,12 @@ void glWidget::updateSurfacesProperties()
     if (!sceneTree || !surfacesList)
         return;
 
+    // Preserve the selected surface index
+    int selectedSurface = -1;
+
+    if (QListWidgetItem *item = surfacesList->currentItem())
+        selectedSurface = item->data(Qt::UserRole).toInt();
+
     surfacesList->clear();
 
     const QList<QTreeWidgetItem*> selectedItems =
@@ -8010,6 +8176,18 @@ void glWidget::updateSurfacesProperties()
         );
 
         item->setData(Qt::UserRole, j);
+    }
+
+    // Restore the previous selection if the surface still exists
+    if (selectedSurface >= 0) {
+        for (int row = 0; row < surfacesList->count(); ++row) {
+            QListWidgetItem *item = surfacesList->item(row);
+
+            if (item->data(Qt::UserRole).toInt() == selectedSurface) {
+                surfacesList->setCurrentItem(item);
+                break;
+            }
+        }
     }
 
     const int maxVisibleRows = 5;

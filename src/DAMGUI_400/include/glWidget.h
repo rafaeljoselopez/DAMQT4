@@ -472,6 +472,7 @@ private:
     QGroupBox *FRMtranslation;
     QGroupBox *FRMviewport;
     QGroupBox *criticalPointsEigenvectorsGroup = nullptr;
+    QGroupBox *surfacesTypeGroup = nullptr;
 
     QLabel *criticalPointsCoordinatesPrecisionLabel = nullptr;
     QLabel *criticalPointsSelectionLabel = nullptr;
@@ -517,6 +518,7 @@ private:
     QMetaObject::Connection labelsUnitsConnection;
     QMetaObject::Connection labelsVerticalShiftConnection;
     QMetaObject::Connection labelsVisibilityConnection;
+    QMetaObject::Connection surfacesTypeConnection;
 
     QPoint position;
 
@@ -545,6 +547,8 @@ private:
     QRadioButton *criticalPointsBohrUnits = nullptr;
     QRadioButton *labelsAngstromUnits = nullptr;
     QRadioButton *labelsBohrUnits = nullptr;
+    QRadioButton *surfacesSolidRadio = nullptr;
+    QRadioButton *surfacesWireRadio = nullptr;
 
     QScrollArea *windowArea;
 

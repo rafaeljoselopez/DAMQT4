@@ -1890,6 +1890,18 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(RBTsolidsurf, &QRadioButton::toggled,
             surf, &surface::setsolidsurf);
 
+    connect(surf, &surface::solidsurfChanged,
+            RBTsolidsurf,
+            [RBTsolidsurf, RBTwiresurf](bool solid) {
+
+                const QSignalBlocker blockerSolid(RBTsolidsurf);
+                const QSignalBlocker blockerWire(RBTwiresurf);
+
+                RBTsolidsurf->setChecked(solid);
+                RBTwiresurf->setChecked(!solid);
+
+            });
+
 //        Opacity
     labelSlider *SLDopacity = new labelSlider();
     SLDopacity->setlabeltext(QString(tr("Opacity:")));
@@ -4517,8 +4529,6 @@ QString molecule::getpath(){
 
 QString molecule::getForcesFilename()
 {
-    qDebug() << "molecule:" << this;
-    qDebug() << "hfforces:" << hfforces;
     return hfforces->getforcesfilename();
 }
 

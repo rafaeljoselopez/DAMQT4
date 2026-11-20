@@ -150,6 +150,7 @@ signals:
     void maximaColor(QColor *);
     void minimaColor(QColor *);
     void opendialog();
+    void solidsurfChanged(bool);
     void toggleshowbutton();    
     void updatedisplay();
     void updatelabelcolor(QString);
