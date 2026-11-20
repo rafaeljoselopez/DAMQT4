@@ -1673,6 +1673,39 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     propertiesStack->addWidget(criticalPointsPropertiesPage);
 
+    // Surfaces properties page
+
+    surfacesPropertiesPage = new QWidget(propertiesStack);
+
+    QVBoxLayout *surfacesLayout =
+        new QVBoxLayout(surfacesPropertiesPage);
+
+    QLabel *surfacesTitle = new QLabel(
+        tr("Surfaces"), surfacesPropertiesPage
+    );
+
+    surfacesLayout->addWidget(surfacesTitle);
+    surfacesLayout->addStretch();
+
+    propertiesStack->addWidget(surfacesPropertiesPage);
+
+
+    // Grids properties page
+
+    gridsPropertiesPage = new QWidget(propertiesStack);
+
+    QVBoxLayout *gridsLayout =
+        new QVBoxLayout(gridsPropertiesPage);
+
+    QLabel *gridsTitle = new QLabel(
+        tr("Grids"), gridsPropertiesPage
+    );
+
+    gridsLayout->addWidget(gridsTitle);
+    gridsLayout->addStretch();
+
+    propertiesStack->addWidget(gridsPropertiesPage);
+
     // Add scene explorer and properties panel to splitter
 
     sceneSplitter->addWidget(sceneTree);
@@ -7827,15 +7860,11 @@ void glWidget::updateSelectedMoleculeProperties()
         break;
 
     case SceneNodeType::Surfaces:
-        label->setText(
-            tr("Surfaces\n\nMolecule: %1").arg(mol->getname())
-        );
+        propertiesStack->setCurrentWidget(surfacesPropertiesPage);
         break;
 
     case SceneNodeType::Grids:
-        label->setText(
-            tr("Grids\n\nMolecule: %1").arg(mol->getname())
-        );
+        propertiesStack->setCurrentWidget(gridsPropertiesPage);
         break;
     }
 }

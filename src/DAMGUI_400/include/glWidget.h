@@ -602,7 +602,9 @@ private:
     QWidget *fieldLinesPropertiesPage = nullptr;
     QWidget *forcesPropertiesPage = nullptr;
     QWidget *geometryPropertiesPage = nullptr;
+    QWidget *gridsPropertiesPage = nullptr;
     QWidget *labelsPropertiesPage = nullptr;
+    QWidget *surfacesPropertiesPage = nullptr;
 
     qreal ballradius;                       // Radius of atom spheres
     qreal cylradius;                        // Radius of bond cylinders
