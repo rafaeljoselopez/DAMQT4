@@ -26,7 +26,9 @@
 //      Last version: July 2018
 //
 #include "criticalpoints.h"
+#include <QRegularExpression>
 #include <cmath>
+#include <limits>
 
 
 criticalpoints::criticalpoints(QString parentpath, QWidget *parent) : QWidget(parent)
@@ -92,158 +94,380 @@ criticalpoints::~criticalpoints(){
 }
 
 bool criticalpoints::readcpseigen(QString cp_filename)
-{	
-    QString filename = QFileInfo(cp_filename).absolutePath() + "/" + QFileInfo(cp_filename).completeBaseName() + ".eigv";
+{
+    const QFileInfo cpFileInfo(cp_filename);
+
+    const QString filename =
+        cpFileInfo.absolutePath() + "/" +
+        cpFileInfo.completeBaseName() + ".eigv";
+
+    // Invalidate previous eigenvector data
+
+    erroreigvec = true;
+
+    for (int i = 0; i < MAX_CPS; ++i) {
+        cpseigval[i].clear();
+        alleigindices[i].clear();
+        alleigindicesoffset[i].clear();
+        alleigvertices[i].clear();
+        maxindex[i] = 0;
+    }
+
+    bool cursorOverridden = false;
+
+    auto fail = [&](const QString &reason) -> bool {
+
+        setvisiblecpseigen(false);
+
+        if (cursorOverridden)
+            QApplication::restoreOverrideCursor();
+
+        QMessageBox msgBox;
+        msgBox.setText(tr("readcpseigen"));
+        msgBox.setInformativeText(
+            tr("Invalid or unreadable eigenvector file %1:\n%2")
+                .arg(filename)
+                .arg(reason)
+            + "\n\n"
+            + tr("Hessian eigenvectors cannot be visualized.")
+            );
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.exec();
+
+        return false;
+    };
+
     QFile file(filename);
-    erroreigvec = false;
-    if (!file.open(QFile::ReadOnly | QFile::Text)) {
-        QMessageBox msgBox;
-        msgBox.setText(tr("readcpseigen"));
-        msgBox.setInformativeText(tr("File %1 cannot be read. Hessian eigenvectors cannot be visualized")
-                                  .arg(filename)+QString(":\n%1.").arg(file.errorString()));
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.exec();
-        setvisiblecpseigen(false);
-        erroreigvec = true;
-        return false;
-    }
-    for (int i=0;i<MAX_CPS;i++){
-        cpseigval[i].clear();
-    }
+
+    if (!file.open(QFile::ReadOnly | QFile::Text))
+        return fail(file.errorString());
+
     QApplication::setOverrideCursor(Qt::WaitCursor);
+    cursorOverridden = true;
+
     QTextStream in(&file);
-    QString line;
-    line = in.readLine();      // The first line contains the number of critical points
-    int numCPs = line.toInt();
-    int naux = 0;
-    for(int i = 0 ; i < MAX_CPS ; ++i){
-        naux += cpsxyzval[i].count();
-    }
-    if (naux != numCPs){
-        QMessageBox msgBox;
-        msgBox.setText(tr("readcpseigen"));
-        msgBox.setInformativeText(tr("Number of eigenvectors in file %1").arg(filename)
-                + tr("different than three times number of CPs.\nCheck file.. Hessian eigenvectors cannot be visualized"));
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.exec();
-        setvisiblecpseigen(false);
-        erroreigvec = true;
-        QApplication::restoreOverrideCursor();
-        return false;
-    }
-    QVector4D auxvec;
-    bool exitloop = false;
-    int knt = 0;
-    for(int i = 0 ; i < MAX_CPS && !exitloop ; i++ ){
-        cpseigval[i].clear();
-        for (int j = 0 ; j < cpsxyzval[i].count() && !exitloop; ++j){
-            for (int k = 0 ; k < 3 ; k++){
-                if (in.atEnd()){     // Never should happen this if file is correct
-                    exitloop = true;
-                    break;
-                }
-                line = in.readLine();
-                line=line.trimmed();
+
+    // Read the declared number of critical points
+
+    bool ok = false;
+
+    const int numCPs =
+        in.readLine().trimmed().toInt(&ok);
+
+    if (!ok || numCPs < 0)
+        return fail(tr("Invalid number of critical points."));
+
+    int expectedCPs = 0;
+
+    for (int i = 0; i < MAX_CPS; ++i)
+        expectedCPs += cpsxyzval[i].count();
+
+    if (numCPs != expectedCPs)
+        return fail(
+            tr("Number of critical points (%1) different "
+               "from the expected number (%2).")
+                .arg(numCPs)
+                .arg(expectedCPs)
+            );
+
+    // Temporary storage
+
+    QVector<QVector4D> newCpseigval[MAX_CPS];
+
+    const QRegularExpression separator("\\s+");
+
+    const double coordTolerance = 0.00501;
+
+    int lineNumber = 1;
+
+    // Read three eigenvectors per critical point
+
+    for (int i = 0; i < MAX_CPS; ++i) {
+
+        for (int j = 0; j < cpsxyzval[i].count(); ++j) {
+
+            const QVector4D &cp = cpsxyzval[i].at(j);
+
+            for (int k = 0; k < 3; ++k) {
+
+                QString line;
+
+                // Skip empty lines
+
+                do {
+                    if (in.atEnd())
+                        return fail(
+                            tr("Incomplete eigenvector data.")
+                            );
+
+                    line = in.readLine().trimmed();
+                    ++lineNumber;
+
+                } while (line.isEmpty());
+
 #if QT_VERSION < 0x050E00
-        QStringList fields = line.split(' ',QString::SkipEmptyParts);
+                const QStringList fields =
+                    line.split(separator, QString::SkipEmptyParts);
 #else
-        QStringList fields = line.split(' ',Qt::SkipEmptyParts);
+                const QStringList fields =
+                    line.split(separator, Qt::SkipEmptyParts);
 #endif
-                if (fields.count() < 7){ 
-                    k--;
-                    continue;
+
+                if (fields.count() < 7)
+                    return fail(
+                        tr("Invalid record at line %1.")
+                            .arg(lineNumber)
+                        );
+
+                double values[7];
+
+                for (int n = 0; n < 7; ++n) {
+
+                    values[n] = fields.at(n).toDouble(&ok);
+
+                    if (!ok || !std::isfinite(values[n]))
+                        return fail(
+                            tr("Invalid numerical value at line %1.")
+                                .arg(lineNumber)
+                            );
                 }
-                fields.removeFirst();   // Neglects the first three entries in each line, which correspond to cp coordinates, already stored
-                fields.removeFirst();
-                fields.removeFirst();
-                auxvec.setX(fields.takeFirst().toFloat());    // Reads the components of Hessian eigenvector and sign of eigenvalue
-                auxvec.setY(fields.takeFirst().toFloat());
-                auxvec.setZ(fields.takeFirst().toFloat());
-                auxvec.setW(fields.takeFirst().toFloat());
-                cpseigval[i].append(auxvec);
-                knt++;
+
+                // Check CP coordinates in angstrom
+
+                for (int n = 0; n < 3; ++n) {
+
+                    const double coord =
+                        cp[n] / ANGSTROM_TO_BOHR;
+
+                    if (std::abs(values[n] - coord)
+                        > coordTolerance)
+                        return fail(
+                            tr("Critical point coordinates do not "
+                               "match at line %1.")
+                                .arg(lineNumber)
+                            );
+                }
+
+                // Check eigenvector components
+
+                for (int n = 3; n < 6; ++n) {
+
+                    if (std::abs(values[n]) >
+                        std::numeric_limits<float>::max())
+                        return fail(
+                            tr("Eigenvector component out of "
+                               "range at line %1.")
+                                .arg(lineNumber)
+                            );
+                }
+
+                // Check eigenvalue sign
+
+                if (values[6] != -1.0 && values[6] != 1.0)
+                    return fail(
+                        tr("Invalid eigenvalue sign at line %1.")
+                            .arg(lineNumber)
+                        );
+
+                const QVector4D eigenvector(
+                    values[3],
+                    values[4],
+                    values[5],
+                    values[6]
+                    );
+
+                if (eigenvector.toVector3D().isNull())
+                    return fail(
+                        tr("Null eigenvector at line %1.")
+                            .arg(lineNumber)
+                        );
+
+                newCpseigval[i].append(eigenvector);
             }
         }
     }
 
-    if (knt != 3*numCPs){
-        QMessageBox msgBox;
-        msgBox.setText(tr("readcpseigen"));
-        msgBox.setInformativeText(tr("Number of eigenvectors read in file %1 different than 3 times the number of critical points. Hessian eigenvectors cannot be visualized")
-                                  .arg(filename));
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.exec();
-        setvisiblecpseigen(false);
-        erroreigvec = true;
-        QApplication::restoreOverrideCursor();
-        return false;
+    // Check for unexpected additional records
+
+    while (!in.atEnd()) {
+
+        const QString line = in.readLine().trimmed();
+        ++lineNumber;
+
+        if (!line.isEmpty())
+            return fail(
+                tr("Unexpected additional record at line %1.")
+                    .arg(lineNumber)
+                );
     }
+
+    if (in.status() != QTextStream::Ok)
+        return fail(tr("Error while reading the file."));
+
+    // Commit validated eigenvector data
+
+    for (int i = 0; i < MAX_CPS; ++i)
+        cpseigval[i].swap(newCpseigval[i]);
+
+    erroreigvec = false;
+
     QApplication::restoreOverrideCursor();
+
     return true;
 }
 
 bool criticalpoints::readcpsfile(QString filename)
-{	
+{
     QFile file(filename);
+
     if (!file.open(QFile::ReadOnly | QFile::Text)) {
         QMessageBox msgBox;
         msgBox.setText(tr("readcpsfile"));
-        msgBox.setInformativeText(tr("File %1 cannot be read").arg(filename)+QString(":\n%1.").arg(file.errorString()));
+        msgBox.setInformativeText(
+            tr("File %1 cannot be read").arg(filename)
+            + QString(":\n%1.").arg(file.errorString())
+            );
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
         return false;
     }
-    cpsfilename = filename;
+
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    QTextStream in(&file);
-    QString line;
-    line = in.readLine();      // The first line contains the number of critical points
-    int numCPs = line.toInt();
-    int itype;
-    QStringList CPtypes;
-    CPtypes << "x" << "y" << "z" << "m";
-    
-    for (int i=0;i<MAX_CPS;i++){
-        cpsxyzval[i].clear();
-    }
-    QVector4D cpsvec;
-    int knt = 0;
-    do{
-        line = in.readLine();
-        line=line.trimmed();
-#if QT_VERSION < 0x050E00
-        QStringList fields = line.split(' ',QString::SkipEmptyParts);
-#else
-        QStringList fields = line.split(' ',Qt::SkipEmptyParts);
-#endif
-        if (fields.count() < 5) continue;
-        QString type(fields.takeFirst());
-        itype = CPtypes.indexOf(type.toStdString().c_str());
-        if (itype < 0 || itype > 3) continue;
-        cpsvec.setX(fields.takeFirst().toDouble() * ANGSTROM_TO_BOHR);
-        cpsvec.setY(fields.takeFirst().toDouble() * ANGSTROM_TO_BOHR);
-        cpsvec.setZ(fields.takeFirst().toDouble() * ANGSTROM_TO_BOHR);
-        cpsvec.setW(fields.takeFirst().toDouble());
-        cpsxyzval[itype].append(cpsvec);
-        cpsactive[itype].append(false);
-        knt++;
-        if (knt > numCPs){
-            QMessageBox msgBox;
-            msgBox.setText(tr("readcpsfile"));
-            msgBox.setInformativeText(tr("Number of CPs in file %1 higher than declared on top of file ").arg(filename));
-            msgBox.setIcon(QMessageBox::Warning);
-            msgBox.exec();
-            break;
-        }
-    }while (!in.atEnd());
-    if (knt < numCPs){
+
+    auto fail = [&](const QString &reason) -> bool {
+        QApplication::restoreOverrideCursor();
+
         QMessageBox msgBox;
         msgBox.setText(tr("readcpsfile"));
-        msgBox.setInformativeText(tr("Number of CPs in file %1 lower than declared on top of file ").arg(filename));
+        msgBox.setInformativeText(
+            tr("Invalid critical points file %1:\n%2")
+                .arg(filename)
+                .arg(reason)
+            );
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
+
+        return false;
+    };
+
+    QTextStream in(&file);
+
+    // Read the declared number of critical points
+
+    bool ok = false;
+    const int numCPs = in.readLine().trimmed().toInt(&ok);
+
+    if (!ok || numCPs < 0)
+        return fail(tr("Invalid number of critical points."));
+
+    const QStringList CPtypes = {"x", "y", "z", "m"};
+
+    const QRegularExpression separator("\\s+");
+
+    // Temporary storage
+
+    QVector<QVector4D> newCpsxyzval[MAX_CPS];
+    QVector<bool> newCpsactive[MAX_CPS];
+
+    int knt = 0;
+    int lineNumber = 1;
+
+    while (!in.atEnd()) {
+
+        const QString line = in.readLine().trimmed();
+        ++lineNumber;
+
+        if (line.isEmpty())
+            continue;
+
+#if QT_VERSION < 0x050E00
+        const QStringList fields =
+            line.split(separator, QString::SkipEmptyParts);
+#else
+        const QStringList fields =
+            line.split(separator, Qt::SkipEmptyParts);
+#endif
+
+        if (fields.count() < 5)
+            return fail(
+                tr("Invalid record at line %1.").arg(lineNumber)
+                );
+
+        const int itype = CPtypes.indexOf(fields.at(0));
+
+        if (itype < 0 || itype >= MAX_CPS)
+            return fail(
+                tr("Invalid critical point type at line %1.")
+                    .arg(lineNumber)
+                );
+
+        double values[4];
+
+        for (int i = 0; i < 4; ++i) {
+
+            values[i] = fields.at(i + 1).toDouble(&ok);
+
+            if (!ok || !std::isfinite(values[i]))
+                return fail(
+                    tr("Invalid numerical value at line %1.")
+                        .arg(lineNumber)
+                    );
+
+            // Convert coordinates from angstrom to bohr
+
+            if (i < 3)
+                values[i] *= ANGSTROM_TO_BOHR;
+
+            if (!std::isfinite(values[i]) ||
+                std::abs(values[i]) >
+                    std::numeric_limits<float>::max())
+                return fail(
+                    tr("Numerical value out of range at line %1.")
+                        .arg(lineNumber)
+                    );
+        }
+
+        newCpsxyzval[itype].append(
+            QVector4D(
+                values[0],
+                values[1],
+                values[2],
+                values[3]
+                )
+            );
+
+        newCpsactive[itype].append(false);
+
+        ++knt;
+
+        if (knt > numCPs)
+            return fail(
+                tr("More critical points than declared.")
+                );
     }
+
+    if (in.status() != QTextStream::Ok)
+        return fail(tr("Error while reading the file."));
+
+    if (knt != numCPs)
+        return fail(
+            tr("Number of critical points read (%1) "
+               "different from the declared number (%2).")
+                .arg(knt)
+                .arg(numCPs)
+            );
+
+    // Commit validated data
+
+    for (int i = 0; i < MAX_CPS; ++i) {
+        cpsxyzval[i].swap(newCpsxyzval[i]);
+        cpsactive[i].swap(newCpsactive[i]);
+    }
+
+    cpsfilename = filename;
+
     QApplication::restoreOverrideCursor();
+
     return true;
 }
 

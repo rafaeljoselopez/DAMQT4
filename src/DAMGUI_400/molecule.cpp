@@ -46,9 +46,6 @@
 
 molecule::molecule(QWidget *parent) : QWidget(parent)
 {
-    for (int i = 0 ; i < MAX_CPS; i++){
-        cpschecked[i] = true;
-    }
     makeAxesCylinder(15,15);    // computes vertices of a cylinder and its indices
     makeAxesCone(15,15,2.);    // computes vertices of a cone and its indices
     timer = new QTimer();
@@ -315,9 +312,9 @@ void molecule::create_symbols_indices_widgets_and_layouts(){
     FRMcoorunits = new QGroupBox();
     RBTangstromcoor = new QRadioButton(tr("angstrom"),FRMcoorunits);
     RBTbohrcoor = new QRadioButton(tr("bohr"),FRMcoorunits);
-    RBTbohrcoor->setChecked(!angstromcp);
+    RBTbohrcoor->setChecked(!getangstromcoor());
     RBTangstromcoor->setVisible(CHKshowcoords->isChecked());
-    RBTangstromcoor->setChecked(angstromcoor);
+    RBTangstromcoor->setChecked(getangstromcoor());
     RBTbohrcoor->setVisible(CHKshowcoords->isChecked());
 
     connect(RBTbohrcoor, &QRadioButton::toggled,
@@ -872,14 +869,18 @@ void molecule::create_forces_widgets_and_layouts(){
     FRMforces->setVisible(false);
 
     TXTforces = new QLineEdit();
-    TXTforces->setText(hfforces->getforcesfilename());
+    TXTforces->setText(
+        QFileInfo(getForcesFilename()).fileName()
+    );
 
     connect(TXTforces, &QLineEdit::returnPressed,
             this, &molecule::TXTforces_changed);
 
     connect(this, &molecule::forcesFileChanged,
             TXTforces, [this]() {
-                TXTforces->setText(hfforces->getforcesfilename());
+                TXTforces->setText(
+                    QFileInfo(getForcesFilename()).fileName()
+                    );
             });
 
     BTNforces = new QToolButton();
@@ -1260,7 +1261,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
 
     QLabel *LBLcps = new QLabel(tr("File")+":");
     TXTcps = new QLineEdit();
-    TXTcps->setText(cps->getcpsfilename());
+    TXTcps->setText(
+        QFileInfo(getCriticalPointsFilename()).fileName()
+    );
 
     connect(TXTcps, &QLineEdit::returnPressed,
             this, &molecule::TXTcps_changed);
@@ -1278,7 +1281,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
     QLabel *LBLcpscolor3 = new QLabel(tr("(3,-3) CP")+":");
     for (int i=0 ; i<MAX_CPS ; i++){
         CHKcps[i] = new QCheckBox();
-        CHKcps[i]->setChecked(cpschecked[i]);
+        CHKcps[i]->setChecked(getCriticalPointVisible(i));
 
         connect(CHKcps[i], QOverload<int>::of(&QCheckBox::stateChanged),
                 this, &molecule::CHKcps_changed);
@@ -1286,12 +1289,29 @@ void molecule::create_critical_points_widgets_and_layouts(){
         BTNcpcolor[i] = new ColorButton();
         BTNcpcolor[i]->setIcon(QIcon(":/images/colores48.png"));
         BTNcpcolor[i]->setText(tr("Color"));
-        QColor currcolor = cps->getcolor(i);
+        QColor currcolor = getCriticalPointColor(i);
         BTNcpcolor[i]->setColor(&currcolor);
 
         connect(BTNcpcolor[i], &QPushButton::clicked,
                 this, &molecule::BTNcpcolor_change);
+
+        connect(this, &molecule::criticalPointsVisibilityChanged,
+                CHKcps[i], [this, i]() {
+
+                    const QSignalBlocker blocker(CHKcps[i]);
+
+                    CHKcps[i]->setChecked(getCriticalPointVisible(i));
+                });
+
+        connect(this, &molecule::criticalPointsColorsChanged,
+                BTNcpcolor[i], [this, i]() {
+
+                    QColor color = getCriticalPointColor(i);
+
+                    BTNcpcolor[i]->setColor(&color);
+                });
     }
+
 //         Ball radius
 
     QLabel *LBLcpsballradius = new QLabel(tr("Ball radius"));
@@ -1299,16 +1319,23 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpballradius->setMinimum(1);
     SPBcpballradius->setMaximum(100);
     SPBcpballradius->setMaximumWidth(50);
-    SPBcpballradius->setValue(cps->getradius());
+    SPBcpballradius->setValue(getCriticalPointsRadius());
 
     connect(SPBcpballradius, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBcpballradius_changed);
 
+    connect(this, &molecule::criticalPointsRadiusChanged,
+            SPBcpballradius, [this]() {
+
+                const QSignalBlocker blocker(SPBcpballradius);
+
+                SPBcpballradius->setValue(getCriticalPointsRadius());
+            });
 
 //         CP coordinates
 
     CHKcpcoords = new QCheckBox(tr("CP coordinates"));
-    CHKcpcoords->setChecked(cps->getdrawcpscoords());
+    CHKcpcoords->setChecked(getCriticalPointsShowCoordinates());
 
     connect(CHKcpcoords, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKcpcoords_changed);
@@ -1316,9 +1343,9 @@ void molecule::create_critical_points_widgets_and_layouts(){
     FRMcpunits = new QGroupBox();
     RBTangstromcp = new QRadioButton(tr("angstrom"),FRMcpunits);
     RBTbohrcp = new QRadioButton(tr("bohr"),FRMcpunits);
-    RBTbohrcp->setChecked(!angstromcp);
+    RBTbohrcp->setChecked(!getCriticalPointsCoordinatesAngstrom());
     RBTangstromcp->setVisible(CHKcpcoords->isChecked());
-    RBTangstromcp->setChecked(angstromcp);
+    RBTangstromcp->setChecked(getCriticalPointsCoordinatesAngstrom());
     RBTbohrcp->setVisible(CHKcpcoords->isChecked());
 
     connect(RBTbohrcp, &QRadioButton::toggled,
@@ -1330,7 +1357,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpcoordprecision->setMinimum(0);
     SPBcpcoordprecision->setMaximum(7);
     SPBcpcoordprecision->setMaximumWidth(50);
-    SPBcpcoordprecision->setValue(cps->getcpcoordprecision());
+    SPBcpcoordprecision->setValue(getCriticalPointsCoordinatesPrecision());
     SPBcpcoordprecision->setVisible(CHKcpcoords->isChecked());
 
     connect(SPBcpcoordprecision, QOverload<int>::of(&QSpinBox::valueChanged),
@@ -1339,13 +1366,13 @@ void molecule::create_critical_points_widgets_and_layouts(){
 //         CP symbols, CP indices
 
     CHKcpsymbols = new QCheckBox(tr("CP symbols"));
-    CHKcpsymbols->setChecked(cps->getdrawcpssymbols());
+    CHKcpsymbols->setChecked(getCriticalPointsShowSymbols());
 
     connect(CHKcpsymbols, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKcpsymbols_changed);
 
     CHKcpindices = new QCheckBox(tr("CP indices"));
-    CHKcpindices->setChecked(cps->getdrawcpsindices());
+    CHKcpindices->setChecked(getCriticalPointsShowIndices());
 
     connect(CHKcpindices, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKcpindices_changed);
@@ -1353,7 +1380,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
 //         CP values
 
     CHKcpvalues = new QCheckBox(tr("CP field values"));
-    CHKcpvalues->setChecked(cps->getdrawcpsvalues());
+    CHKcpvalues->setChecked(getCriticalPointsShowValues());
 
     connect(CHKcpvalues, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKcpvalues_changed);
@@ -1364,14 +1391,14 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpprecision->setMinimum(0);
     SPBcpprecision->setMaximum(7);
     SPBcpprecision->setMaximumWidth(50);
-    SPBcpprecision->setValue(cps->getcpprecision());
+    SPBcpprecision->setValue(getCriticalPointsValuesPrecision());
     SPBcpprecision->setVisible(CHKcpvalues->isChecked());
 
     connect(SPBcpprecision, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBcpprecision_changed);
 
     CHKcpactiveonly = new QCheckBox(tr("Only selected CPs"));
-    CHKcpactiveonly->setChecked(cps->getonlycpsactive());
+    CHKcpactiveonly->setChecked(getCriticalPointsOnlySelected());
     if (CHKcpvalues->isChecked() || CHKcpcoords->isChecked() || CHKcpsymbols->isChecked() || CHKcpindices->isChecked()){
         CHKcpactiveonly->setVisible(true);
     }
@@ -1422,7 +1449,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpvshift = new QSpinBox();
     SPBcpvshift->setRange(-150,150);
     SPBcpvshift->setMaximumWidth(70);
-    SPBcpvshift->setValue(cps->getcpvshift());
+    SPBcpvshift->setValue(getCriticalPointsLabelsVerticalShift());
 
     connect(SPBcpvshift, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBcpvshift_changed);
@@ -1430,7 +1457,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
     BTNcpcolorfont = new ColorButton();
     BTNcpcolorfont->setIcon(QIcon(":/images/fonts48.png"));
     BTNcpcolorfont->setText(tr("Color"));
-    QColor fontcolor = cps->getfontcolor();
+    QColor fontcolor =getCriticalPointsLabelsColor();
     BTNcpcolorfont->setColor(&fontcolor);
     BTNcpcolorfont->setVisible(true);
 
@@ -1439,16 +1466,12 @@ void molecule::create_critical_points_widgets_and_layouts(){
 
 //        Hessian eigenvectors
 
-    FRMcpeigvec= new QGroupBox();
+    FRMcpeigvec = new QGroupBox();
     FRMcpeigvec->setTitle(tr("Hessian eigenvectors"));
-    if (cps->geterroreigvec()){
-        cps->setvisiblecpseigen(false);
-        FRMcpeigvec->setVisible(false);
-    }
-    else
-        FRMcpeigvec->setVisible(true);
+    FRMcpeigvec->setVisible(getCriticalPointsEigenvectorsAvailable());
 
     CHKcpeigvec = new QCheckBox(tr("Display hessian eigenvectors"));
+    CHKcpeigvec->setChecked(getCriticalPointsEigenvectorsVisible());
 
     connect(CHKcpeigvec, QOverload<int>::of(&QCheckBox::stateChanged),
             this, &molecule::CHKcpeigvec_changed);
@@ -1460,12 +1483,19 @@ void molecule::create_critical_points_widgets_and_layouts(){
         BTNcpeigcolor[i] = new ColorButton();
         BTNcpeigcolor[i]->setIcon(QIcon(":/images/colores48.png"));
         BTNcpeigcolor[i]->setText(tr("Color"));
-        QColor color = cps->geteigcolor(i);
+        QColor color = getCriticalPointsEigenvectorColor(i);
         BTNcpeigcolor[i]->setColor(&color);
 
         connect(BTNcpeigcolor[i], &QPushButton::clicked,
                 this, &molecule::BTNcpeigcolor_change);
 
+        connect(this, &molecule::criticalPointsEigenvectorsColorsChanged,
+                BTNcpeigcolor[i], [this, i]() {
+
+                    QColor color = getCriticalPointsEigenvectorColor(i);
+
+                    BTNcpeigcolor[i]->setColor(&color);
+                });
     }
 
 //         Thickness
@@ -1475,7 +1505,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpeigthickness->setMinimum(1);
     SPBcpeigthickness->setMaximum(50);
     SPBcpeigthickness->setMaximumWidth(50);
-    SPBcpeigthickness->setValue(cps->geteigthickness());
+    SPBcpeigthickness->setValue(getCriticalPointsEigenvectorsThickness());
 
     connect(SPBcpeigthickness, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBcpeigthickness_changed);
@@ -1488,7 +1518,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpeiglength->setMaximum(100);
     SPBcpeiglength->setMaximumWidth(50);
     SPBcpeiglength->setSingleStep(1);
-    SPBcpeiglength->setValue(cps->geteiglength());
+    SPBcpeiglength->setValue(getCriticalPointsEigenvectorsLength());
 
     connect(SPBcpeiglength, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBcpeiglength_change);
@@ -1501,7 +1531,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpeigarrowsize->setMaximum(50);
     SPBcpeigarrowsize->setMaximumWidth(50);
     SPBcpeigarrowsize->setSingleStep(1);
-    SPBcpeigarrowsize->setValue(cps->geteigarrowsize());
+    SPBcpeigarrowsize->setValue(getCriticalPointsEigenvectorsArrowLength());
 
     connect(SPBcpeigarrowsize, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBcpeigarrowsize_changed);
@@ -1514,7 +1544,7 @@ void molecule::create_critical_points_widgets_and_layouts(){
     SPBcpeigarrowwidth->setMaximum(50);
     SPBcpeigarrowwidth->setMaximumWidth(50);
     SPBcpeigarrowwidth->setSingleStep(1);
-    SPBcpeigarrowwidth->setValue(10);
+    SPBcpeigarrowwidth->setValue(getCriticalPointsEigenvectorsArrowWidth());;
 
     connect(SPBcpeigarrowwidth, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &molecule::SPBcpeigarrowwidth_changed);
@@ -1631,6 +1661,149 @@ void molecule::create_critical_points_widgets_and_layouts(){
     Layout->addWidget(FRMcps);
     Layout->addWidget(FRMcpeigvec);
     Layout->addStretch();
+
+    connect(this, &molecule::criticalPointsFileChanged,
+            TXTcps, [this]() {
+
+                TXTcps->setText(
+                    QFileInfo(getCriticalPointsFilename()).fileName()
+                    );
+
+                FRMcpeigvec->setVisible(
+                    getCriticalPointsEigenvectorsAvailable()
+                    );
+
+                const QSignalBlocker blocker(CHKcpeigvec);
+
+                CHKcpeigvec->setChecked(
+                    getCriticalPointsEigenvectorsVisible()
+                    );
+            });
+
+    connect(this, &molecule::criticalPointsEigenvectorsVisibilityChanged,
+            CHKcpeigvec, [this]() {
+
+                const QSignalBlocker blocker(CHKcpeigvec);
+
+                CHKcpeigvec->setChecked(
+                    getCriticalPointsEigenvectorsVisible()
+                    );
+            });
+
+    connect(this, &molecule::criticalPointsLabelsChanged,
+            CHKcpsymbols, [this]() {
+
+                const QSignalBlocker blockerSymbols(CHKcpsymbols);
+                const QSignalBlocker blockerIndices(CHKcpindices);
+                const QSignalBlocker blockerCoords(CHKcpcoords);
+                const QSignalBlocker blockerValues(CHKcpvalues);
+
+                const bool showSymbols = getCriticalPointsShowSymbols();
+                const bool showIndices = getCriticalPointsShowIndices();
+                const bool showCoords = getCriticalPointsShowCoordinates();
+                const bool showValues = getCriticalPointsShowValues();
+
+                CHKcpsymbols->setChecked(showSymbols);
+                CHKcpindices->setChecked(showIndices);
+                CHKcpcoords->setChecked(showCoords);
+                CHKcpvalues->setChecked(showValues);
+
+                // Controls associated with coordinates
+                LBLcpcoordprecision->setVisible(showCoords);
+                SPBcpcoordprecision->setVisible(showCoords);
+                RBTangstromcp->setVisible(showCoords);
+                RBTbohrcp->setVisible(showCoords);
+
+                // Controls associated with field values
+                LBLcpprecision->setVisible(showValues);
+                SPBcpprecision->setVisible(showValues);
+
+                // Controls associated with label visibility
+                CHKcpactiveonly->setVisible(
+                    showSymbols || showIndices || showCoords || showValues
+                    );
+
+                QDLeditMolecule->update();
+                QDLeditMolecule->adjustSize();
+            });
+
+    connect(this, &molecule::criticalPointsLabelsFormatChanged,
+            RBTbohrcp, [this]() {
+
+                const QSignalBlocker blockerBohr(RBTbohrcp);
+                const QSignalBlocker blockerAngstrom(RBTangstromcp);
+                const QSignalBlocker blockerCoords(SPBcpcoordprecision);
+                const QSignalBlocker blockerValues(SPBcpprecision);
+
+                const bool angstromUnits = getCriticalPointsCoordinatesAngstrom();
+
+                RBTbohrcp->setChecked(!angstromUnits);
+                RBTangstromcp->setChecked(angstromUnits);
+
+                SPBcpcoordprecision->setValue(
+                    getCriticalPointsCoordinatesPrecision()
+                    );
+
+                SPBcpprecision->setValue(
+                    getCriticalPointsValuesPrecision()
+                    );
+            });
+
+    connect(this, &molecule::criticalPointsOnlySelectedChanged,
+            CHKcpactiveonly, [this]() {
+
+                const QSignalBlocker blocker(CHKcpactiveonly);
+
+                const bool onlySelected = getCriticalPointsOnlySelected();
+
+                CHKcpactiveonly->setChecked(onlySelected);
+
+                LBLcpselect->setVisible(onlySelected);
+                BTNcpselectall->setVisible(onlySelected);
+                BTNcpselectnone->setVisible(onlySelected);
+
+                QDLeditMolecule->update();
+                QDLeditMolecule->adjustSize();
+            });
+
+    connect(this, &molecule::criticalPointsLabelsAppearanceChanged,
+            SPBcpvshift, [this]() {
+
+                const QSignalBlocker blocker(SPBcpvshift);
+
+                SPBcpvshift->setValue(
+                    getCriticalPointsLabelsVerticalShift()
+                    );
+
+                QColor color = getCriticalPointsLabelsColor();
+
+                BTNcpcolorfont->setColor(&color);
+            });
+
+    connect(this, &molecule::criticalPointsEigenvectorsGeometryChanged,
+            SPBcpeigthickness, [this]() {
+
+                const QSignalBlocker blockerThickness(SPBcpeigthickness);
+                const QSignalBlocker blockerLength(SPBcpeiglength);
+                const QSignalBlocker blockerArrowLength(SPBcpeigarrowsize);
+                const QSignalBlocker blockerArrowWidth(SPBcpeigarrowwidth);
+
+                SPBcpeigthickness->setValue(
+                    getCriticalPointsEigenvectorsThickness()
+                    );
+
+                SPBcpeiglength->setValue(
+                    getCriticalPointsEigenvectorsLength()
+                    );
+
+                SPBcpeigarrowsize->setValue(
+                    getCriticalPointsEigenvectorsArrowLength()
+                    );
+
+                SPBcpeigarrowwidth->setValue(
+                    getCriticalPointsEigenvectorsArrowWidth()
+                    );
+            });
 }
 
 void molecule::create_surfaces_widgets_and_layouts()
@@ -2512,79 +2685,70 @@ void molecule::BTNaddforces_clicked(){
 //  End of function BTNaddforces_clicked
 
 
-void molecule::BTNcpcolor_change(){
-    QPushButton *BTNp = (QPushButton *)sender();
-    int tipo=-1;
-    for(int i = 0; i < MAX_CPS; ++i){
-        if(BTNcpcolor[i] == BTNp){
-                tipo = i;
-                break;
-        }
-    }
-    if (tipo>-1){
-        QColor colact = cps->getcolor(tipo);
-        QColor col = QColorDialog::getColor(colact, this);
-        if(col.isValid()) {
-            cps->setcolor(tipo,col);
-            BTNcpcolor[tipo]->setColor(&col);
-            cps->createCPs();
-            emit updatedisplay();
+void molecule::BTNcpcolor_change()
+{
+    for (int i = 0; i < MAX_CPS; ++i) {
+        if (BTNcpcolor[i] == sender()) {
+
+            const QColor color = QColorDialog::getColor(
+                getCriticalPointColor(i), this
+                );
+
+            if (color.isValid())
+                setCriticalPointColor(i, color);
+
+            return;
         }
     }
 }
 
-void molecule::BTNcpcolorfont_clicked(){
-    QColor col = QColorDialog::getColor(fontcolor, this);
-    if(col.isValid()) {
-        cps->setfontcolor(col);
-        BTNcpcolorfont->setColor(&col);
-        emit updatedisplay();
-    }
+void molecule::BTNcpcolorfont_clicked()
+{
+    const QColor color = QColorDialog::getColor(
+        getCriticalPointsLabelsColor(), this
+        );
+
+    if (color.isValid())
+        setCriticalPointsLabelsColor(color);
 }
 
-void molecule::BTNcpeigcolor_change(){
-    QPushButton *BTNp = (QPushButton *)sender();
-    int tipo=-1;
-    for(int i = 0; i < 3; ++i){
-        if(BTNcpeigcolor[i] == BTNp){
-                tipo = i;
-                break;
-        }
-    }
-    if (tipo>-1){
-        QColor colact = cps->geteigcolor(tipo);
-        QColor col = QColorDialog::getColor(colact, this);
-        if(col.isValid()) {
-            cps->seteigcolor(tipo,col);
-            BTNcpeigcolor[tipo]->setColor(&col);
-            cps->createCPseigen();
-            emit updatedisplay();
+void molecule::BTNcpeigcolor_change()
+{
+    for (int i = 0; i < 3; ++i) {
+        if (BTNcpeigcolor[i] == sender()) {
+
+            const QColor color = QColorDialog::getColor(
+                getCriticalPointsEigenvectorColor(i), this
+                );
+
+            if (color.isValid())
+                setCriticalPointsEigenvectorColor(i, color);
+
+            return;
         }
     }
 }
 
-void molecule::BTNcplblfont_clicked(){
-    font = QFontDialog::getFont(nullptr, font);
-    cps->setfont(font);
-    emit updatedisplay();
+void molecule::BTNcplblfont_clicked()
+{
+    bool ok = false;
+
+    const QFont selectedFont = QFontDialog::getFont(
+        &ok, getCriticalPointsLabelsFont(), this
+        );
+
+    if (ok)
+        setCriticalPointsLabelsFont(selectedFont);
 }
 
-void molecule::BTNcpselectall_clicked(){
-    for (int i=0 ; i<MAX_CPS ; i++){
-        for (int j = 0 ; j < cps->getcpsactivelength(i) ; j++){
-            cps->setcpsactive(i, j, true);
-        }
-    }
-    emit updatedisplay();
+void molecule::BTNcpselectall_clicked()
+{
+    selectAllCriticalPoints();
 }
 
-void molecule::BTNcpselectnone_clicked(){
-    for (int i=0 ; i<MAX_CPS ; i++){
-        for (int j = 0 ; j < cps->getcpsactivelength(i) ; j++){
-            cps->setcpsactive(i, j, false);
-        }
-    }
-    emit updatedisplay();
+void molecule::BTNcpselectnone_clicked()
+{
+    deselectAllCriticalPoints();
 }
 
 void molecule::BTNflinescolor_clicked()
@@ -2852,123 +3016,44 @@ void molecule::CHKactiveonly_changed(int a){
         emit updatedisplay();
 }
 
-void molecule::CHKcpactiveonly_changed(int a){
-    if (a == 0){
-        cps->setonlycpsactive(false);
-        LBLcpselect->setVisible(false);
-        BTNcpselectall->setVisible(false);
-        BTNcpselectnone->setVisible(false);
-    }
-    else{
-        cps->setonlycpsactive(true);
-        LBLcpselect->setVisible(true);
-        BTNcpselectall->setVisible(true);
-        BTNcpselectnone->setVisible(true);
-    }
-    QDLeditMolecule->update();
-    QDLeditMolecule->adjustSize();
-    emit updatedisplay();
+void molecule::CHKcpactiveonly_changed(int a)
+{
+    setCriticalPointsOnlySelected(a != 0);
 }
 
-void molecule::CHKcpcoords_changed(int a){
-    if (a == 0){
-        LBLcpcoordprecision->setVisible(false);
-        SPBcpcoordprecision->setVisible(false);
-        cps->setdrawcpscoords(false);
-        if (!cps->getdrawcpssymbols() && !cps->getdrawcpsindices() && !cps->getdrawcpsvalues())
-            CHKcpactiveonly->setVisible(false);
-        RBTangstromcp->setVisible(false);
-        RBTbohrcp->setVisible(false);
-    }
-    else{
-        LBLcpcoordprecision->setVisible(true);
-        SPBcpcoordprecision->setVisible(true);
-        cps->setdrawcpscoords(true);
-        CHKcpactiveonly->setVisible(true);
-        RBTangstromcp->setVisible(true);
-        RBTbohrcp->setVisible(true);
-    }
-    QDLeditMolecule->update();
-    QDLeditMolecule->adjustSize();
-    emit updatedisplay();
+void molecule::CHKcpcoords_changed(int a)
+{
+    setCriticalPointsShowCoordinates(a != 0);
 }
 
-void molecule::CHKcpeigvec_changed(int a){
-    if (a == 0){
-        cps->setvisiblecpseigen(false);
-    }
-    else{
-        cps->setvisiblecpseigen(true);
-    }
-    emit updatedisplay();
+void molecule::CHKcpeigvec_changed(int a)
+{
+    setCriticalPointsEigenvectorsVisible(a != 0);
 }
 
-void molecule::CHKcpindices_changed(int a){
-    if (a == 0){
-        cps->setdrawcpsindices(false);
-        if (!cps->getdrawcpscoords() && !cps->getdrawcpssymbols() && !cps->getdrawcpsvalues())
-            CHKcpactiveonly->setVisible(false);
-    }
-    else{
-        cps->setdrawcpsindices(true);
-        CHKcpactiveonly->setVisible(true);
-    }
-    QDLeditMolecule->update();
-    QDLeditMolecule->adjustSize();
-    emit updatedisplay();
+void molecule::CHKcpindices_changed(int a)
+{
+    setCriticalPointsShowIndices(a != 0);
 }
 
-void molecule::CHKcps_changed(){
-    QCheckBox *CHKp = (QCheckBox *)sender();
-    int tipo=-1;
-    for(int i = 0; i < MAX_CPS; ++i){
-        if(CHKcps[i] == CHKp){
-                tipo = i;
-                break;
+void molecule::CHKcps_changed()
+{
+    for (int i = 0; i < MAX_CPS; ++i) {
+        if (CHKcps[i] == sender()) {
+            setCriticalPointVisible(i, CHKcps[i]->isChecked());
+            return;
         }
     }
-    if(CHKcps[tipo]->isChecked()){
-        cpschecked[tipo] = true;
-        cps->setvisiblecps(tipo,true);
-    }else{
-        cpschecked[tipo] = false;
-        cps->setvisiblecps(tipo,false);
-    }
-    emit updatedisplay();
 }
 
-void molecule::CHKcpsymbols_changed(int a){
-    if (a == 0){
-        cps->setdrawcpssymbols(false);
-        if (!cps->getdrawcpscoords() && !cps->getdrawcpsindices() && !cps->getdrawcpsvalues())
-            CHKcpactiveonly->setVisible(false);
-    }
-    else{
-        cps->setdrawcpssymbols(true);
-        CHKcpactiveonly->setVisible(true);
-    }
-    QDLeditMolecule->update();
-    QDLeditMolecule->adjustSize();
-    emit updatedisplay();
+void molecule::CHKcpsymbols_changed(int a)
+{
+    setCriticalPointsShowSymbols(a != 0);
 }
 
-void molecule::CHKcpvalues_changed(int a){
-    if (a == 0){
-        LBLcpprecision->setVisible(false);
-        SPBcpprecision->setVisible(false);
-        cps->setdrawcpsvalues(false);
-        if (!cps->getdrawcpscoords() && !cps->getdrawcpssymbols() && !cps->getdrawcpsindices())
-            CHKcpactiveonly->setVisible(false);
-    }
-    else{
-        LBLcpprecision->setVisible(true);
-        SPBcpprecision->setVisible(true);
-        cps->setdrawcpsvalues(true);
-        CHKcpactiveonly->setVisible(true);
-    }
-    QDLeditMolecule->update();
-    QDLeditMolecule->adjustSize();
-    emit updatedisplay();
+void molecule::CHKcpvalues_changed(int a)
+{
+    setCriticalPointsShowValues(a != 0);
 }
 
 //	Connects Checkbox with show/hide arrows in electric field lines
@@ -3355,38 +3440,39 @@ void molecule::QDLeditMolecule_delete(){
 //	Imports a file with critical points
 void molecule::readcpsfiles_dialog()
 {
-    bool update = false;
-    QFileDialog filedialog(this);
-    filedialog.setWindowFlags(Qt::WindowStaysOnTopHint);
-    filedialog.setDirectory(ProjectFolder);
-    QString fileName = filedialog.getOpenFileName(this,tr("Open file with critical points"),path, tr("Allowed files")
-            + " *cps-?.xyz " + " (*cps-?.xyz);;"+tr("All files")+" (*)");
-    if (fileName.length()==0) return;
-    TXTcps->setText(QFileInfo(fileName).fileName());
-    if (cps->readcpsfile(fileName)){
-        cps->createCPs();
-        update = true;
-    }
-    else {
-        return;
-    }
-    if (cps->readcpseigen(fileName)){
-        cps->createCPseigen();
-    }
-    if (cps->geterroreigvec())
-        FRMcpeigvec->setVisible(false);
-    else {
-        update = true;
-    }
-    if (update){
-        emitupdatedisplay();
-    }
+    selectCriticalPointsFile();
 }
 
 //	Imports a file with field lines
 void molecule::readfieldlines_dialog()
 {
     selectFieldLinesFile();
+}
+
+bool molecule::readCriticalPointsFile(const QString &filename)
+{
+    addcriticalpoints();
+
+    QString resolvedFilename = filename.trimmed();
+
+    if (QDir::isRelativePath(resolvedFilename))
+        resolvedFilename =
+            QDir(ProjectFolder).absoluteFilePath(resolvedFilename);
+
+    if (!cps->readcpsfile(resolvedFilename))
+        return false;
+
+    ProjectFolder = QFileInfo(resolvedFilename).absolutePath();
+
+    cps->createCPs();
+
+    if (cps->readcpseigen(resolvedFilename))
+        cps->createCPseigen();
+
+    emit criticalPointsFileChanged();
+    emit updatedisplay();
+
+    return true;
 }
 
 bool molecule::readFieldLinesFile(const QString &filename)
@@ -3417,27 +3503,29 @@ bool molecule::readFieldLinesFile(const QString &filename)
 //	Imports a file with HF forces
 void molecule::readforcefiles_dialog()
 {
-    QFileDialog filedialog(this);
-    filedialog.setWindowFlags(Qt::WindowStaysOnTopHint);
-    filedialog.setDirectory(ProjectFolder);
-    QString fileName = filedialog.getOpenFileName(this,tr("Open file with HF forces"),path, tr("Allowed files")
-            + " *.forces " + " (*.forces);;"+tr("All files")+" (*)");
-    if (fileName.length()==0) return;
-    TXTforces->setText(fileName.trimmed());
-    readForcesFile(TXTforces->text(), true);
+    selectForcesFile();
 }
 
 bool molecule::readForcesFile(const QString &filename, bool createGeometry)
 {
-    bool success = hfforces->readforcesfile(filename);
+    QString resolvedFilename = filename.trimmed();
 
-    if (success && createGeometry)
+    if (QDir::isRelativePath(resolvedFilename))
+        resolvedFilename =
+            QDir(ProjectFolder).absoluteFilePath(resolvedFilename);
+
+    if (!hfforces->readforcesfile(resolvedFilename))
+        return false;
+
+    ProjectFolder = QFileInfo(resolvedFilename).absolutePath();
+
+    if (createGeometry)
         hfforces->createforces();
 
-    if (success)
-        emit forcesFileChanged();
+    emit forcesFileChanged();
+    emit updatedisplay();
 
-    return success;
+    return true;
 }
 
 void molecule::resetinterval(){
@@ -3626,9 +3714,12 @@ void molecule::SPBstepwheel_changed(){
     emit updatedisplay();
 }
 
-void molecule::TXTcps_changed(){
-//    if (!TXTcps->text().isEmpty())
-        cps->readcpsfile(TXTcps->text());
+void molecule::TXTcps_changed()
+{
+    if (!readCriticalPointsFile(TXTcps->text()))
+        TXTcps->setText(
+            QFileInfo(getCriticalPointsFilename()).fileName()
+            );
 }
 
 void molecule::TXTfieldlines_changed()
@@ -3638,9 +3729,12 @@ void molecule::TXTfieldlines_changed()
             QFileInfo(getFieldLinesFilename()).fileName());
 }
 
-void molecule::TXTforces_changed(){
-//    if (!TXTforces->text().isEmpty())
-        readForcesFile(TXTforces->text(), false);
+void molecule::TXTforces_changed()
+{
+    if (!readForcesFile(TXTforces->text(), true))
+        TXTforces->setText(
+            QFileInfo(getForcesFilename()).fileName()
+            );
 }
 
 void molecule::updateeditMoleculeDialog(){
@@ -4091,7 +4185,126 @@ bool molecule::getangstromcoor(){
 }
 
 bool molecule::getangstromcp(){
+    return getCriticalPointsCoordinatesAngstrom();
+}
+
+QColor molecule::getCriticalPointColor(int type)
+{
+    if (!cps || type < 0 || type >= MAX_CPS)
+        return QColor();
+
+    return cps->getcolor(type);
+}
+
+QColor molecule::getCriticalPointsEigenvectorColor(int type)
+{
+    if (!cps || type < 0 || type >= 3)
+        return QColor();
+
+    return cps->geteigcolor(type);
+}
+
+bool molecule::getCriticalPointsCoordinatesAngstrom()
+{
     return angstromcp;
+}
+
+int molecule::getCriticalPointsCoordinatesPrecision()
+{
+    return cps ? cps->getcpcoordprecision() : 2;
+}
+
+bool molecule::getCriticalPointsEigenvectorsAvailable()
+{
+    return cps && !cps->geterroreigvec();
+}
+
+int molecule::getCriticalPointsEigenvectorsArrowLength()
+{
+    return cps ? cps->geteigarrowsize() : 4;
+}
+
+int molecule::getCriticalPointsEigenvectorsArrowWidth()
+{
+    return cps ? cps->geteigarrowwidth() : 10;
+}
+
+int molecule::getCriticalPointsEigenvectorsLength()
+{
+    return cps ? cps->geteiglength() : 10;
+}
+
+int molecule::getCriticalPointsEigenvectorsThickness()
+{
+    return cps ? cps->geteigthickness() : 4;
+}
+
+bool molecule::getCriticalPointsEigenvectorsVisible()
+{
+    return cps && cps->isvisiblecpseigen();
+}
+
+QString molecule::getCriticalPointsFilename()
+{
+    return cps ? cps->getcpsfilename() : QString();
+}
+
+QColor molecule::getCriticalPointsLabelsColor()
+{
+    return cps ? cps->getfontcolor() : QColor();
+}
+
+QFont molecule::getCriticalPointsLabelsFont()
+{
+    return cps ? cps->getfont() : QFont();
+}
+
+int molecule::getCriticalPointsLabelsVerticalShift()
+{
+    return cps ? cps->getcpvshift() : 0;
+}
+
+bool molecule::getCriticalPointsOnlySelected()
+{
+    return cps && cps->getonlycpsactive();
+}
+
+int molecule::getCriticalPointsRadius()
+{
+    return cps ? cps->getradius() : 10;
+}
+
+bool molecule::getCriticalPointsShowSymbols()
+{
+    return cps && cps->getdrawcpssymbols();
+}
+
+bool molecule::getCriticalPointsShowIndices()
+{
+    return cps && cps->getdrawcpsindices();
+}
+
+bool molecule::getCriticalPointsShowCoordinates()
+{
+    return cps && cps->getdrawcpscoords();
+}
+
+bool molecule::getCriticalPointsShowValues()
+{
+    return cps && cps->getdrawcpsvalues();
+}
+
+int molecule::getCriticalPointsValuesPrecision()
+{
+    return cps ? cps->getcpprecision() : 2;
+}
+
+bool molecule::getCriticalPointVisible(int type)
+{
+    if (!cps || type < 0 || type >= MAX_CPS)
+        return false;
+
+    return cps->isvisiblecps(type);
 }
 
 bool molecule::getdrawatomcoords(){
@@ -4716,19 +4929,42 @@ void molecule::RBTbohr_changed(){
     }
 }
 
+void molecule::deselectAllCriticalPoints()
+{
+    if (!cps)
+        return;
+
+    for (int i = 0; i < MAX_CPS; ++i) {
+        for (int j = 0; j < cps->getcpsactivelength(i); ++j) {
+            cps->setcpsactive(i, j, false);
+        }
+    }
+
+    emit updatedisplay();
+}
+
 void molecule::RBTbohrcoor_changed()
 {
     setangstromcoor(!RBTbohrcoor->isChecked());
     emit updatedisplay();
 }
 
-void molecule::RBTbohrcp_changed(){
-    if (RBTbohrcp->isChecked()){
-        angstromcp = false;
+void molecule::RBTbohrcp_changed()
+{
+    setCriticalPointsCoordinatesAngstrom(!RBTbohrcp->isChecked());
+}
+
+void molecule::selectAllCriticalPoints()
+{
+    if (!cps)
+        return;
+
+    for (int i = 0; i < MAX_CPS; ++i) {
+        for (int j = 0; j < cps->getcpsactivelength(i); ++j) {
+            cps->setcpsactive(i, j, true);
+        }
     }
-    else{
-        angstromcp = true;
-    }
+
     emit updatedisplay();
 }
 
@@ -4743,6 +4979,15 @@ void molecule::setactive(bool a){
 void molecule::setallatomactive(bool a){
     for(int i = 0 ; i < atomactive.count() ; i++)
         atomactive[i] = a;
+}
+
+void molecule::setangstromcoor(bool angstrom)
+{
+    if (angstromcoor == angstrom)
+        return;
+
+    angstromcoor = angstrom;
+    emit coordinateUnitsChanged();
 }
 
 void molecule::setatomactive(int i, bool a){
@@ -4770,13 +5015,273 @@ void molecule::setcoordprecision(int precision)
     emit coordPrecisionChanged();
 }
 
-void molecule::setangstromcoor(bool angstrom)
+void molecule::setCriticalPointColor(int type, const QColor &color)
 {
-    if (angstromcoor == angstrom)
+    if (!cps || type < 0 || type >= MAX_CPS || !color.isValid())
         return;
 
-    angstromcoor = angstrom;
-    emit coordinateUnitsChanged();
+    if (cps->getcolor(type) == color)
+        return;
+
+    cps->setcolor(type, color);
+    cps->createCPs();
+
+    emit criticalPointsColorsChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsCoordinatesAngstrom(bool angstromUnits)
+{
+    if (angstromcp == angstromUnits)
+        return;
+
+    angstromcp = angstromUnits;
+
+    emit criticalPointsLabelsFormatChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsCoordinatesPrecision(int precision)
+{
+    if (!cps || precision < 0 || precision > 7)
+        return;
+
+    if (cps->getcpcoordprecision() == precision)
+        return;
+
+    cps->setcoordprecision(precision);
+
+    emit criticalPointsLabelsFormatChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsEigenvectorColor(int type,
+                                                 const QColor &color)
+{
+    if (!cps || type < 0 || type >= 3 || !color.isValid())
+        return;
+
+    if (cps->geteigcolor(type) == color)
+        return;
+
+    cps->seteigcolor(type, color);
+    cps->createCPseigen();
+
+    emit criticalPointsEigenvectorsColorsChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsEigenvectorsArrowLength(int length)
+{
+    if (!cps || length < 1 || length > 50)
+        return;
+
+    if (cps->geteigarrowsize() == length)
+        return;
+
+    cps->seteigarrowsize(length);
+    cps->createCPseigen();
+
+    emit criticalPointsEigenvectorsGeometryChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsEigenvectorsArrowWidth(int width)
+{
+    if (!cps || width < 1 || width > 50)
+        return;
+
+    if (cps->geteigarrowwidth() == width)
+        return;
+
+    cps->seteigarrowwidth(width);
+    cps->createCPseigen();
+
+    emit criticalPointsEigenvectorsGeometryChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsEigenvectorsLength(int length)
+{
+    if (!cps || length < 1 || length > 100)
+        return;
+
+    if (cps->geteiglength() == length)
+        return;
+
+    cps->seteiglength(length);
+    cps->createCPseigen();
+
+    emit criticalPointsEigenvectorsGeometryChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsEigenvectorsThickness(int thickness)
+{
+    if (!cps || thickness < 1 || thickness > 50)
+        return;
+
+    if (cps->geteigthickness() == thickness)
+        return;
+
+    cps->seteigthickness(thickness);
+    cps->createCPseigen();
+
+    emit criticalPointsEigenvectorsGeometryChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsEigenvectorsVisible(bool visible)
+{
+    if (!cps)
+        return;
+
+    if (visible && !getCriticalPointsEigenvectorsAvailable())
+        return;
+
+    if (cps->isvisiblecpseigen() == visible)
+        return;
+
+    cps->setvisiblecpseigen(visible);
+
+    emit criticalPointsEigenvectorsVisibilityChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsLabelsColor(const QColor &color)
+{
+    if (!cps || !color.isValid())
+        return;
+
+    if (cps->getfontcolor() == color)
+        return;
+
+    cps->setfontcolor(color);
+
+    emit criticalPointsLabelsAppearanceChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsLabelsFont(const QFont &font)
+{
+    if (!cps || cps->getfont() == font)
+        return;
+
+    cps->setfont(font);
+
+    emit criticalPointsLabelsAppearanceChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsLabelsVerticalShift(int shift)
+{
+    if (!cps || shift < -150 || shift > 150)
+        return;
+
+    if (cps->getcpvshift() == shift)
+        return;
+
+    cps->setcpvshift(shift);
+
+    emit criticalPointsLabelsAppearanceChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsOnlySelected(bool onlySelected)
+{
+    if (!cps || cps->getonlycpsactive() == onlySelected)
+        return;
+
+    cps->setonlycpsactive(onlySelected);
+
+    emit criticalPointsOnlySelectedChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsRadius(int radius)
+{
+    if (!cps || radius < 1 || radius > 100)
+        return;
+
+    if (cps->getradius() == radius)
+        return;
+
+    cps->setradius(radius);
+
+    emit criticalPointsRadiusChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsShowSymbols(bool visible)
+{
+    if (!cps || cps->getdrawcpssymbols() == visible)
+        return;
+
+    cps->setdrawcpssymbols(visible);
+
+    emit criticalPointsLabelsChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsShowIndices(bool visible)
+{
+    if (!cps || cps->getdrawcpsindices() == visible)
+        return;
+
+    cps->setdrawcpsindices(visible);
+
+    emit criticalPointsLabelsChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsShowCoordinates(bool visible)
+{
+    if (!cps || cps->getdrawcpscoords() == visible)
+        return;
+
+    cps->setdrawcpscoords(visible);
+
+    emit criticalPointsLabelsChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsShowValues(bool visible)
+{
+    if (!cps || cps->getdrawcpsvalues() == visible)
+        return;
+
+    cps->setdrawcpsvalues(visible);
+
+    emit criticalPointsLabelsChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointsValuesPrecision(int precision)
+{
+    if (!cps || precision < 0 || precision > 7)
+        return;
+
+    if (cps->getcpprecision() == precision)
+        return;
+
+    cps->setcpprecision(precision);
+
+    emit criticalPointsLabelsFormatChanged();
+    emit updatedisplay();
+}
+
+void molecule::setCriticalPointVisible(int type, bool visible)
+{
+    if (!cps || type < 0 || type >= MAX_CPS)
+        return;
+
+    if (cps->isvisiblecps(type) == visible)
+        return;
+
+    cps->setvisiblecps(type, visible);
+
+    emit criticalPointsVisibilityChanged();
+    emit updatedisplay();
 }
 
 void molecule::changeAtomCoordinateUnits(bool angstrom)
@@ -5237,51 +5742,51 @@ void molecule::SPBcoordprecision_changed(int i){
 }
 
 // Changes ball radius for critical
-void molecule::SPBcpballradius_changed(int i){
-    cps->setradius(i);
-    emitupdatedisplay();
+void molecule::SPBcpballradius_changed(int i)
+{
+    setCriticalPointsRadius(i);
 }
 
 // Changes precision for critical points coordinates display
-void molecule::SPBcpcoordprecision_changed(int i){
-    cps->setcoordprecision(i);
-    emitupdatedisplay();
+void molecule::SPBcpcoordprecision_changed(int i)
+{
+    setCriticalPointsCoordinatesPrecision(i);
 }
 
 // Changes width of critical points eigenvector arrows
-void molecule::SPBcpeigarrowwidth_changed(int i){
-    cps->seteigarrowwidth(i);
-    emitupdatedisplay();
+void molecule::SPBcpeigarrowwidth_changed(int i)
+{
+    setCriticalPointsEigenvectorsArrowWidth(i);
 }
 
 // Changes length critical points eigenvector arrows
-void molecule::SPBcpeigarrowsize_changed(int i){
-    cps->seteigarrowsize(i);
-    emitupdatedisplay();
+void molecule::SPBcpeigarrowsize_changed(int i)
+{
+    setCriticalPointsEigenvectorsArrowLength(i);
 }
 
 // Changes length of critical points eigenvectors
-void molecule::SPBcpeiglength_change(int i){
-    cps->seteiglength(i);
-    emitupdatedisplay();
+void molecule::SPBcpeiglength_change(int i)
+{
+    setCriticalPointsEigenvectorsLength(i);
 }
 
 // Changes thickness of critical points eigenvectors
-void molecule::SPBcpeigthickness_changed(int i){
-    cps->seteigthickness(i);
-    emitupdatedisplay();
+void molecule::SPBcpeigthickness_changed(int i)
+{
+    setCriticalPointsEigenvectorsThickness(i);
 }
 
 // Changes precision for critical points
-void molecule::SPBcpprecision_changed(int i){
-    cps->setcpprecision(i);
-    emitupdatedisplay();
+void molecule::SPBcpprecision_changed(int i)
+{
+    setCriticalPointsValuesPrecision(i);
 }
 
 // Changes vertical display for critical points labels
-void molecule::SPBcpvshift_changed(int i){
-    cps->setcpvshift(i);
-    emitupdatedisplay();
+void molecule::SPBcpvshift_changed(int i)
+{
+    setCriticalPointsLabelsVerticalShift(i);
 }
 
 void molecule::SPBflineslinewidth_changed(int i)
@@ -5376,6 +5881,27 @@ void molecule::updateLabelsEditorControls()
 
     QDLeditMolecule->update();
     QDLeditMolecule->adjustSize();
+}
+
+void molecule::selectCriticalPointsFile()
+{
+    QFileDialog filedialog(this);
+
+    filedialog.setWindowFlags(Qt::WindowStaysOnTopHint);
+    filedialog.setDirectory(ProjectFolder);
+
+    QString fileName = filedialog.getOpenFileName(
+        this,
+        tr("Open file with critical points"),
+        ProjectFolder,
+        tr("Allowed files") + " (*cps-?.xyz);;" +
+            tr("All files") + " (*)"
+        );
+
+    if (fileName.isEmpty())
+        return;
+
+    readCriticalPointsFile(fileName);
 }
 
 void molecule::selectFieldLinesFile()

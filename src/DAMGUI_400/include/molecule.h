@@ -141,6 +141,15 @@ public:
 
     bool getangstromcoor();
     bool getangstromcp();
+    bool getCriticalPointsCoordinatesAngstrom();
+    bool getCriticalPointsEigenvectorsAvailable();
+    bool getCriticalPointsEigenvectorsVisible();
+    bool getCriticalPointsOnlySelected();
+    bool getCriticalPointsShowSymbols();
+    bool getCriticalPointsShowIndices();
+    bool getCriticalPointsShowCoordinates();
+    bool getCriticalPointsShowValues();
+    bool getCriticalPointVisible(int type);
     bool getdrawatomcoords();
     bool getdrawatomindices();
     bool getdrawatomsymbols();
@@ -160,6 +169,7 @@ public:
     bool isvisible();
     bool loadgrid();
     bool loadsurf();
+    bool readCriticalPointsFile(const QString &filename);
     bool readFieldLinesFile(const QString &filename);
     bool readForcesFile(const QString &filename, bool createGeometry);
     bool retrievegrid(const QString &filename);
@@ -172,6 +182,14 @@ public:
     float getstepwheel();
 
     int getcoordprecision();
+    int getCriticalPointsCoordinatesPrecision();
+    int getCriticalPointsEigenvectorsArrowLength();
+    int getCriticalPointsEigenvectorsArrowWidth();
+    int getCriticalPointsEigenvectorsLength();
+    int getCriticalPointsEigenvectorsThickness();
+    int getCriticalPointsLabelsVerticalShift();
+    int getCriticalPointsRadius();
+    int getCriticalPointsValuesPrecision();
     int getFieldLinesArrowsLength();
     int getFieldLinesArrowsSpacing();
     int getFieldLinesArrowsWidth();
@@ -185,22 +203,103 @@ public:
     int getnumcps(int);
     int getznuc(int);
 
+
     void changeAllAtomsActive(bool active);
     void changeAtomCoordinatePrecision(int precision);
+    void changeAtomCoordinateUnits(bool angstrom);
+    void changeLabelsFont();
+    void changeLabelsColor();
     void changeOnlySelectedAtoms(bool selectedOnly);
-    void setlabelsvshift(int);
-    void set_ProjectFolder(QString);
-    void set_ProjectName(QString);
+    void createeditMoleculeDialog();
+    void darken();
+    void deselectAllCriticalPoints();
+    void initatomactive(bool);
+    void initatomvisible(bool);
+    void lighten();
+    void loadallindices(QVector<GLuint>);
+    void loadallindicesoffset(QVector<GLuint>);
+    void loadallvertices(QVector<VertexNormalData>);
+    void loadcharges(QVector <int>);
+    void loadxyz(QVector <QVector3D>);
+    void selectAllCriticalPoints();
+    void selectCriticalPointsFile();
+    void selectFieldLinesFile();
+    void setactive(bool);
+    void setallatomactive(bool);
+    void setatomactive(int, bool);
+    void setdrawatomcoords(bool);
+    void setdrawatomindices(bool);
+    void setdrawatomsymbols(bool);
     void setcoordprecision(int);
+    void setCriticalPointColor(int type, const QColor &color);
+    void setCriticalPointsEigenvectorColor(int type, const QColor &color);
+    void setCriticalPointsEigenvectorsArrowLength(int length);
+    void setCriticalPointsEigenvectorsArrowWidth(int width);
+    void setCriticalPointsEigenvectorsLength(int length);
+    void setCriticalPointsEigenvectorsThickness(int thickness);
+    void setCriticalPointsCoordinatesAngstrom(bool angstromUnits);
+    void setCriticalPointsCoordinatesPrecision(int precision);
+    void setCriticalPointsEigenvectorsVisible(bool visible);
+    void setCriticalPointsLabelsColor(const QColor &color);
+    void setCriticalPointsLabelsFont(const QFont &font);
+    void setCriticalPointsLabelsVerticalShift(int shift);
+    void setCriticalPointsOnlySelected(bool onlySelected);
+    void setCriticalPointsValuesPrecision(int precision);
+    void setCriticalPointsRadius(int radius);
+    void setCriticalPointsShowSymbols(bool visible);
+    void setCriticalPointsShowIndices(bool visible);
+    void setCriticalPointsShowCoordinates(bool visible);
+    void setCriticalPointsShowValues(bool visible);
+    void setCriticalPointVisible(int type, bool visible);
+    void setFieldLinesArrowsLength(int length);
+    void setFieldLinesArrowsSpacing(int spacing);
+    void setFieldLinesArrowsVisible(bool visible);
+    void setFieldLinesArrowsWidth(int width);
+    void setFieldLinesColor(const QColor &color);
+    void setFieldLinesVisible(bool visible);
+    void setFieldLinesWidth(int width);
+    void setfont(QFont);
+    void setfontaxeslabels(QFont);
+    void setfontcolor(QColor);
+    void setForceArrowLength(int value);
+    void setForceArrowWidth(int value);
+    void setForceColor(int i, const QColor &color);
+    void selectForcesFile();
+    void setForceLength(int value);
+    void setForceThickness(int value);
+    void setForceVisible(int i, bool visible);
+    void setfullname(QString);
     void sethideatoms(bool hide);
     void sethidebonds(bool hide);
     void sethidehydrogens(bool hide);
-    void selectForcesFile();
+    void setiscluster(bool);
+    void setlabelsvshift(int);
+    void setname(QString);
+    void setparentposition(QPoint);
+    void setonlyatomactive(bool);
+    void setpath(QString);
+    void set_ProjectFolder(QString);
+    void set_ProjectName(QString);
+    void setrotation(QQuaternion);
+    void setrotationAxis(QVector3D);
+    void setrotationButtons();
+    void setscaleradii(bool);
+    void setstepwheel(float);
+    void settranslationButtons();
+    void settranslation(QVector3D);
+    void setvisible(bool);
+    void showAtomSymbols(bool show);
+    void showAtomIndices(bool show);
+    void showAtomCoordinates(bool show);
+    void setangstromcoor(bool angstrom);
 
     fieldlines *flines = nullptr;
     forces *hfforces = nullptr;
     criticalpoints *cps = nullptr;
 
+    QColor getCriticalPointsEigenvectorColor(int type);
+    QColor getCriticalPointColor(int type);
+    QColor getCriticalPointsLabelsColor();
     QColor getFieldLinesColor();
     QColor getfontcolor();
     QColor getForceColor(int i);
@@ -208,6 +307,7 @@ public:
     QColor getYaxis_color();
     QColor getZaxis_color();
 
+    QFont getCriticalPointsLabelsFont();
     QFont getfont();
     QFont getfontaxeslabels();
 
@@ -219,11 +319,13 @@ public:
 
     QQuaternion getrotation();
 
+    QString getCriticalPointsFilename();
+    QString getFieldLinesFilename();
+    QString getForcesFilename();
     QString getfullname();
     QString getname();
     QString getpath();
-    QString getFieldLinesFilename();
-    QString getForcesFilename();
+
 
     QVector <QVector3D> getpositionaxeslabels();
     QVector3D gettranslation();
@@ -241,65 +343,21 @@ public:
     QVector <int> getcharges();
     QVector <QVector3D> getxyz();
 
-    void changeAtomCoordinateUnits(bool angstrom);
-    void changeLabelsFont();
-    void changeLabelsColor();
-    void createeditMoleculeDialog();
-    void darken();
-    void initatomactive(bool);
-    void initatomvisible(bool);
-    void lighten();
-    void loadallindices(QVector<GLuint>);
-    void loadallindicesoffset(QVector<GLuint>);
-    void loadallvertices(QVector<VertexNormalData>);
-    void loadcharges(QVector <int>);
-    void loadxyz(QVector <QVector3D>);
-    void selectFieldLinesFile();
-    void setactive(bool);
-    void setallatomactive(bool);
-    void setatomactive(int, bool);
-    void setdrawatomcoords(bool);
-    void setdrawatomindices(bool);
-    void setdrawatomsymbols(bool);
-    void setFieldLinesArrowsLength(int length);
-    void setFieldLinesArrowsSpacing(int spacing);
-    void setFieldLinesArrowsVisible(bool visible);
-    void setFieldLinesArrowsWidth(int width);
-    void setFieldLinesColor(const QColor &color);
-    void setFieldLinesVisible(bool visible);
-    void setFieldLinesWidth(int width);
-    void setfont(QFont);
-    void setfontaxeslabels(QFont);
-    void setfontcolor(QColor);
-    void setForceArrowLength(int value);
-    void setForceArrowWidth(int value);
-    void setForceColor(int i, const QColor &color);
-    void setForceLength(int value);
-    void setForceThickness(int value);
-    void setForceVisible(int i, bool visible);
-    void setfullname(QString);
-    void setiscluster(bool);
-    void setname(QString);
-    void setparentposition(QPoint);
-    void setonlyatomactive(bool);
-    void setpath(QString);
-    void setrotation(QQuaternion);
-    void setrotationAxis(QVector3D);
-    void setrotationButtons();
-    void setscaleradii(bool);
-    void setstepwheel(float);
-    void settranslationButtons();
-    void settranslation(QVector3D);
-    void setvisible(bool);
-    void showAtomSymbols(bool show);
-    void showAtomIndices(bool show);
-    void showAtomCoordinates(bool show);
-    void setangstromcoor(bool angstrom);
-
 
 
 signals:
     void animate(bool);
+    void criticalPointsColorsChanged();
+    void criticalPointsEigenvectorsColorsChanged();
+    void criticalPointsEigenvectorsGeometryChanged();
+    void criticalPointsEigenvectorsVisibilityChanged();
+    void criticalPointsFileChanged();
+    void criticalPointsLabelsAppearanceChanged();
+    void criticalPointsLabelsChanged();
+    void criticalPointsLabelsFormatChanged();
+    void criticalPointsOnlySelectedChanged();
+    void criticalPointsRadiusChanged();
+    void criticalPointsVisibilityChanged();
     void coordPrecisionChanged();
     void coordinateUnitsChanged();
     void fieldLinesArrowsGeometryChanged();
@@ -481,7 +539,6 @@ private:
     bool angstromcp = false;                      // If true CPs coordinates displayed in angstrom
     bool axes_visible = false;
     bool axeslabels_visible = false;
-    bool cpschecked[MAX_CPS] = {};
     bool drawatomcoords = false;                  // If true displays atom coordinates
     bool drawatomindices = false;                 // If true displays atom indices
     bool drawatomsymbols = false;                 // If true displays atom symbols

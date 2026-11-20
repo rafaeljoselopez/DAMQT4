@@ -35,6 +35,7 @@
 #include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QFontDialog>
 #include <QMessageBox>
 #include <QUrl>
 
@@ -584,8 +585,12 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     connect(forcesFile, &QLineEdit::returnPressed,
             this, [this]() {
         if (forcesPropertiesMolecule)
-            forcesPropertiesMolecule->readForcesFile(
-                forcesFile->text(), false
+            if (!forcesPropertiesMolecule->readForcesFile(
+                    forcesFile->text(), true))
+                forcesFile->setText(
+                    QFileInfo(
+                        forcesPropertiesMolecule->getForcesFilename()
+                    ).fileName()
             );
     });
 
@@ -947,6 +952,726 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     fieldLinesLayout->addStretch();
 
     propertiesStack->addWidget(fieldLinesPropertiesPage);
+
+    // Critical points properties page
+
+    criticalPointsPropertiesPage = new QWidget(propertiesStack);
+
+    QVBoxLayout *criticalPointsLayout =
+        new QVBoxLayout(criticalPointsPropertiesPage);
+
+    QLabel *criticalPointsTitle = new QLabel(
+        tr("Critical points"), criticalPointsPropertiesPage
+    );
+
+    QLabel *criticalPointsFileLabel = new QLabel(
+        tr("File:"), criticalPointsPropertiesPage
+    );
+
+    criticalPointsFile = new QLineEdit(criticalPointsPropertiesPage);
+
+    criticalPointsBrowse = new QToolButton(criticalPointsPropertiesPage);
+    criticalPointsBrowse->setText(tr("..."));
+    criticalPointsBrowse->setToolTip(
+        tr("Open file with critical points")
+    );
+
+    connect(criticalPointsBrowse, &QToolButton::clicked,
+            this, [this]() {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule->selectCriticalPointsFile();
+    });
+
+    connect(criticalPointsFile, &QLineEdit::returnPressed,
+            this, [this]() {
+
+        if (!criticalPointsPropertiesMolecule)
+            return;
+
+        if (!criticalPointsPropertiesMolecule->readCriticalPointsFile(
+                criticalPointsFile->text())) {
+
+            criticalPointsFile->setText(
+                QFileInfo(
+                    criticalPointsPropertiesMolecule->getCriticalPointsFilename()
+                ).fileName()
+            );
+        }
+    });
+
+    QHBoxLayout *criticalPointsFileLayout = new QHBoxLayout();
+
+    criticalPointsFileLayout->addWidget(criticalPointsFileLabel);
+    criticalPointsFileLayout->addWidget(criticalPointsFile);
+    criticalPointsFileLayout->addWidget(criticalPointsBrowse);
+
+    QGroupBox *criticalPointsAppearanceGroup = new QGroupBox(
+        tr("Critical points"), criticalPointsPropertiesPage
+    );
+
+    QGridLayout *criticalPointsAppearanceLayout =
+        new QGridLayout(criticalPointsAppearanceGroup);
+
+    const QString criticalPointsTypeNames[4] = {
+        tr("(3,+3) CP"),
+        tr("(3,+1) CP"),
+        tr("(3,-1) CP"),
+        tr("(3,-3) CP")
+    };
+
+    for (int i = 0; i < 4; ++i) {
+
+        criticalPointsVisible[i] = new QCheckBox(
+            criticalPointsTypeNames[i],
+            criticalPointsAppearanceGroup
+        );
+
+        criticalPointsColor[i] = new ColorButton(
+            QIcon(":/images/colores48.png"), tr("Color")
+        );
+
+        criticalPointsColor[i]->setSizePolicy(
+            QSizePolicy::Fixed, QSizePolicy::Fixed
+        );
+
+        connect(criticalPointsVisible[i], &QCheckBox::toggled,
+                this, [this, i](bool checked) {
+
+            if (criticalPointsPropertiesMolecule)
+                criticalPointsPropertiesMolecule->setCriticalPointVisible(
+                    i, checked
+                );
+        });
+
+        connect(criticalPointsColor[i], &QPushButton::clicked,
+                this, [this, i]() {
+
+            if (!criticalPointsPropertiesMolecule)
+                return;
+
+            const QColor color = QColorDialog::getColor(
+                criticalPointsPropertiesMolecule->getCriticalPointColor(i),
+                this
+            );
+
+            if (color.isValid())
+                criticalPointsPropertiesMolecule->setCriticalPointColor(
+                    i, color
+                );
+        });
+
+        criticalPointsAppearanceLayout->addWidget(
+            criticalPointsVisible[i], i, 0, Qt::AlignLeft
+        );
+
+        criticalPointsAppearanceLayout->addWidget(
+            criticalPointsColor[i], i, 1, Qt::AlignRight
+        );
+    }
+
+    QLabel *criticalPointsRadiusLabel = new QLabel(
+        tr("Ball radius:"), criticalPointsAppearanceGroup
+    );
+
+    criticalPointsRadius = new QSpinBox(
+        criticalPointsAppearanceGroup
+    );
+
+    criticalPointsRadius->setRange(1, 100);
+    criticalPointsRadius->setMaximumWidth(50);
+
+    connect(criticalPointsRadius,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule->setCriticalPointsRadius(value);
+    });
+
+    criticalPointsAppearanceLayout->addWidget(
+        criticalPointsRadiusLabel, 4, 0, Qt::AlignLeft
+    );
+
+    criticalPointsAppearanceLayout->addWidget(
+        criticalPointsRadius, 4, 1, Qt::AlignRight
+    );
+
+    // Critical points labels
+
+    QGroupBox *criticalPointsLabelsGroup = new QGroupBox(
+        tr("Labels"), criticalPointsPropertiesPage
+    );
+
+    QVBoxLayout *criticalPointsLabelsLayout =
+        new QVBoxLayout(criticalPointsLabelsGroup);
+
+    criticalPointsShowSymbols = new QCheckBox(
+        tr("CP symbols"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsShowIndices = new QCheckBox(
+        tr("CP indices"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsShowCoordinates = new QCheckBox(
+        tr("CP coordinates"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsShowValues = new QCheckBox(
+        tr("CP field values"), criticalPointsLabelsGroup
+    );
+
+    connect(criticalPointsShowSymbols, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule->setCriticalPointsShowSymbols(
+                checked
+            );
+    });
+
+    connect(criticalPointsShowIndices, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule->setCriticalPointsShowIndices(
+                checked
+            );
+    });
+
+    connect(criticalPointsShowCoordinates, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule->setCriticalPointsShowCoordinates(
+                checked
+            );
+    });
+
+    connect(criticalPointsShowValues, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule->setCriticalPointsShowValues(
+                checked
+            );
+    });
+
+    // Critical points coordinate precision
+
+    criticalPointsCoordinatesPrecisionLabel = new QLabel(
+        tr("Precision"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsCoordinatesPrecision = new QSpinBox(
+        criticalPointsLabelsGroup
+    );
+
+    criticalPointsCoordinatesPrecision->setRange(0, 7);
+    criticalPointsCoordinatesPrecision->setFixedWidth(50);
+    criticalPointsCoordinatesPrecision->setMinimumHeight(28);
+
+    QGridLayout *criticalPointsCoordinatesPrecisionLayout =
+        new QGridLayout();
+
+    criticalPointsCoordinatesPrecisionLayout->addWidget(
+        criticalPointsCoordinatesPrecisionLabel, 0, 0,
+        Qt::AlignVCenter
+    );
+
+    criticalPointsCoordinatesPrecisionLayout->addWidget(
+        criticalPointsCoordinatesPrecision, 0, 1,
+        Qt::AlignVCenter
+    );
+
+    criticalPointsCoordinatesPrecisionLayout->setColumnStretch(2, 1);
+
+    connect(criticalPointsCoordinatesPrecision,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int precision) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsCoordinatesPrecision(precision);
+    });
+
+    // Critical points coordinate units
+
+    criticalPointsAngstromUnits = new QRadioButton(
+        tr("angstrom"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsBohrUnits = new QRadioButton(
+        tr("bohr"), criticalPointsLabelsGroup
+    );
+
+    QHBoxLayout *criticalPointsUnitsLayout = new QHBoxLayout();
+
+    criticalPointsUnitsLayout->addWidget(criticalPointsAngstromUnits);
+    criticalPointsUnitsLayout->addWidget(criticalPointsBohrUnits);
+    criticalPointsUnitsLayout->addStretch();
+
+    connect(criticalPointsAngstromUnits, &QRadioButton::toggled,
+            this, [this](bool checked) {
+
+        if (checked && criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsCoordinatesAngstrom(true);
+    });
+
+    connect(criticalPointsBohrUnits, &QRadioButton::toggled,
+            this, [this](bool checked) {
+
+        if (checked && criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsCoordinatesAngstrom(false);
+    });
+
+
+    // Critical points field values precision
+
+    criticalPointsValuesPrecisionLabel = new QLabel(
+        tr("Precision"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsValuesPrecision = new QSpinBox(
+        criticalPointsLabelsGroup
+    );
+
+    criticalPointsValuesPrecision->setRange(0, 7);
+    criticalPointsValuesPrecision->setFixedWidth(50);
+    criticalPointsValuesPrecision->setMinimumHeight(28);
+
+    QGridLayout *criticalPointsValuesPrecisionLayout =
+        new QGridLayout();
+
+    criticalPointsValuesPrecisionLayout->addWidget(
+        criticalPointsValuesPrecisionLabel, 0, 0,
+        Qt::AlignVCenter
+    );
+
+    criticalPointsValuesPrecisionLayout->addWidget(
+        criticalPointsValuesPrecision, 0, 1,
+        Qt::AlignVCenter
+    );
+
+    criticalPointsValuesPrecisionLayout->setColumnStretch(2, 1);
+
+    connect(criticalPointsValuesPrecision,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int precision) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsValuesPrecision(precision);
+    });
+
+    criticalPointsLabelsLayout->addWidget(criticalPointsShowSymbols);
+    criticalPointsLabelsLayout->addWidget(criticalPointsShowIndices);
+    criticalPointsLabelsLayout->addWidget(criticalPointsShowCoordinates);
+
+    criticalPointsLabelsLayout->addLayout(
+        criticalPointsCoordinatesPrecisionLayout
+    );
+
+    criticalPointsLabelsLayout->addLayout(criticalPointsUnitsLayout);
+
+    criticalPointsLabelsLayout->addWidget(criticalPointsShowValues);
+
+    criticalPointsLabelsLayout->addLayout(
+        criticalPointsValuesPrecisionLayout
+    );
+
+    // Only selected critical points
+
+    criticalPointsOnlySelected = new QCheckBox(
+        tr("Only selected CPs"), criticalPointsLabelsGroup
+    );
+
+    connect(criticalPointsOnlySelected, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsOnlySelected(checked);
+    });
+
+    // Critical points selection buttons
+
+    criticalPointsSelectionLabel = new QLabel(
+        tr("Select:"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsSelectAll = new ColorButton(
+        tr("All"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsSelectNone = new ColorButton(
+        tr("None"), criticalPointsLabelsGroup
+    );
+
+    QColor criticalPointsAllColor(29, 124, 31);
+    QColor criticalPointsNoneColor(255, 0, 0);
+
+    criticalPointsSelectAll->setColor(&criticalPointsAllColor);
+    criticalPointsSelectNone->setColor(&criticalPointsNoneColor);
+
+    connect(criticalPointsSelectAll, &QPushButton::clicked,
+            this, [this]() {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule->selectAllCriticalPoints();
+    });
+
+    connect(criticalPointsSelectNone, &QPushButton::clicked,
+            this, [this]() {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule->deselectAllCriticalPoints();
+    });
+
+    // Selection layout
+
+    QHBoxLayout *criticalPointsSelectionLayout = new QHBoxLayout();
+
+    criticalPointsSelectionLayout->addWidget(
+        criticalPointsSelectionLabel
+    );
+
+    criticalPointsSelectionLayout->addWidget(criticalPointsSelectAll);
+    criticalPointsSelectionLayout->addWidget(criticalPointsSelectNone);
+    criticalPointsSelectionLayout->addStretch();
+
+    criticalPointsLabelsLayout->addWidget(criticalPointsOnlySelected);
+
+    criticalPointsLabelsLayout->addLayout(
+        criticalPointsSelectionLayout
+    );
+
+    // Critical points labels vertical shift
+
+    QLabel *criticalPointsLabelsVerticalShiftLabel = new QLabel(
+        tr("Vertical shift"), criticalPointsLabelsGroup
+    );
+
+    criticalPointsLabelsVerticalShift = new QSpinBox(
+        criticalPointsLabelsGroup
+    );
+
+    criticalPointsLabelsVerticalShift->setRange(-150, 150);
+    criticalPointsLabelsVerticalShift->setMaximumWidth(70);
+
+    connect(criticalPointsLabelsVerticalShift,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsLabelsVerticalShift(value);
+    });
+
+    QHBoxLayout *criticalPointsLabelsVerticalShiftLayout =
+        new QHBoxLayout();
+
+    criticalPointsLabelsVerticalShiftLayout->addWidget(
+        criticalPointsLabelsVerticalShiftLabel
+    );
+
+    criticalPointsLabelsVerticalShiftLayout->addWidget(
+        criticalPointsLabelsVerticalShift
+    );
+
+    criticalPointsLabelsVerticalShiftLayout->addStretch();
+
+    // Critical points labels font
+
+    criticalPointsLabelsFont = new QPushButton(
+        QIcon(":/images/fonts48.png"),
+        tr("Font"),
+        criticalPointsLabelsGroup
+    );
+
+    connect(criticalPointsLabelsFont, &QPushButton::clicked,
+            this, [this]() {
+
+        if (!criticalPointsPropertiesMolecule)
+            return;
+
+        bool ok = false;
+
+        const QFont font = QFontDialog::getFont(
+            &ok,
+            criticalPointsPropertiesMolecule->getCriticalPointsLabelsFont(),
+            this
+        );
+
+        if (ok && criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsLabelsFont(font);
+    });
+
+    // Critical points labels color
+
+    criticalPointsLabelsColor = new ColorButton(
+        criticalPointsLabelsGroup
+    );
+
+    criticalPointsLabelsColor->setIcon(
+        QIcon(":/images/fonts48.png")
+    );
+
+    criticalPointsLabelsColor->setText(tr("Color"));
+
+    connect(criticalPointsLabelsColor, &QPushButton::clicked,
+            this, [this]() {
+
+        if (!criticalPointsPropertiesMolecule)
+            return;
+
+        const QColor color = QColorDialog::getColor(
+            criticalPointsPropertiesMolecule->getCriticalPointsLabelsColor(),
+            this
+        );
+
+        if (color.isValid() && criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsLabelsColor(color);
+    });
+
+    QHBoxLayout *criticalPointsLabelsFontLayout =
+        new QHBoxLayout();
+
+    criticalPointsLabelsFontLayout->addStretch();
+    criticalPointsLabelsFontLayout->addWidget(criticalPointsLabelsFont);
+    criticalPointsLabelsFontLayout->addWidget(criticalPointsLabelsColor);
+    criticalPointsLabelsFontLayout->addStretch();
+
+    criticalPointsLabelsLayout->addLayout(
+        criticalPointsLabelsVerticalShiftLayout
+    );
+
+    criticalPointsLabelsLayout->addLayout(
+        criticalPointsLabelsFontLayout
+    );
+
+    // Hessian eigenvectors
+
+    criticalPointsEigenvectorsGroup = new QGroupBox(
+        tr("Hessian eigenvectors"), criticalPointsPropertiesPage
+    );
+
+    QVBoxLayout *criticalPointsEigenvectorsLayout =
+        new QVBoxLayout(criticalPointsEigenvectorsGroup);
+
+    criticalPointsEigenvectorsVisible = new QCheckBox(
+        tr("Display hessian eigenvectors"),
+        criticalPointsEigenvectorsGroup
+    );
+
+    connect(criticalPointsEigenvectorsVisible, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsEigenvectorsVisible(checked);
+    });
+
+    criticalPointsEigenvectorsLayout->addWidget(
+        criticalPointsEigenvectorsVisible
+    );
+
+    // Hessian eigenvectors colors
+
+    QGridLayout *criticalPointsEigenvectorsColorsLayout =
+        new QGridLayout();
+
+    const QString criticalPointsEigenvectorNames[3] = {
+        tr("Highest abs. eigenvalue"),
+        tr("Interm. abs. eigenvalue"),
+        tr("Lowest abs. eigenvalue")
+    };
+
+    for (int i = 0; i < 3; ++i) {
+
+        QLabel *label = new QLabel(
+            criticalPointsEigenvectorNames[i],
+            criticalPointsEigenvectorsGroup
+        );
+
+        criticalPointsEigenvectorColor[i] = new ColorButton(
+            QIcon(":/images/colores48.png"), tr("Color")
+        );
+
+        criticalPointsEigenvectorColor[i]->setSizePolicy(
+            QSizePolicy::Fixed, QSizePolicy::Fixed
+        );
+
+        connect(criticalPointsEigenvectorColor[i],
+                &QPushButton::clicked,
+                this, [this, i]() {
+
+            if (!criticalPointsPropertiesMolecule)
+                return;
+
+            const QColor color = QColorDialog::getColor(
+                criticalPointsPropertiesMolecule
+                    ->getCriticalPointsEigenvectorColor(i),
+                this
+            );
+
+            if (color.isValid())
+                criticalPointsPropertiesMolecule
+                    ->setCriticalPointsEigenvectorColor(i, color);
+        });
+
+        criticalPointsEigenvectorsColorsLayout->addWidget(
+            label, i, 0, Qt::AlignLeft
+        );
+
+        criticalPointsEigenvectorsColorsLayout->addWidget(
+            criticalPointsEigenvectorColor[i], i, 1, Qt::AlignRight
+        );
+    }
+
+    criticalPointsEigenvectorsLayout->addLayout(
+        criticalPointsEigenvectorsColorsLayout
+    );
+
+    // Hessian eigenvectors geometry
+
+    QLabel *criticalPointsEigenvectorsThicknessLabel = new QLabel(
+        tr("Vectors thickness"), criticalPointsEigenvectorsGroup
+    );
+
+    criticalPointsEigenvectorsThickness = new QSpinBox(
+        criticalPointsEigenvectorsGroup
+    );
+
+    criticalPointsEigenvectorsThickness->setRange(1, 50);
+    criticalPointsEigenvectorsThickness->setMaximumWidth(50);
+
+
+    QLabel *criticalPointsEigenvectorsLengthLabel = new QLabel(
+        tr("Vectors length"), criticalPointsEigenvectorsGroup
+    );
+
+    criticalPointsEigenvectorsLength = new QSpinBox(
+        criticalPointsEigenvectorsGroup
+    );
+
+    criticalPointsEigenvectorsLength->setRange(1, 100);
+    criticalPointsEigenvectorsLength->setMaximumWidth(50);
+
+
+    QLabel *criticalPointsEigenvectorsArrowLengthLabel = new QLabel(
+        tr("Arrows length"), criticalPointsEigenvectorsGroup
+    );
+
+    criticalPointsEigenvectorsArrowLength = new QSpinBox(
+        criticalPointsEigenvectorsGroup
+    );
+
+    criticalPointsEigenvectorsArrowLength->setRange(1, 50);
+    criticalPointsEigenvectorsArrowLength->setMaximumWidth(50);
+
+
+    QLabel *criticalPointsEigenvectorsArrowWidthLabel = new QLabel(
+        tr("Arrows width"), criticalPointsEigenvectorsGroup
+    );
+
+    criticalPointsEigenvectorsArrowWidth = new QSpinBox(
+        criticalPointsEigenvectorsGroup
+    );
+
+    criticalPointsEigenvectorsArrowWidth->setRange(1, 50);
+    criticalPointsEigenvectorsArrowWidth->setMaximumWidth(50);
+
+    connect(criticalPointsEigenvectorsThickness,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsEigenvectorsThickness(value);
+    });
+
+    connect(criticalPointsEigenvectorsLength,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsEigenvectorsLength(value);
+    });
+
+    connect(criticalPointsEigenvectorsArrowLength,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsEigenvectorsArrowLength(value);
+    });
+
+    connect(criticalPointsEigenvectorsArrowWidth,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (criticalPointsPropertiesMolecule)
+            criticalPointsPropertiesMolecule
+                ->setCriticalPointsEigenvectorsArrowWidth(value);
+    });
+
+    QGridLayout *criticalPointsEigenvectorsGeometryLayout =
+        new QGridLayout();
+
+    criticalPointsEigenvectorsGeometryLayout->addWidget(
+        criticalPointsEigenvectorsThicknessLabel, 0, 0
+    );
+
+    criticalPointsEigenvectorsGeometryLayout->addWidget(
+        criticalPointsEigenvectorsThickness, 0, 1
+    );
+
+    criticalPointsEigenvectorsGeometryLayout->addWidget(
+        criticalPointsEigenvectorsLengthLabel, 1, 0
+    );
+
+    criticalPointsEigenvectorsGeometryLayout->addWidget(
+        criticalPointsEigenvectorsLength, 1, 1
+    );
+
+    criticalPointsEigenvectorsGeometryLayout->addWidget(
+        criticalPointsEigenvectorsArrowLengthLabel, 2, 0
+    );
+
+    criticalPointsEigenvectorsGeometryLayout->addWidget(
+        criticalPointsEigenvectorsArrowLength, 2, 1
+    );
+
+    criticalPointsEigenvectorsGeometryLayout->addWidget(
+        criticalPointsEigenvectorsArrowWidthLabel, 3, 0
+    );
+
+    criticalPointsEigenvectorsGeometryLayout->addWidget(
+        criticalPointsEigenvectorsArrowWidth, 3, 1
+    );
+
+    criticalPointsEigenvectorsGeometryLayout->setColumnStretch(2, 1);
+
+    criticalPointsEigenvectorsLayout->addLayout(
+        criticalPointsEigenvectorsGeometryLayout
+    );
+
+    criticalPointsLayout->addWidget(criticalPointsTitle);
+    criticalPointsLayout->addLayout(criticalPointsFileLayout);
+    criticalPointsLayout->addWidget(criticalPointsAppearanceGroup);
+    criticalPointsLayout->addWidget(criticalPointsLabelsGroup);
+    criticalPointsLayout->addWidget(criticalPointsEigenvectorsGroup);
+    criticalPointsLayout->addStretch();
+
+    propertiesStack->addWidget(criticalPointsPropertiesPage);
 
     // Add scene explorer and properties panel to splitter
 
@@ -5537,6 +6262,47 @@ void glWidget::updateWindowDialog(MyDockWidget *gdock){
         disconnect(fieldLinesArrowsGeometryConnection);
         fieldLinesArrowsGeometryConnection = QMetaObject::Connection();
 
+        disconnect(criticalPointsFileConnection);
+        criticalPointsFileConnection = QMetaObject::Connection();
+        disconnect(criticalPointsFileConnection);
+        criticalPointsFileConnection = QMetaObject::Connection();
+
+        disconnect(criticalPointsVisibilityConnection);
+        criticalPointsVisibilityConnection = QMetaObject::Connection();
+
+        disconnect(criticalPointsColorsConnection);
+        criticalPointsColorsConnection = QMetaObject::Connection();
+
+        disconnect(criticalPointsRadiusConnection);
+        criticalPointsRadiusConnection = QMetaObject::Connection();
+
+        disconnect(criticalPointsLabelsConnection);
+        criticalPointsLabelsConnection = QMetaObject::Connection();
+
+        disconnect(criticalPointsLabelsFormatConnection);
+        criticalPointsLabelsFormatConnection = QMetaObject::Connection();
+
+        disconnect(criticalPointsOnlySelectedConnection);
+        criticalPointsOnlySelectedConnection = QMetaObject::Connection();
+
+        disconnect(criticalPointsLabelsAppearanceConnection);
+        criticalPointsLabelsAppearanceConnection = QMetaObject::Connection();
+
+        disconnect(criticalPointsEigenvectorsVisibilityConnection);
+        criticalPointsEigenvectorsVisibilityConnection =
+            QMetaObject::Connection();
+
+        disconnect(criticalPointsEigenvectorsColorsConnection);
+        criticalPointsEigenvectorsColorsConnection =
+            QMetaObject::Connection();
+
+        disconnect(criticalPointsEigenvectorsGeometryConnection);
+
+        criticalPointsEigenvectorsGeometryConnection =
+            QMetaObject::Connection();
+
+        criticalPointsPropertiesMolecule = nullptr;
+
         labelsPropertiesMolecule = nullptr;
 
         delete QDLwindow;
@@ -6198,6 +6964,274 @@ void moleculeDialog::renewwidth(QSize a){
     resize(a.width()-10,height());
 }
 
+void glWidget::updateCriticalPointsEigenvectorsProperties()
+{
+    molecule *mol = criticalPointsPropertiesMolecule;
+
+    if (!mol)
+        return;
+
+    const QSignalBlocker blockerVisibility(
+        criticalPointsEigenvectorsVisible
+    );
+
+    // Eigenvectors availability
+
+    criticalPointsEigenvectorsGroup->setVisible(
+        mol->getCriticalPointsEigenvectorsAvailable()
+    );
+
+    // Eigenvectors visibility
+
+    criticalPointsEigenvectorsVisible->setChecked(
+        mol->getCriticalPointsEigenvectorsVisible()
+    );
+
+    // Eigenvectors colors
+
+    for (int i = 0; i < 3; ++i) {
+
+        QColor color = mol->getCriticalPointsEigenvectorColor(i);
+
+        criticalPointsEigenvectorColor[i]->setColor(&color);
+    }
+
+    // Eigenvectors geometry
+
+    const QSignalBlocker blockerThickness(
+        criticalPointsEigenvectorsThickness
+    );
+
+    const QSignalBlocker blockerLength(
+        criticalPointsEigenvectorsLength
+    );
+
+    const QSignalBlocker blockerArrowLength(
+        criticalPointsEigenvectorsArrowLength
+    );
+
+    const QSignalBlocker blockerArrowWidth(
+        criticalPointsEigenvectorsArrowWidth
+    );
+
+    criticalPointsEigenvectorsThickness->setValue(
+        mol->getCriticalPointsEigenvectorsThickness()
+    );
+
+    criticalPointsEigenvectorsLength->setValue(
+        mol->getCriticalPointsEigenvectorsLength()
+    );
+
+    criticalPointsEigenvectorsArrowLength->setValue(
+        mol->getCriticalPointsEigenvectorsArrowLength()
+    );
+
+    criticalPointsEigenvectorsArrowWidth->setValue(
+        mol->getCriticalPointsEigenvectorsArrowWidth()
+    );
+}
+
+void glWidget::updateCriticalPointsLabelsProperties()
+{
+    molecule *mol = criticalPointsPropertiesMolecule;
+
+    if (!mol)
+        return;
+
+    const QSignalBlocker blockerSymbols(criticalPointsShowSymbols);
+    const QSignalBlocker blockerIndices(criticalPointsShowIndices);
+    const QSignalBlocker blockerCoordinates(criticalPointsShowCoordinates);
+    const QSignalBlocker blockerValues(criticalPointsShowValues);
+    const QSignalBlocker blockerOnlySelected(criticalPointsOnlySelected);
+
+    const QSignalBlocker blockerAngstrom(criticalPointsAngstromUnits);
+    const QSignalBlocker blockerBohr(criticalPointsBohrUnits);
+
+    const QSignalBlocker blockerCoordinatesPrecision(
+        criticalPointsCoordinatesPrecision
+    );
+
+    const QSignalBlocker blockerValuesPrecision(
+        criticalPointsValuesPrecision
+    );
+
+    const QSignalBlocker blockerVerticalShift(
+        criticalPointsLabelsVerticalShift
+    );
+
+    const bool showSymbols = mol->getCriticalPointsShowSymbols();
+    const bool showIndices = mol->getCriticalPointsShowIndices();
+    const bool showCoordinates = mol->getCriticalPointsShowCoordinates();
+    const bool showValues = mol->getCriticalPointsShowValues();
+    const bool onlySelected = mol->getCriticalPointsOnlySelected();
+    const bool showLabels =
+        showSymbols || showIndices || showCoordinates || showValues;
+
+    const bool angstromUnits = mol->getCriticalPointsCoordinatesAngstrom();
+
+    // Labels content
+
+    criticalPointsShowSymbols->setChecked(showSymbols);
+    criticalPointsShowIndices->setChecked(showIndices);
+    criticalPointsShowCoordinates->setChecked(showCoordinates);
+    criticalPointsShowValues->setChecked(showValues);
+
+    // Coordinate units
+
+    criticalPointsAngstromUnits->setChecked(angstromUnits);
+    criticalPointsBohrUnits->setChecked(!angstromUnits);
+
+    // Precision
+
+    criticalPointsCoordinatesPrecision->setValue(
+        mol->getCriticalPointsCoordinatesPrecision()
+    );
+
+    criticalPointsValuesPrecision->setValue(
+        mol->getCriticalPointsValuesPrecision()
+    );
+
+    // Controls visibility
+
+    criticalPointsCoordinatesPrecisionLabel->setVisible(showCoordinates);
+    criticalPointsCoordinatesPrecision->setVisible(showCoordinates);
+
+    criticalPointsAngstromUnits->setVisible(showCoordinates);
+    criticalPointsBohrUnits->setVisible(showCoordinates);
+
+    criticalPointsValuesPrecisionLabel->setVisible(showValues);
+    criticalPointsValuesPrecision->setVisible(showValues);
+
+    // Critical points selection
+
+    criticalPointsOnlySelected->setChecked(onlySelected);
+
+    criticalPointsOnlySelected->setVisible(showLabels);
+
+    criticalPointsSelectionLabel->setVisible(onlySelected);
+    criticalPointsSelectAll->setVisible(onlySelected);
+    criticalPointsSelectNone->setVisible(onlySelected);
+
+    // Critical points labels appearance
+
+    criticalPointsLabelsVerticalShift->setValue(
+        mol->getCriticalPointsLabelsVerticalShift()
+    );
+
+    QColor color = mol->getCriticalPointsLabelsColor();
+
+    criticalPointsLabelsColor->setColor(&color);
+}
+
+
+
+void glWidget::updateGeometryProperties()
+{
+    if (!geometryPropertiesMolecule)
+        return;
+
+    if (!geometryHideAtoms ||
+        !geometryHideBonds ||
+        !geometryHideHydrogens)
+        return;
+
+    QSignalBlocker blockAtoms(geometryHideAtoms);
+    QSignalBlocker blockBonds(geometryHideBonds);
+    QSignalBlocker blockHydrogens(geometryHideHydrogens);
+
+    geometryHideAtoms->setChecked(
+        geometryPropertiesMolecule->gethideatoms()
+    );
+
+    geometryHideBonds->setChecked(
+        geometryPropertiesMolecule->gethidebonds()
+    );
+
+    geometryHideHydrogens->setChecked(
+        geometryPropertiesMolecule->gethidehydrogens()
+    );
+}
+
+void glWidget::updateLabelsProperties()
+{
+    if (!labelsPropertiesMolecule ||
+        !labelsShowSymbols ||
+        !labelsShowIndices ||
+        !labelsShowCoordinates ||
+        !labelsCoordinatePrecision ||
+        !labelsCoordinatePrecisionLabel ||
+        !labelsAngstromUnits ||
+        !labelsBohrUnits ||
+        !labelsOnlySelectedAtoms ||
+        !labelsSelectAll ||
+        !labelsSelectNone ||
+        !labelsVerticalShift ||
+        !labelsVerticalShiftLabel ||
+        !labelsFontColor)
+        return;
+
+    QSignalBlocker blockSymbols(labelsShowSymbols);
+    QSignalBlocker blockIndices(labelsShowIndices);
+    QSignalBlocker blockCoordinates(labelsShowCoordinates);
+    QSignalBlocker blockPrecision(labelsCoordinatePrecision);
+    QSignalBlocker blockAngstrom(labelsAngstromUnits);
+    QSignalBlocker blockBohr(labelsBohrUnits);
+    QSignalBlocker blockOnlySelected(labelsOnlySelectedAtoms);
+    QSignalBlocker blockVerticalShift(labelsVerticalShift);
+
+    labelsShowSymbols->setChecked(
+        labelsPropertiesMolecule->getdrawatomsymbols()
+    );
+
+    labelsShowIndices->setChecked(
+        labelsPropertiesMolecule->getdrawatomindices()
+    );
+
+    const bool showCoordinates =
+        labelsPropertiesMolecule->getdrawatomcoords();
+
+    labelsShowCoordinates->setChecked(showCoordinates);
+
+    labelsCoordinatePrecision->setValue(
+        labelsPropertiesMolecule->getcoordprecision()
+    );
+
+    const bool angstrom = labelsPropertiesMolecule->getangstromcoor();
+
+    labelsAngstromUnits->setChecked(angstrom);
+    labelsBohrUnits->setChecked(!angstrom);
+    labelsOnlySelectedAtoms->setChecked(
+        labelsPropertiesMolecule->getonlyatomactive()
+    );
+
+    // Show precision controls only when coordinates are enabled
+    labelsCoordinatePrecisionLabel->setVisible(showCoordinates);
+    labelsCoordinatePrecision->setVisible(showCoordinates);
+    labelsAngstromUnits->setVisible(showCoordinates);
+    labelsBohrUnits->setVisible(showCoordinates);
+
+    const bool showSelectionControls =
+        labelsPropertiesMolecule->getdrawatomsymbols() ||
+        labelsPropertiesMolecule->getdrawatomindices() ||
+        labelsPropertiesMolecule->getdrawatomcoords();
+
+    labelsOnlySelectedAtoms->setVisible(showSelectionControls);
+
+    const bool showSelectionButtons =
+        showSelectionControls &&
+        labelsPropertiesMolecule->getonlyatomactive();
+
+    labelsSelectAll->setVisible(showSelectionButtons);
+    labelsSelectNone->setVisible(showSelectionButtons);
+
+    labelsVerticalShift->setValue(
+        labelsPropertiesMolecule->getlabelsvshift()
+    );
+
+    QColor color = labelsPropertiesMolecule->getfontcolor();
+    labelsFontColor->setColor(&color);
+}
+
 void glWidget::updateSelectedMoleculeProperties()
 {
     if (!sceneTree || !propertiesStack)
@@ -6258,9 +7292,38 @@ void glWidget::updateSelectedMoleculeProperties()
     disconnect(fieldLinesArrowsGeometryConnection);
     fieldLinesArrowsGeometryConnection = QMetaObject::Connection();
 
+    disconnect(criticalPointsFileConnection);
+    criticalPointsFileConnection = QMetaObject::Connection();
+
+    disconnect(criticalPointsLabelsConnection);
+    criticalPointsLabelsConnection = QMetaObject::Connection();
+
+    disconnect(criticalPointsLabelsFormatConnection);
+    criticalPointsLabelsFormatConnection = QMetaObject::Connection();
+
+    disconnect(criticalPointsOnlySelectedConnection);
+    criticalPointsOnlySelectedConnection = QMetaObject::Connection();
+
+    disconnect(criticalPointsLabelsAppearanceConnection);
+    criticalPointsLabelsAppearanceConnection = QMetaObject::Connection();
+
+    disconnect(criticalPointsEigenvectorsVisibilityConnection);
+    criticalPointsEigenvectorsVisibilityConnection =
+        QMetaObject::Connection();
+
+    disconnect(criticalPointsEigenvectorsColorsConnection);
+    criticalPointsEigenvectorsColorsConnection =
+        QMetaObject::Connection();
+
+    disconnect(criticalPointsEigenvectorsGeometryConnection);
+
+    criticalPointsEigenvectorsGeometryConnection =
+        QMetaObject::Connection();
+
     labelsPropertiesMolecule = nullptr;
     forcesPropertiesMolecule = nullptr;
     fieldLinesPropertiesMolecule = nullptr;
+    criticalPointsPropertiesMolecule = nullptr;
 
     QList<QTreeWidgetItem*> selectedItems =
         sceneTree->selectedItems();
@@ -6361,14 +7424,18 @@ void glWidget::updateSelectedMoleculeProperties()
 
         mol->addforces();
 
-        forcesFile->setText(mol->getForcesFilename());
+        forcesFile->setText(
+            QFileInfo(mol->getForcesFilename()).fileName()
+        );
 
         forcesFileConnection =
             connect(mol, &molecule::forcesFileChanged,
                     this, [this]() {
                 if (forcesPropertiesMolecule)
                     forcesFile->setText(
-                        forcesPropertiesMolecule->getForcesFilename()
+                        QFileInfo(
+                            forcesPropertiesMolecule->getForcesFilename()
+                        ).fileName()
                     );
             });
 
@@ -6630,9 +7697,133 @@ void glWidget::updateSelectedMoleculeProperties()
         break;
 
     case SceneNodeType::CriticalPoints:
-        label->setText(
-            tr("Critical points\n\nMolecule: %1").arg(mol->getname())
+
+        criticalPointsPropertiesMolecule = mol;
+
+        mol->addcriticalpoints();
+
+        criticalPointsFile->setText(
+            QFileInfo(mol->getCriticalPointsFilename()).fileName()
         );
+
+        for (int i = 0; i < 4; ++i) {
+
+            const QSignalBlocker blocker(criticalPointsVisible[i]);
+
+            criticalPointsVisible[i]->setChecked(
+                mol->getCriticalPointVisible(i)
+            );
+
+            QColor color = mol->getCriticalPointColor(i);
+
+            criticalPointsColor[i]->setColor(&color);
+        }
+
+        {
+            const QSignalBlocker blocker(criticalPointsRadius);
+
+            criticalPointsRadius->setValue(
+                mol->getCriticalPointsRadius()
+            );
+        }
+
+        criticalPointsFileConnection =
+            connect(mol, &molecule::criticalPointsFileChanged,
+                    this, [this]() {
+
+            if (!criticalPointsPropertiesMolecule)
+                return;
+
+            criticalPointsFile->setText(
+                QFileInfo(
+                    criticalPointsPropertiesMolecule->getCriticalPointsFilename()
+                ).fileName()
+            );
+
+            updateCriticalPointsEigenvectorsProperties();
+        });
+
+        criticalPointsVisibilityConnection =
+            connect(mol, &molecule::criticalPointsVisibilityChanged,
+                    this, [this]() {
+
+            if (!criticalPointsPropertiesMolecule)
+                return;
+
+            for (int i = 0; i < 4; ++i) {
+
+                const QSignalBlocker blocker(criticalPointsVisible[i]);
+
+                criticalPointsVisible[i]->setChecked(
+                    criticalPointsPropertiesMolecule->getCriticalPointVisible(i)
+                );
+            }
+        });
+
+        criticalPointsColorsConnection =
+            connect(mol, &molecule::criticalPointsColorsChanged,
+                    this, [this]() {
+
+            if (!criticalPointsPropertiesMolecule)
+                return;
+
+            for (int i = 0; i < 4; ++i) {
+
+                QColor color =
+                    criticalPointsPropertiesMolecule->getCriticalPointColor(i);
+
+                criticalPointsColor[i]->setColor(&color);
+            }
+        });
+
+        criticalPointsRadiusConnection =
+            connect(mol, &molecule::criticalPointsRadiusChanged,
+                    this, [this]() {
+
+            if (!criticalPointsPropertiesMolecule)
+                return;
+
+            const QSignalBlocker blocker(criticalPointsRadius);
+
+            criticalPointsRadius->setValue(
+                criticalPointsPropertiesMolecule->getCriticalPointsRadius()
+            );
+        });
+
+        updateCriticalPointsLabelsProperties();
+
+        criticalPointsLabelsConnection =
+            connect(mol, &molecule::criticalPointsLabelsChanged,
+                    this, &glWidget::updateCriticalPointsLabelsProperties);
+
+        criticalPointsLabelsFormatConnection =
+            connect(mol, &molecule::criticalPointsLabelsFormatChanged,
+                    this, &glWidget::updateCriticalPointsLabelsProperties);
+
+        criticalPointsOnlySelectedConnection =
+            connect(mol, &molecule::criticalPointsOnlySelectedChanged,
+                    this, &glWidget::updateCriticalPointsLabelsProperties);
+
+        criticalPointsLabelsAppearanceConnection =
+            connect(mol, &molecule::criticalPointsLabelsAppearanceChanged,
+                    this, &glWidget::updateCriticalPointsLabelsProperties);
+
+        updateCriticalPointsEigenvectorsProperties();
+
+        criticalPointsEigenvectorsVisibilityConnection =
+            connect(mol, &molecule::criticalPointsEigenvectorsVisibilityChanged,
+                    this, &glWidget::updateCriticalPointsEigenvectorsProperties);
+
+        criticalPointsEigenvectorsColorsConnection =
+            connect(mol, &molecule::criticalPointsEigenvectorsColorsChanged,
+                    this, &glWidget::updateCriticalPointsEigenvectorsProperties);
+
+        criticalPointsEigenvectorsGeometryConnection =
+            connect(mol, &molecule::criticalPointsEigenvectorsGeometryChanged,
+                    this, &glWidget::updateCriticalPointsEigenvectorsProperties);
+
+        propertiesStack->setCurrentWidget(criticalPointsPropertiesPage);
+
         break;
 
     case SceneNodeType::Surfaces:
@@ -6647,113 +7838,6 @@ void glWidget::updateSelectedMoleculeProperties()
         );
         break;
     }
-}
-
-void glWidget::updateGeometryProperties()
-{
-    if (!geometryPropertiesMolecule)
-        return;
-
-    if (!geometryHideAtoms ||
-        !geometryHideBonds ||
-        !geometryHideHydrogens)
-        return;
-
-    QSignalBlocker blockAtoms(geometryHideAtoms);
-    QSignalBlocker blockBonds(geometryHideBonds);
-    QSignalBlocker blockHydrogens(geometryHideHydrogens);
-
-    geometryHideAtoms->setChecked(
-        geometryPropertiesMolecule->gethideatoms()
-    );
-
-    geometryHideBonds->setChecked(
-        geometryPropertiesMolecule->gethidebonds()
-    );
-
-    geometryHideHydrogens->setChecked(
-        geometryPropertiesMolecule->gethidehydrogens()
-    );
-}
-
-void glWidget::updateLabelsProperties()
-{
-    if (!labelsPropertiesMolecule ||
-        !labelsShowSymbols ||
-        !labelsShowIndices ||
-        !labelsShowCoordinates ||
-        !labelsCoordinatePrecision ||
-        !labelsCoordinatePrecisionLabel ||
-        !labelsAngstromUnits ||
-        !labelsBohrUnits ||
-        !labelsOnlySelectedAtoms ||
-        !labelsSelectAll ||
-        !labelsSelectNone ||
-        !labelsVerticalShift ||
-        !labelsVerticalShiftLabel ||
-        !labelsFontColor)
-        return;
-
-    QSignalBlocker blockSymbols(labelsShowSymbols);
-    QSignalBlocker blockIndices(labelsShowIndices);
-    QSignalBlocker blockCoordinates(labelsShowCoordinates);
-    QSignalBlocker blockPrecision(labelsCoordinatePrecision);
-    QSignalBlocker blockAngstrom(labelsAngstromUnits);
-    QSignalBlocker blockBohr(labelsBohrUnits);
-    QSignalBlocker blockOnlySelected(labelsOnlySelectedAtoms);
-    QSignalBlocker blockVerticalShift(labelsVerticalShift);
-
-    labelsShowSymbols->setChecked(
-        labelsPropertiesMolecule->getdrawatomsymbols()
-    );
-
-    labelsShowIndices->setChecked(
-        labelsPropertiesMolecule->getdrawatomindices()
-    );
-
-    const bool showCoordinates =
-        labelsPropertiesMolecule->getdrawatomcoords();
-
-    labelsShowCoordinates->setChecked(showCoordinates);
-
-    labelsCoordinatePrecision->setValue(
-        labelsPropertiesMolecule->getcoordprecision()
-    );
-
-    const bool angstrom = labelsPropertiesMolecule->getangstromcoor();
-
-    labelsAngstromUnits->setChecked(angstrom);
-    labelsBohrUnits->setChecked(!angstrom);
-    labelsOnlySelectedAtoms->setChecked(
-        labelsPropertiesMolecule->getonlyatomactive()
-    );
-
-    // Show precision controls only when coordinates are enabled
-    labelsCoordinatePrecisionLabel->setVisible(showCoordinates);
-    labelsCoordinatePrecision->setVisible(showCoordinates);
-    labelsAngstromUnits->setVisible(showCoordinates);
-    labelsBohrUnits->setVisible(showCoordinates);
-
-    const bool showSelectionControls =
-        labelsPropertiesMolecule->getdrawatomsymbols() ||
-        labelsPropertiesMolecule->getdrawatomindices() ||
-        labelsPropertiesMolecule->getdrawatomcoords();
-
-    labelsOnlySelectedAtoms->setVisible(showSelectionControls);
-
-    const bool showSelectionButtons =
-        showSelectionControls &&
-        labelsPropertiesMolecule->getonlyatomactive();
-
-    labelsSelectAll->setVisible(showSelectionButtons);
-    labelsSelectNone->setVisible(showSelectionButtons);
-
-    labelsVerticalShift->setValue(
-        labelsPropertiesMolecule->getlabelsvshift()
-    );
-
-    QColor color = labelsPropertiesMolecule->getfontcolor();
-    labelsFontColor->setColor(&color);
 }
 
 

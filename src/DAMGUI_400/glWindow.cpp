@@ -1326,19 +1326,16 @@ void glWindow::drawcplabels(QPainter *painter, QRect viewport, int i){
             if (molecules->at(i)->cps->getdrawcpssymbols())
                 string = CPtypes[type];
             if (molecules->at(i)->cps->getdrawcpsindices())
-                string.append(QString("%1").arg(j+1));
-            QSize fmsize = fm.size( Qt::TextSingleLine, string );
+                string.append(QString("%1").arg(j+1));;
             if (molecules->at(i)->cps->getdrawcpsvalues()){
                 if (string.length() > 0){
                     string.append("\n");
                     string.append(QString::number( molecules->at(i)->cps->cpsxyzval[type].at(j).w(), 'g',
                             molecules->at(i)->cps->getcpprecision()));
-                    fmsize = fm.size( Qt::TextWordWrap, string );
                 }
                 else{
                     string = QString::number( molecules->at(i)->cps->cpsxyzval[type].at(j).w(), 'g',
                             molecules->at(i)->cps->getcpprecision() );
-                    fmsize = fm.size( Qt::TextSingleLine, string );
                 }
             }
             if (molecules->at(i)->cps->getdrawcpscoords()){
@@ -1357,7 +1354,6 @@ void glWindow::drawcplabels(QPainter *painter, QRect viewport, int i){
                         .arg( QString::number(funits*xyzcp.z(), 'g',
                             molecules->at(i)->cps->getcpcoordprecision()))
                             );
-                    fmsize = fm.size( Qt::TextWordWrap, string );
                 }
                 else{
                     string.append(QString("(%1,%2,%3)")
@@ -1368,9 +1364,9 @@ void glWindow::drawcplabels(QPainter *painter, QRect viewport, int i){
                       .arg( QString::number(funits*xyzcp.z(), 'g',
                           molecules->at(i)->cps->getcpcoordprecision()))
                             );
-                    fmsize = fm.size( Qt::TextSingleLine, string );
                 }
             }
+            const QSize fmsize = fm.size(Qt::AlignCenter, string);
             QRect rect = QRect(win.x()-0.5f*fmsize.width(),
                     viewport.height()-(win.y()+0.5f*fmsize.height())-molecules->at(i)->cps->getcpvshift(),
                     fmsize.width(), fmsize.height()) ;

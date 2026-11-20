@@ -332,15 +332,16 @@ private:
 
     QString selectSettingsSaveFile();
 
+    void updateCriticalPointsEigenvectorsProperties();
+    void updateCriticalPointsLabelsProperties();
+    void updateGeometryProperties();
+    void updateLabelsProperties();
+    void updateSelectedMoleculeProperties();
     void writeLightsSettings(SettingsWriter& writer);
     void writeBackgroundSettings(SettingsWriter& writer);
     void writeBallsAndCylindersSettings(SettingsWriter& writer);
     void writeViewportSettings(SettingsWriter& writer);
     void writeMoleculesSettings(SettingsWriter& writer);
-
-    void updateSelectedMoleculeProperties();
-    void updateGeometryProperties();
-    void updateLabelsProperties();
 
 
     bool angstrom;
@@ -382,9 +383,16 @@ private:
     int speed;
     int windownumber;
 
+    ColorButton *criticalPointsColor[4] = {};
+    ColorButton *criticalPointsEigenvectorColor[3] = {};
+    ColorButton *criticalPointsLabelsColor = nullptr;
+    ColorButton *criticalPointsSelectAll = nullptr;
+    ColorButton *criticalPointsSelectNone = nullptr;
     ColorButton *fieldLinesColor = nullptr;
     ColorButton *forcesColorButton[5] = {nullptr};
     ColorButton *labelsFontColor = nullptr;
+    ColorButton *labelsSelectAll = nullptr;
+    ColorButton *labelsSelectNone = nullptr;
 
     DoubleSpinBox *SPBbondthres;
 
@@ -394,6 +402,7 @@ private:
 
     myScrollArea *scrollArea;
 
+    molecule *criticalPointsPropertiesMolecule = nullptr;
     molecule *geometryPropertiesMolecule = nullptr;
     molecule *fieldLinesPropertiesMolecule = nullptr;
     molecule *forcesPropertiesMolecule = nullptr;
@@ -412,6 +421,13 @@ private:
     QCheckBox *CHKsettingsrot;
     QCheckBox *CHKsettingssurf;
     QCheckBox *CHKsettingsviewport;
+    QCheckBox *criticalPointsEigenvectorsVisible = nullptr;
+    QCheckBox *criticalPointsOnlySelected = nullptr;
+    QCheckBox *criticalPointsShowCoordinates = nullptr;
+    QCheckBox *criticalPointsShowIndices = nullptr;
+    QCheckBox *criticalPointsShowSymbols = nullptr;
+    QCheckBox *criticalPointsShowValues = nullptr;
+    QCheckBox *criticalPointsVisible[4] = {};
     QCheckBox *fieldLinesArrowsVisible = nullptr;
     QCheckBox *fieldLinesVisible = nullptr;
     QCheckBox *forcesVisibleCheck[5] = {nullptr};
@@ -453,10 +469,15 @@ private:
     QGroupBox *FRMsettings;
     QGroupBox *FRMtranslation;
     QGroupBox *FRMviewport;
+    QGroupBox *criticalPointsEigenvectorsGroup = nullptr;
 
+    QLabel *criticalPointsCoordinatesPrecisionLabel = nullptr;
+    QLabel *criticalPointsSelectionLabel = nullptr;
+    QLabel *criticalPointsValuesPrecisionLabel = nullptr;
     QLabel *labelsCoordinatePrecisionLabel = nullptr;
     QLabel *labelsVerticalShiftLabel = nullptr;
 
+    QLineEdit *criticalPointsFile = nullptr;
     QLineEdit *fieldLinesFile = nullptr;
     QLineEdit *forcesFile = nullptr;
 
@@ -464,6 +485,18 @@ private:
     QList<QMetaObject::Connection> connections;         // Stores connections to release in destructor
     QList<QCheckBox*> visibilityBoxes;          // Stores boxes for hide/show molecules
 
+
+    QMetaObject::Connection criticalPointsColorsConnection;
+    QMetaObject::Connection criticalPointsEigenvectorsColorsConnection;
+    QMetaObject::Connection criticalPointsEigenvectorsGeometryConnection;
+    QMetaObject::Connection criticalPointsEigenvectorsVisibilityConnection;
+    QMetaObject::Connection criticalPointsFileConnection;
+    QMetaObject::Connection criticalPointsLabelsAppearanceConnection;
+    QMetaObject::Connection criticalPointsLabelsConnection;
+    QMetaObject::Connection criticalPointsLabelsFormatConnection;
+    QMetaObject::Connection criticalPointsOnlySelectedConnection;
+    QMetaObject::Connection criticalPointsRadiusConnection;
+    QMetaObject::Connection criticalPointsVisibilityConnection;
     QMetaObject::Connection fieldLinesArrowsVisibilityConnection;
     QMetaObject::Connection fieldLinesArrowsGeometryConnection;
     QMetaObject::Connection fieldLinesColorConnection;
@@ -499,13 +532,14 @@ private:
     QPushButton *BTNsettings;
     QPushButton *BTNtranslation;
     QPushButton *BTNviewport;
-    ColorButton *labelsSelectAll = nullptr;
-    ColorButton *labelsSelectNone = nullptr;
+    QPushButton *criticalPointsLabelsFont = nullptr;
     QPushButton *labelsFont = nullptr;
     QToolButton *forcesBrowse = nullptr;
 
     QQuaternion rotation;                   // Quaternion for rotation
 
+    QRadioButton *criticalPointsAngstromUnits = nullptr;
+    QRadioButton *criticalPointsBohrUnits = nullptr;
     QRadioButton *labelsAngstromUnits = nullptr;
     QRadioButton *labelsBohrUnits = nullptr;
 
@@ -513,6 +547,14 @@ private:
 
     QSize size;
 
+    QSpinBox *criticalPointsCoordinatesPrecision = nullptr;
+    QSpinBox *criticalPointsEigenvectorsArrowLength = nullptr;
+    QSpinBox *criticalPointsEigenvectorsArrowWidth = nullptr;
+    QSpinBox *criticalPointsEigenvectorsLength = nullptr;
+    QSpinBox *criticalPointsEigenvectorsThickness = nullptr;
+    QSpinBox *criticalPointsLabelsVerticalShift = nullptr;
+    QSpinBox *criticalPointsRadius = nullptr;
+    QSpinBox *criticalPointsValuesPrecision = nullptr;
     QSpinBox *labelsVerticalShift = nullptr;
     QSpinBox *fieldLinesArrowsLength = nullptr;
     QSpinBox *fieldLinesArrowsSpacing = nullptr;
@@ -544,6 +586,7 @@ private:
 
     QTimer *timer;
 
+    QToolButton *criticalPointsBrowse = nullptr;
     QToolButton *fieldLinesBrowse = nullptr;
 
     QVector < QVector <double> *> *chargescanvas;  // charges for EPIC optimization (mespimizer)
@@ -555,6 +598,7 @@ private:
     QVector3D lightPosition;                // Light position in world space
     QVector3D rotationAxis;                 // Rotation axis
 
+    QWidget *criticalPointsPropertiesPage = nullptr;
     QWidget *fieldLinesPropertiesPage = nullptr;
     QWidget *forcesPropertiesPage = nullptr;
     QWidget *geometryPropertiesPage = nullptr;
