@@ -1686,9 +1686,31 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     surfacesList = new QListWidget(surfacesPropertiesPage);
     surfacesList->setSelectionMode(QAbstractItemView::SingleSelection);
+    surfacesList->setSizePolicy(
+        QSizePolicy::Expanding,
+        QSizePolicy::Fixed
+    );
 
-    QPushButton *surfacesAddButton = new QPushButton(
-        tr("Add surface"), surfacesPropertiesPage
+    surfacesList->setVerticalScrollBarPolicy(
+        Qt::ScrollBarAsNeeded
+    );
+
+    surfacesList->setSizePolicy(
+        QSizePolicy::Expanding,
+        QSizePolicy::Fixed
+    );
+
+    surfacesList->setVerticalScrollBarPolicy(
+        Qt::ScrollBarAsNeeded
+    );
+
+    ColorButton *surfacesAddButton = new ColorButton(
+        tr("+ Add"), surfacesPropertiesPage
+    );
+    QColor addColor(29, 124, 31);
+    surfacesAddButton->setColor(&addColor);
+    surfacesAddButton->setSizePolicy(
+        QSizePolicy::Maximum, QSizePolicy::Fixed
     );
 
     connect(surfacesAddButton, &QPushButton::clicked,
@@ -1709,17 +1731,69 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
         mol->addsurface();
 
-        surfacesList->clear();
-
-        for (surface *surf : mol->surfaces) {
-            if (surf)
-                surfacesList->addItem(surf->getname());
-        }
+        updateSurfacesProperties();
     });
+
+    ColorButton *surfacesRemoveButton = new ColorButton(
+        tr("− Remove"), surfacesPropertiesPage
+    );
+    QColor removeColor(255, 0, 0);
+    surfacesRemoveButton->setColor(&removeColor);
+    surfacesRemoveButton->setSizePolicy(
+        QSizePolicy::Maximum, QSizePolicy::Fixed
+    );
+
+    surfacesRemoveButton->setEnabled(false);
+
+    connect(surfacesList, &QListWidget::itemSelectionChanged,
+            this, [this, surfacesRemoveButton]() {
+        surfacesRemoveButton->setEnabled(
+            surfacesList->currentItem() != nullptr
+        );
+    });
+
+    connect(surfacesRemoveButton, &QPushButton::clicked,
+            this, [this]() {
+
+        QListWidgetItem *item = surfacesList->currentItem();
+
+        if (!item)
+            return;
+
+        const QList<QTreeWidgetItem*> selectedItems =
+            sceneTree->selectedItems();
+
+        if (selectedItems.isEmpty())
+            return;
+
+        int i = selectedItems.first()->data(0, Qt::UserRole).toInt();
+
+        if (i < 0 || i >= molecules->count())
+            return;
+
+        molecule *mol = molecules->at(i);
+
+        int j = item->data(Qt::UserRole).toInt();
+
+        if (j < 0 || j >= mol->surfaces.count())
+            return;
+
+        mol->deletesurf(j);
+        updateSurfacesProperties();
+    });
+
+    QHBoxLayout *surfacesButtonsLayout = new QHBoxLayout();
+
+    surfacesButtonsLayout->setSpacing(8);
+
+    surfacesButtonsLayout->addStretch();
+    surfacesButtonsLayout->addWidget(surfacesAddButton);
+    surfacesButtonsLayout->addWidget(surfacesRemoveButton);
+    surfacesButtonsLayout->addStretch();
 
     surfacesLayout->addWidget(surfacesTitle);
     surfacesLayout->addWidget(surfacesList);
-    surfacesLayout->addWidget(surfacesAddButton);
+    surfacesLayout->addLayout(surfacesButtonsLayout);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);
@@ -7895,22 +7969,64 @@ void glWidget::updateSelectedMoleculeProperties()
         break;
 
     case SceneNodeType::Surfaces:
-
-        surfacesList->clear();
-
-        for (surface *surf : mol->surfaces) {
-            if (surf)
-                surfacesList->addItem(surf->getname());
-        }
-
+        updateSurfacesProperties();
         propertiesStack->setCurrentWidget(surfacesPropertiesPage);
-
         break;
 
     case SceneNodeType::Grids:
         propertiesStack->setCurrentWidget(gridsPropertiesPage);
         break;
     }
+}
+
+void glWidget::updateSurfacesProperties()
+{
+    if (!sceneTree || !surfacesList)
+        return;
+
+    surfacesList->clear();
+
+    const QList<QTreeWidgetItem*> selectedItems =
+        sceneTree->selectedItems();
+
+    if (selectedItems.isEmpty())
+        return;
+
+    int i = selectedItems.first()->data(0, Qt::UserRole).toInt();
+
+    if (i < 0 || i >= molecules->count())
+        return;
+
+    molecule *mol = molecules->at(i);
+
+    for (int j = 0; j < mol->surfaces.count(); ++j) {
+        surface *surf = mol->surfaces.at(j);
+
+        if (!surf)
+            continue;
+
+        QListWidgetItem *item = new QListWidgetItem(
+            surf->getname(), surfacesList
+        );
+
+        item->setData(Qt::UserRole, j);
+    }
+
+    const int maxVisibleRows = 5;
+
+    const int visibleRows = qBound(
+        1, surfacesList->count(), maxVisibleRows
+    );
+
+    const int rowHeight = surfacesList->sizeHintForRow(0) > 0
+        ? surfacesList->sizeHintForRow(0)
+        : surfacesList->fontMetrics().height() + 6;
+
+    const int listHeight =
+        visibleRows * rowHeight
+        + 2 * surfacesList->frameWidth();
+
+    surfacesList->setFixedHeight(listHeight);
 }
 
 

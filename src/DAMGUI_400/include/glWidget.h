@@ -338,6 +338,7 @@ private:
     void updateGeometryProperties();
     void updateLabelsProperties();
     void updateSelectedMoleculeProperties();
+    void updateSurfacesProperties();
     void writeLightsSettings(SettingsWriter& writer);
     void writeBackgroundSettings(SettingsWriter& writer);
     void writeBallsAndCylindersSettings(SettingsWriter& writer);

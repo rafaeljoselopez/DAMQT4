@@ -3262,6 +3262,7 @@ void molecule::deletesurf(int i){
         surfaces.removeAt(i);
         if (QDLeditMolecule)
             updateeditMoleculeDialog();
+        emitupdatedisplay();
     }
 }
 
@@ -3305,9 +3306,37 @@ bool molecule::loadsurf(){
     QString filename = filedialog.getOpenFileName(this,tr("Open a surface file"),path, tr("Allowed files")
             + " (*.srf *.sgh *.basins *.ellipsoid *.isoden *.isopot);;  *.srf *.sgh *.basins *.ellipsoid *.isoden *.isopot;; "
             + tr("All files")+" (*)");
+
     if (filename.length()==0){
         return false;
     }
+
+    // Prevent loading the same surface twice in the same molecule
+
+    const QString selectedPath =
+        QFileInfo(filename).canonicalFilePath();
+
+    for (int i = 0; i < surfaces.count() - 1; ++i) {
+        surface *surf = surfaces.at(i);
+
+        if (!surf)
+            continue;
+
+        const QString loadedPath =
+            QFileInfo(surf->getfullname()).canonicalFilePath();
+
+        if (selectedPath == loadedPath) {
+            QMessageBox::information(
+                this,
+                tr("Surface already loaded"),
+                tr("The selected surface is already loaded "
+                   "in this molecule.")
+                );
+
+            return false;
+        }
+    }
+
     QString suf=QFileInfo(filename).suffix().toLower();
     if (suf=="srf"){
         if (surfaces.last()->readsrfnew(filename)){
