@@ -62,10 +62,15 @@ END MODULE
     USE DAM_400_DATA_D, fA_orig => fA
     USE DAMPOT_400_D
     USE DAMSGHOLE_400_D
+    USE MVEE
     implicit none
     integer(KINT) :: jaux
     real(KREAL4) :: tarray(2), tiempo, dtime
     real(KREAL) :: xmax, xmin, ymax, ymin, zmax, zmin
+    real(KREAL) :: t1, t2
+    real(KREAL) :: centro(3), auxmat(3,3), radios(3), ejes(3,3)
+    real(KREAL4), allocatable :: vertices4(:,:)
+    logical :: exito
     
 #ifdef DBLPRCGRID
     real(KREAL) :: v4, x4, xini4, xfin4, y4, yini4, yfin4, z4, zini4, zfin4, drvxtot4, drvytot4, drvztot4, red4, green4, blue4
@@ -602,6 +607,12 @@ END MODULE
         endif
     endif
 !     Computes MED, MED gradient and MESP on the vertices
+
+    allocate (vertices4(3,kntvert), stat = ierr)
+    if (ierr /= 0) call error(1, 'Memory error allocating vertices4')
+
+    vertices4 = real(vertices, KREAL4)
+
     errabs = cero
     vmax = -1.d-90
     vmin = 1.d90
@@ -897,10 +908,32 @@ END MODULE
         write(69,*) fvarneg
         write(69,*) fdevtot
         write(69,*) fvarpos * fvarneg / (fvartot**2) 
-        call ellipsoid      ! Computes the geometry ellipsoid
-        write(69,*) eigvalmax
-        write(69,*) eigvalmed
-        write(69,*) eigvalmin
+
+        if (ldebug) call cpu_time(t1)
+
+        call MVEE_por_expansion(vertices4, kntvert, centro, radios, ejes, auxmat, exito, ldebug)
+
+        if (ldebug) call cpu_time(t2)
+
+        if (exito) then
+            if (ldebug) then
+                print *, "Computation time:", t2 - t1, "seconds"
+                print *, "Center:", centro
+                print *, "Radii:", radios
+                print *, "Orientation (axes as columns):"
+                do i = 1, 3
+                    print *, ejes(i, :)
+                end do
+            endif
+            call generar_triangulacion_elipsoide(centro, radios, ejes, nx, ny, nz, &
+                xini, xfin, yini, yfin, zini, zfin, trim(outrootname)//".ellipsoid", ldebug)
+        else
+            print *, "MVEE did not converge"
+        end if
+        write(69,*) dos*radios(1)
+        write(69,*) dos*radios(2)
+        write(69,*) dos*radios(3)
+        write(6,"(/'Dimensions of geometry ellipsoid: ',3(1x,e12.5))") dos*radios
     endif
     close(69)
     

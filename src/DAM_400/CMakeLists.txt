@@ -4,6 +4,10 @@ project(DAM_400)
 
 enable_language (C Fortran)
 
+# === AÑADIDO: Buscar LAPACK y BLAS ===
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+
 # Fortran compiler flags
 # ======================
 if (NOT CMAKE_Fortran_FLAGS_RELEASE)
@@ -29,6 +33,12 @@ set (utilities_EXECUTABLES "" )
 # Creates a library with modules
 # ==============================
 add_library(DAMGLOBAL_mods DAM_400_GLOBAL.F90)
+
+# Propagate BLAS/LAPACK dependencies to all executables using DAMGLOBAL_mods
+target_link_libraries(DAMGLOBAL_mods PUBLIC
+    LAPACK::LAPACK
+    BLAS::BLAS
+)
 
 # Create binaries
 # ===============

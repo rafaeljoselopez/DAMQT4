@@ -499,6 +499,538 @@ END MODULE
 !
 !                 END OF MODULE GAUSS
 !...............................................................................................
+
+!===============================================================================================
+!                 MODULE MVEE
+!===============================================================================================
+
+!***********************************************************************
+! Iterative expansion method for Minimum Volume Enclosing Ellipsoid (MVEE)
+!
+! This subroutine computes an ellipsoid that contains all input points by:
+!   1. Computing the inertia ellipsoid (based on covariance matrix)
+!   2. Iteratively scaling it until all points lie inside
+!
+! Arguments:
+!   puntos(3,n) - Input points (double precision)
+!   n           - Number of points
+!   centro(3)   - Output: ellipsoid center (centroid of points)
+!   radios(3)   - Output: ellipsoid radii (semi-axis lengths)
+!   ejes(3,3)   - Output: principal axes as COLUMNS (eigenvectors)
+!   A(3,3)      - Output: shape matrix such that (x-c)' * A * (x-c) = 1
+!   exito       - Output: .true. if successful, .false. otherwise
+!***********************************************************************
+module MVEE
+    USE DAM_400_D, only: KINT, KREAL, KREAL4
+    implicit none
+
+    ! Generic interfaces
+    interface MVEE_por_expansion
+        module procedure MVEE_por_expansion_double
+        module procedure MVEE_por_expansion_simple
+    end interface MVEE_por_expansion
+
+    interface generar_triangulacion_elipsoide
+        module procedure generar_triangulacion_elipsoide_simple
+        module procedure generar_triangulacion_elipsoide_double
+    end interface generar_triangulacion_elipsoide
+
+contains
+
+subroutine MVEE_por_expansion_double(puntos, n, centro, radios, ejes, A, exito, ldebug)
+    implicit none
+    real(KREAL), intent(in) :: puntos(3, n)
+    integer, intent(in) :: n
+    real(KREAL), intent(out) :: centro(3)
+    real(KREAL), intent(out) :: radios(3)
+    real(KREAL), intent(out) :: ejes(3,3)
+    real(KREAL), intent(out) :: A(3,3)
+    logical, intent(out) :: exito
+    logical, intent(in)  :: ldebug
+
+    ! Local variables
+    real(KREAL) :: cov(3,3)           ! Covariance matrix
+    real(KREAL) :: autovalores(3)      ! Eigenvalues of covariance matrix
+    real(KREAL) :: work_lapack(100)    ! Workspace for LAPACK
+    integer :: i, j, iter, info
+    real(KREAL) :: punto(3)             ! Temporary point vector
+    real(KREAL) :: proyeccion(3)        ! Projections onto principal axes
+    real(KREAL) :: dist_max(3)          ! Maximum projection on each axis
+    real(KREAL) :: dist_norm            ! Normalized distance (in ellipsoid coordinates)
+    real(KREAL) :: factor_max           ! Maximum scaling factor needed
+    real(KREAL), parameter :: tol = 1.0d-6     ! Convergence tolerance
+    integer, parameter :: max_iter = 20         ! Maximum number of iterations
+
+    ! --- Step 1: Center = mean of points ---
+    centro = sum(puntos, dim=2) / real(n, KREAL)
+
+    ! --- Step 2: Compute covariance matrix ---
+    cov = 0.d0
+    do i = 1, n
+        punto = puntos(:, i) - centro
+        do j = 1, 3
+            cov(j,1) = cov(j,1) + punto(j) * punto(1)
+            cov(j,2) = cov(j,2) + punto(j) * punto(2)
+            cov(j,3) = cov(j,3) + punto(j) * punto(3)
+        end do
+    end do
+    cov = cov / real(n, KREAL)
+
+    ! --- Step 3: Get principal axes (eigenvectors of covariance matrix) ---
+    ejes = cov
+    call DSYEV('V', 'U', 3, ejes, 3, autovalores, work_lapack, 100, info)
+    if (info /= 0) then
+        print *, "Error in DSYEV"
+        exito = .false.
+        return
+    end if
+
+    ! --- Step 4: Maximum projection on each axis (first approximation) ---
+    dist_max = 0.d0
+    do i = 1, n
+        punto = puntos(:, i) - centro
+        do j = 1, 3
+            proyeccion(j) = abs(dot_product(punto, ejes(:, j)))
+            if (proyeccion(j) > dist_max(j)) dist_max(j) = proyeccion(j)
+        end do
+    end do
+
+    radios = dist_max
+
+    if (ldebug) then
+        print *, "Maximum projection on principal axes:", dist_max
+        print *, "Initial radii:", radios
+    endif
+
+    ! --- Step 5: Iterative refinement loop ---
+    do iter = 1, max_iter
+        factor_max = 1.0d0
+
+        ! Find the point most outside the current ellipsoid
+        do i = 1, n
+            punto = puntos(:, i) - centro
+            dist_norm = 0.0d0
+            do j = 1, 3
+                proyeccion(j) = dot_product(punto, ejes(:, j))
+                dist_norm = dist_norm + (proyeccion(j) / radios(j))**2
+            end do
+            dist_norm = sqrt(dist_norm)
+
+            if (dist_norm > factor_max) then
+                factor_max = dist_norm
+            end if
+        end do
+
+        if (ldebug) print *, "Iteration", iter, ": factor_max =", factor_max
+
+        ! Convergence criterion
+        if (factor_max <= 1.0d0 + tol) then
+            if (ldebug) print *, "Convergence achieved in", iter, "iterations"
+            exit
+        end if
+
+        ! Scale radii
+        radios = radios * factor_max
+
+        if (iter == max_iter) then
+            print *, "Maximum number of iterations reached"
+        end if
+    end do
+
+    ! --- Step 6: Build matrix A (such that (x-c)' * A * (x-c) = 1) ---
+    A = 0.0d0
+    do i = 1, 3
+        A = A + matmul(ejes(:, i:i), transpose(ejes(:, i:i))) / (radios(i)**2)
+    end do
+
+    if (ldebug) then
+        print *, "Final ellipsoid:"
+        print *, "  Radii:", radios
+        print *, "  Principal axes (as columns):"
+        do i = 1, 3
+            print *, ejes(i, :)
+        end do
+    endif
+
+    exito = .true.
+
+    ! Final verification
+    if (ldebug) call verificar_contenedor(puntos, n, centro, A, radios)
+
+end subroutine MVEE_por_expansion_double
+
+
+!***********************************************************************
+! Single-precision wrapper for MVEE_por_expansion_iterativo
+!
+! This subroutine accepts single-precision (real(4)) input points,
+! converts them to double precision, and calls the main routine.
+!
+! Arguments:
+!   puntos(3,n) - Input points (single precision)
+!   n           - Number of points
+!   centro(3)   - Output: ellipsoid center (double precision)
+!   radios(3)   - Output: ellipsoid radii (double precision)
+!   ejes(3,3)   - Output: principal axes (double precision)
+!   A(3,3)      - Output: shape matrix (double precision)
+!   exito       - Output: .true. if successful, .false. otherwise
+!***********************************************************************
+subroutine MVEE_por_expansion_simple(puntos, n, centro, radios, ejes, A, exito, ldebug)
+    implicit none
+    ! Input arguments (single precision)
+    real(KREAL4), intent(in) :: puntos(3, n)
+    integer, intent(in)  :: n
+    ! Output arguments (double precision)
+    real(KREAL), intent(out) :: centro(3)
+    real(KREAL), intent(out) :: A(3,3)
+    real(KREAL), intent(out) :: radios(3)
+    real(KREAL), intent(out) :: ejes(3,3)
+    logical, intent(out) :: exito
+    logical, intent(in)  :: ldebug
+
+    ! Local variables (double precision)
+    real(8), allocatable :: puntos_dp(:,:)
+    integer :: i
+
+    if (ldebug) write(6,"(///'Entering MVEE_por_expansion_simple',///)")
+
+    ! Convert to double precision
+    allocate(puntos_dp(3, n))
+    puntos_dp = real(puntos, 8)  ! Explicit conversion to real(8)
+
+    ! Call the double-precision version
+    call MVEE_por_expansion_double(puntos_dp, n, centro, radios, ejes, A, exito, ldebug)
+
+    deallocate(puntos_dp)
+
+end subroutine MVEE_por_expansion_simple
+
+!***********************************************************************
+! Final verification subroutine
+!
+! Checks if all points lie inside the computed ellipsoid defined by:
+!   (x - centro)^T * A * (x - centro) = 1
+!
+! Arguments:
+!   puntos(3,n) - Input points to check
+!   n           - Number of points
+!   centro(3)   - Ellipsoid center
+!   A(3,3)      - Shape matrix (defines ellipsoid orientation and shape)
+!   radios(3)   - Ellipsoid radii (semi-axis lengths) [used for reporting]
+!***********************************************************************
+subroutine verificar_contenedor(puntos, n, centro, A, radios)
+    implicit none
+    real(KREAL), intent(in) :: puntos(3, n)
+    integer, intent(in) :: n
+    real(KREAL), intent(in) :: centro(3)
+    real(KREAL), intent(in) :: A(3,3)
+    real(KREAL), intent(in) :: radios(3)
+
+    ! Tolerance for considering a point outside the ellipsoid
+    ! Points with (x-c)'*A*(x-c) > 1 + thrsdst are counted as outside
+    real(KREAL), parameter :: thrsdst = 1.d-1
+
+    ! Local variables
+    real(KREAL) :: dist, max_dist, punto(3), work(3)
+    integer :: i, fuera
+
+    max_dist = 0.0d0
+    fuera = 0
+
+    ! Check each point
+    do i = 1, n
+        punto = puntos(:,i) - centro
+        work = matmul(A, punto)
+        dist = dot_product(punto, work)
+
+        ! Count points outside the tolerance threshold
+        if (dist > (1.d0 + thrsdst)) then
+            fuera = fuera + 1
+        end if
+
+        ! Track maximum distance for reporting
+        if (dist > max_dist) max_dist = dist
+    end do
+
+    ! Print verification results
+    print *, "========================================="
+    print *, "FINAL VERIFICATION"
+    print *, "========================================="
+    print *, "  Points outside (tolerance ", thrsdst, "):", fuera, "out of", n
+    if (fuera == 0) then
+        print *, "  ✓ CORRECT ELLIPSOID: all points contained"
+    else
+        print *, "  ✗ ERROR: some points are outside"
+    end if
+    print *, "  Maximum distance from surface:", sqrt(max_dist) - 1.0d0
+    print *, "========================================="
+
+end subroutine verificar_contenedor
+
+
+!***********************************************************************
+! Subroutine: generar_triangulacion_elipsoide
+!
+! Generates a triangular mesh of an ellipsoid defined by its radii and axes,
+! computes outward normals at vertices, and saves everything to a binary file.
+!
+! The ellipsoid equation: (x - centro)^T * A * (x - centro) = 1
+! where A = sum_{i=1..3} (eje_i * eje_i^T) / radios(i)^2
+!
+! Output binary file format:
+!   Header:
+!     integer(4) :: nx, ny, nz
+!     real(8)    :: xini, xfin, yini, yfin, zini, zfin
+!   Vertex data (for i = 1 to nvertices):
+!     real(8)    :: x, y, z, grad_x, grad_y, grad_z
+!   Triangle indices (for i = 1 to ntriangles):
+!     integer(4) :: i1, i2, i3
+!
+! Arguments:
+!   centro(3)    - Ellipsoid center
+!   radios(3)    - Ellipsoid radii (semi-axis lengths)
+!   ejes(3,3)    - Principal axes as COLUMNS (eigenvectors)
+!   nx, ny, nz   - Grid dimensions that contain the ellipsoid
+!   xini, xfin, yini, yfin, zini, zfin - Grid bounds
+!   filename     - Output binary file name
+!***********************************************************************
+subroutine generar_triangulacion_elipsoide_simple(centro, radios, ejes, &
+                                          nx, ny, nz, &
+                                          xini, xfin, yini, yfin, zini, zfin, &
+                                          filename, ldebug)
+    implicit none
+    real(KREAL), intent(in) :: centro(3)
+    real(KREAL), intent(in) :: radios(3)
+    real(KREAL), intent(in) :: ejes(3,3)
+    integer, intent(in) :: nx, ny, nz
+    real(KREAL4), intent(in) :: xini, xfin, yini, yfin, zini, zfin
+    character(len=*), intent(in) :: filename
+    logical, intent(in) :: ldebug
+
+    ! Local variables
+    integer, parameter :: dp = 8
+    real(8), parameter :: pi = 3.14159265358979323846_dp
+
+    ! Mesh parameters
+    integer, parameter :: ntheta = 30      ! Number of latitude divisions
+    integer, parameter :: nphi = 30        ! Number of longitude divisions
+    integer :: nvertices, ntriangles
+    integer :: i, j, k, idx
+
+    ! Vertex coordinates in unit sphere space
+    real(8) :: theta, phi
+    real(8) :: x_unit, y_unit, z_unit
+
+    ! Vertex coordinates in ellipsoid space
+    real(KREAL4), allocatable :: vertices(:,:)
+    real(KREAL4), allocatable :: normals(:,:)
+    integer, allocatable :: triangles(:,:)
+
+    ! Temporary variables
+    real(KREAL) :: punto(3), normal(3), grad(3)
+    real(KREAL) :: M(3,3)  ! Matrix to transform unit sphere to ellipsoid
+
+    ! Calculate number of vertices and triangles
+    nvertices = (ntheta - 1) * nphi + 2  ! +2 for poles
+    ntriangles = 2 * (ntheta - 2) * nphi + 2 * nphi
+
+    if (ldebug) then
+        print *, "Generating ellipsoid mesh:"
+        print *, "  Latitudes (theta):", ntheta
+        print *, "  Longitudes (phi):", nphi
+        print *, "  Vertices:", nvertices
+        print *, "  Triangles:", ntriangles
+    endif
+
+    ! Allocate arrays
+    allocate(vertices(3, nvertices))
+    allocate(normals(3, nvertices))
+    allocate(triangles(3, ntriangles))
+
+    ! Build transformation matrix from unit sphere to ellipsoid
+    ! x_ellip = centro + M * x_unit
+    ! where M = [ejes(:,1)*radios(1), ejes(:,2)*radios(2), ejes(:,3)*radios(3)]
+    do i = 1, 3
+        M(:,i) = ejes(:,i) * radios(i)
+    end do
+
+    !-----------------------------------------------------------------------
+    ! Generate vertices and normals
+    !-----------------------------------------------------------------------
+    idx = 0
+
+    ! North pole (theta = pi)
+    idx = idx + 1
+    x_unit = 0.0_dp
+    y_unit = 0.0_dp
+    z_unit = 1.0_dp
+    punto = centro + matmul(M, [x_unit, y_unit, z_unit])
+    vertices(:, idx) = punto
+
+    ! Normal at south pole points outward (same direction as point - centro)
+    normal = matmul(M, [x_unit, y_unit, z_unit])
+    normals(:, idx) = normal / sqrt(sum(normal**2))
+
+    ! Intermediate latitudes (theta from pi-dtheta down to dtheta)
+    do i = 1, ntheta-1
+        theta = pi * real(i, dp) / real(ntheta, dp)  ! theta in (pi/ntheta, (ntheta-1)*pi/ntheta)
+
+        do j = 1, nphi
+            phi = 2.0_dp * pi * real(j-1, dp) / real(nphi, dp)
+
+            idx = idx + 1
+
+            ! Unit sphere coordinates
+            x_unit = sin(theta) * cos(phi)
+            y_unit = sin(theta) * sin(phi)
+            z_unit = cos(theta)
+
+            ! Transform to ellipsoid
+            punto = centro + matmul(M, [x_unit, y_unit, z_unit])
+            vertices(:, idx) = punto
+
+            ! Outward normal = transformed unit normal, then normalized
+            ! For an ellipsoid, the normal direction is given by M^{-T} * unit_normal
+            ! But since we have the inverse, we compute directly:
+            normal = matmul(transpose(ejes), punto - centro) / radios**2
+            ! Alternative: normal = matmul(A, punto - centro)
+            normals(:, idx) = normal / sqrt(sum(normal**2))
+        end do
+    end do
+
+    ! South pole (theta = 0)
+    idx = idx + 1
+    x_unit = 0.0_dp
+    y_unit = 0.0_dp
+    z_unit = -1.0_dp
+    punto = centro + matmul(M, [x_unit, y_unit, z_unit])
+    vertices(:, idx) = punto
+
+    normal = matmul(M, [x_unit, y_unit, z_unit])
+    normals(:, idx) = normal / sqrt(sum(normal**2))
+
+    if (idx /= nvertices) then
+        print *, "ERROR: Vertex count mismatch"
+        return
+    end if
+
+    !-----------------------------------------------------------------------
+    ! Generate triangle indices
+    !-----------------------------------------------------------------------
+    idx = 0
+
+    ! Triangles connecting south pole (vertex 1) to first latitude ring
+    do j = 1, nphi
+        idx = idx + 1
+        triangles(1, idx) = 1  ! South pole
+        triangles(2, idx) = 2 + mod(j-1, nphi)
+        triangles(3, idx) = 2 + mod(j, nphi)
+    end do
+
+    ! Triangles between latitude rings
+    do i = 1, ntheta-2
+        do j = 1, nphi
+            ! Vertex indices for this quad
+            ! v1 = 2 + (i-1)*nphi + j-1
+            ! v2 = 2 + i*nphi + j-1
+            ! v3 = 2 + i*nphi + j
+            ! v4 = 2 + (i-1)*nphi + j
+
+            ! First triangle (v1, v2, v3)
+            idx = idx + 1
+            triangles(1, idx) = 2 + (i-1)*nphi + j-1
+            triangles(2, idx) = 2 + i*nphi + j-1
+            triangles(3, idx) = 2 + i*nphi + mod(j,nphi)
+
+            ! Second triangle (v1, v3, v4)
+            idx = idx + 1
+            triangles(1, idx) = 2 + (i-1)*nphi + j-1
+            triangles(2, idx) = 2 + i*nphi + mod(j,nphi)
+            triangles(3, idx) = 2 + (i-1)*nphi + mod(j,nphi)
+        end do
+    end do
+
+    ! Triangles connecting north pole (last vertex) to last latitude ring
+    do j = 1, nphi
+        idx = idx + 1
+        triangles(1, idx) = nvertices                     ! North pole
+        triangles(3, idx) = nvertices - nphi + mod(j, nphi)
+        triangles(2, idx) = nvertices - nphi + mod(j-1, nphi)
+    end do
+
+    if (idx /= ntriangles) then
+        print *, "ERROR: Triangle count mismatch"
+        return
+    end if
+
+    !-----------------------------------------------------------------------
+    ! Write binary file
+    !-----------------------------------------------------------------------
+    if (ldebug) print *, "Writing binary file: ", trim(filename)
+
+    open(unit=10, file=filename, form='unformatted', access='stream', status='replace')
+
+    ! Header: sinmple precision (3), dummy, grid dimensions and bounds
+    write(10) 3, 0, nx, ny, nz
+    write(10) xini, xfin, yini, yfin, zini, zfin
+    write(10) nvertices, 3*ntriangles
+
+    ! Vertex data: coordinates and normals
+    do i = 1, nvertices
+        write(10) vertices(1,i), vertices(2,i), vertices(3,i), &
+                  -normals(1,i), -normals(2,i), -normals(3,i)
+    end do
+
+    ! Triangle indices
+    do i = 1, ntriangles
+        write(10) triangles(1,i), triangles(2,i), triangles(3,i)
+    end do
+
+    close(10)
+
+    if (ldebug) then
+        print *, "File written successfully."
+        print *, "  Total vertices:", nvertices
+        print *, "  Total triangles:", ntriangles
+    endif
+
+    ! Clean up
+    deallocate(vertices, normals, triangles)
+
+end subroutine generar_triangulacion_elipsoide_simple
+
+subroutine generar_triangulacion_elipsoide_double(centro, radios, ejes, &
+                                          nx, ny, nz, &
+                                          xini, xfin, yini, yfin, zini, zfin, &
+                                          filename, ldebug)
+    implicit none
+    real(KREAL), intent(in) :: centro(3)
+    real(KREAL), intent(in) :: radios(3)
+    real(KREAL), intent(in) :: ejes(3,3)
+    integer, intent(in) :: nx, ny, nz
+    real(KREAL), intent(in) :: xini, xfin, yini, yfin, zini, zfin
+    real(KREAL4) :: xini_sp, xfin_sp, yini_sp, yfin_sp, zini_sp, zfin_sp
+    character(len=*), intent(in) :: filename
+    logical, intent(in) :: ldebug
+
+    xini_sp = xini
+    xfin_sp = xfin
+    yini_sp = yini
+    yfin_sp = yfin
+    zini_sp = zini
+    zfin_sp = zfin
+
+    call generar_triangulacion_elipsoide_simple(centro, radios, ejes, nx, ny, nz, &
+        xini_sp, xfin_sp, yini_sp, yfin_sp, zini_sp, zfin_sp, filename, ldebug)
+
+end subroutine generar_triangulacion_elipsoide_double
+
+end module MVEE
+!
+!                 END OF MODULE MVEE
+!...............................................................................................
+
+
 !===============================================================================================
 !                 MODULE PRECISION  (due to Dr. George Benthien:   http://www.gbenthien.net/strings/index.html)
 !===============================================================================================

@@ -118,7 +118,7 @@ MODULE DAM_400_DATA_D
     character(2), allocatable :: atmnam(:)
     character(300) :: projectname
     logical :: lgbsgz, lden, ldengz, ldensprsbin, lm2c, longoutput, lsto, lvalence, lzdo, lgencontract, lchargesbyl
-logical :: lmulliken
+    logical :: lmulliken
     real(KREAL) :: roblk(-mxl:mxl,-mxl:mxl)
     logical, allocatable :: lblock(:,:), lblockproc(:)
     logical*1, allocatable :: lsdisf(:,:)
@@ -744,7 +744,8 @@ subroutine MVEE_por_expansion_double(puntos, n, centro, radios, ejes, A, exito, 
     real(KREAL), intent(out) :: radios(3)
     real(KREAL), intent(out) :: ejes(3,3)
     real(KREAL), intent(out) :: A(3,3)
-    logical, intent(out) :: exito, ldebug
+    logical, intent(out) :: exito
+    logical, intent(in)  :: ldebug
 
     ! Local variables
     real(KREAL) :: cov(3,3)           ! Covariance matrix
@@ -883,7 +884,8 @@ subroutine MVEE_por_expansion_simple(puntos, n, centro, radios, ejes, A, exito, 
     real(KREAL), intent(out) :: A(3,3)
     real(KREAL), intent(out) :: radios(3)
     real(KREAL), intent(out) :: ejes(3,3)
-    logical, intent(out)  :: exito, ldebug
+    logical, intent(out) :: exito
+    logical, intent(in)  :: ldebug
 
     ! Local variables (double precision)
     real(8), allocatable :: puntos_dp(:,:)

@@ -1308,6 +1308,7 @@ END MODULE
         else
             outrootname = gridname(1:len_trim(gridname)-6)
         endif
+
         write(straux,"(e9.2)") contourval
         if (lexact) then
             straux = trim(straux)//"_exact"
@@ -1343,6 +1344,7 @@ END MODULE
             write(69,*) fvarpos * fvarneg / (fvartot**2)
             if (ldebug) call cpu_time(t1)
             call MVEE_por_expansion(vertices4, kntvert, centro, radios, ejes, auxmat, exito, ldebug)
+
             if (ldebug) call cpu_time(t2)
             if (exito) then
                 if (ldebug) then
@@ -1355,7 +1357,7 @@ END MODULE
                     end do
                 endif
                 call generar_triangulacion_elipsoide(centro, radios, ejes, nx, ny, nz, &
-                    xini, xfin, yini, yfin, zini, zfin, trim(filename)//".ellipsoid", ldebug)
+                    xini, xfin, yini, yfin, zini, zfin, trim(outrootname)//".ellipsoid", ldebug)
             else
                 print *, "MVEE did not converge"
             end if
