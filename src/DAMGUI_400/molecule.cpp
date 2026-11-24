@@ -1923,6 +1923,15 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(CHKtranslucence, &QCheckBox::toggled,
             surf, &surface::settranslucence);
 
+    connect(surf, &surface::translucenceChanged,
+            CHKtranslucence,
+            [CHKtranslucence](bool checked) {
+
+                const QSignalBlocker blocker(CHKtranslucence);
+                CHKtranslucence->setChecked(checked);
+
+            });
+
 //        Basins color
     ColorButton *BTNsurfacecolor = new ColorButton();
     BTNsurfacecolor->setIcon(QIcon(":/images/colores48.png"));

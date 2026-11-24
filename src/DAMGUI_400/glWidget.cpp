@@ -1751,42 +1751,29 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesTypeConnection);
         surfacesTypeConnection = QMetaObject::Connection();
 
+        disconnect(surfacesTranslucenceConnection);
+        surfacesTranslucenceConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
         surfacesTypeGroup->setEnabled(false);
+        surfacesTranslucenceCheckBox->setEnabled(false);
 
-        if (!item)
-            return;
-
-        const QList<QTreeWidgetItem*> selectedItems =
-            sceneTree->selectedItems();
-
-        if (selectedItems.isEmpty())
-            return;
-
-        const int i =
-            selectedItems.first()->data(0, Qt::UserRole).toInt();
-
-        if (i < 0 || i >= molecules->count())
-            return;
-
-        molecule *mol = molecules->at(i);
-
-        const int j = item->data(Qt::UserRole).toInt();
-
-        if (j < 0 || j >= mol->surfaces.count())
-            return;
-
-        surface *surf = mol->surfaces.at(j);
+        surface *surf = selectedSurface();
 
         if (!surf)
             return;
 
         // Update controls without modifying the surface
 
-        QSignalBlocker blockerSolid(surfacesSolidRadio);
-        QSignalBlocker blockerWire(surfacesWireRadio);
+        const QSignalBlocker blockerSolid(surfacesSolidRadio);
+        const QSignalBlocker blockerWire(surfacesWireRadio);
+        const QSignalBlocker blockerTranslucence(
+            surfacesTranslucenceCheckBox
+        );
+
+        // Synchronize surface type
 
         surfacesTypeConnection =
             connect(surf, &surface::solidsurfChanged,
@@ -1800,10 +1787,31 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
             });
 
+        // Synchronize translucence correction
+
+        surfacesTranslucenceConnection =
+            connect(surf, &surface::translucenceChanged,
+                    this, [this](bool checked) {
+
+                const QSignalBlocker blocker(
+                    surfacesTranslucenceCheckBox
+                );
+
+                surfacesTranslucenceCheckBox->setChecked(checked);
+
+            });
+
+        // Initialize controls from the selected surface
+
         surfacesSolidRadio->setChecked(surf->getsolidsurf());
         surfacesWireRadio->setChecked(!surf->getsolidsurf());
+        surfacesTranslucenceCheckBox->setChecked(
+            surf->gettranslucence()
+        );
 
         surfacesTypeGroup->setEnabled(true);
+        surfacesTranslucenceCheckBox->setEnabled(true);
+
     });
 
     connect(surfacesRemoveButton, &QPushButton::clicked,
@@ -1868,48 +1876,14 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesTypeGroup->setEnabled(false);
 
     connect(surfacesSolidRadio, &QRadioButton::toggled,
-            this, [](bool checked) {
-    });
-
-    connect(surfacesWireRadio, &QRadioButton::toggled,
-            this, [](bool checked) {
-    });
-
-    connect(surfacesSolidRadio, &QRadioButton::toggled,
             this, [this](bool checked) {
 
         if (!checked)
             return;
 
-        QListWidgetItem *item = surfacesList->currentItem();
-
-        if (!item)
-            return;
-
-        const QList<QTreeWidgetItem*> selectedItems =
-            sceneTree->selectedItems();
-
-        if (selectedItems.isEmpty())
-            return;
-
-        const int i =
-            selectedItems.first()->data(0, Qt::UserRole).toInt();
-
-        if (i < 0 || i >= molecules->count())
-            return;
-
-        molecule *mol = molecules->at(i);
-
-        const int j = item->data(Qt::UserRole).toInt();
-
-        if (j < 0 || j >= mol->surfaces.count())
-            return;
-
-        surface *surf = mol->surfaces.at(j);
-
-        if (surf) {
+        if (surface *surf = selectedSurface())
             surf->setsolidsurf(true);
-        }
+
     });
 
     connect(surfacesWireRadio, &QRadioButton::toggled,
@@ -1918,42 +1892,32 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         if (!checked)
             return;
 
-        QListWidgetItem *item = surfacesList->currentItem();
-
-        if (!item)
-            return;
-
-        const QList<QTreeWidgetItem*> selectedItems =
-            sceneTree->selectedItems();
-
-        if (selectedItems.isEmpty())
-            return;
-
-        const int i =
-            selectedItems.first()->data(0, Qt::UserRole).toInt();
-
-        if (i < 0 || i >= molecules->count())
-            return;
-
-        molecule *mol = molecules->at(i);
-
-        const int j = item->data(Qt::UserRole).toInt();
-
-        if (j < 0 || j >= mol->surfaces.count())
-            return;
-
-
-        surface *surf = mol->surfaces.at(j);
-
-        if (surf) {
+        if (surface *surf = selectedSurface())
             surf->setsolidsurf(false);
-        }
+
+    });
+
+    // Translucence correction
+
+    surfacesTranslucenceCheckBox = new QCheckBox(
+        tr("Translucence correction"), surfacesPropertiesPage
+    );
+
+    surfacesTranslucenceCheckBox->setEnabled(false);
+
+    connect(surfacesTranslucenceCheckBox, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (surface *surf = selectedSurface())
+            surf->settranslucence(checked);
+
     });
 
     surfacesLayout->addWidget(surfacesTitle);
     surfacesLayout->addWidget(surfacesList);
     surfacesLayout->addLayout(surfacesButtonsLayout);
     surfacesLayout->addWidget(surfacesTypeGroup);
+    surfacesLayout->addWidget(surfacesTranslucenceCheckBox);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);
@@ -3745,9 +3709,6 @@ bool glWidget::addemptyclusterTowindow(QString filename){
     molecules->last()->initatomactive(false);
     molecules->last()->initatomvisible(true);
     window->setdisplayEPIC(displayEPIC);
-//    connections << connect(molecules->last(), SIGNAL(updatedisplay()), this, SLOT(updatedisplay()));
-//    connections << connect(molecules->last(), SIGNAL(updateGL()), this, SLOT(updateGL()));
-//    connections << connect(molecules->last(), SIGNAL(animate(bool)), this, SLOT(animate(bool)));
 
     connect(molecules->last(),&molecule::updatedisplay,
             this,&glWidget::updatedisplay);
@@ -3856,36 +3817,6 @@ void glWidget::displayClusterGeometry(QString str){
 //  End of function displayClusterGeometry
 //  --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-//  Function exec_mespimizer: executes cluster optimization
-//
-//void glWidget::exec_mespimizer(){
-//    cluster_exists = false;
-//    QString stdinput = QDLwindow->mespimizerdialog->getmespimizerpath() + "/mespimizer.inp";
-//    QString stdoutput = QDLwindow->mespimizerdialog->getmespimizerpath() + "/mespimizer.out";
-//    if (!strprocess) strprocess = new QString();
-//    if (!arguments) arguments = new QStringList();
-//    *strprocess = QString("DAMMESPIMIZER.exe");
-//    QString execName = get_execName(*strprocess, QString("TDAM320"));
-//    if (execName.isEmpty())
-//        return;
-//    arguments->clear();
-//    *arguments << " < " << stdinput << " > " << stdoutput;
-
-//    if (!myProcess) myProcess = new QProcess(this);
-//    myProcess->setStandardInputFile(stdinput);
-//    myProcess->setStandardOutputFile(stdoutput,QIODevice::Truncate);
-//    myProcess->setStandardErrorFile(stdoutput,QIODevice::Append);
-//    connect(myProcess, SIGNAL(started()), this, SLOT(processStart()));
-//    connect(myProcess, SIGNAL(error(QProcess::ProcessError)), this, SLOT(processError(QProcess::ProcessError)));
-//    connect(myProcess, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(processOutput(int,QProcess::ExitStatus)));
-////    qDebug() << "myProcess = " << execName << *arguments;
-//    myProcess->start(execName,*arguments);
-//    QFileSystemWatcher *watcher = new QFileSystemWatcher();
-//    connect(watcher, SIGNAL(fileChanged(QString)), this, SLOT(displayClusterGeometry(QString)));
-//    mespimizerpath = QDLwindow->mespimizerdialog->getmespimizerpath();
-//    watcher->addPath(QDLwindow->mespimizerdialog->getmespimizerpath() + "/mespimizer.out");
-//    emit moveToTop(windownumber);
-//}
 void glWidget::exec_mespimizer()
 {
     cluster_exists = false;
@@ -4969,547 +4900,6 @@ void glWidget::BTNsettings_clicked(){
         QDLwindow->adjustSize();
         QDLwindow->renewwidth(gdock->size());
 }
-
-//void glWidget::BTNretrieveSettings_clicked(){
-//    QFileDialog filedialog(this);
-//    filedialog.setWindowFlags(Qt::WindowStaysOnTopHint);
-//    filedialog.setDirectory(ProjectFolder);
-//    QString fileName = filedialog.getOpenFileName(this,tr("Open file ..."),molpath, tr("Settings saving files")
-//                + " *.3Dsettings" + " (*.3Dsettings);;"+tr("All files")+" (*)");
-//    QFile filein(fileName);
-//    if (!filein.open(QFile::ReadOnly | QFile::Text)) {
-//            QMessageBox::warning(this, tr("DAMQT"),tr("File %1 cannot be read")
-//                    .arg(fileName)+QString(":\n%1.").arg(filein.errorString()));
-//            emit moveToTop(windownumber);
-//            return;
-//    };
-//    CaptureFolder = QFileInfo(fileName).path();
-//    std::string file = QString(fileName).toStdString();
-//    QString qv;
-//    QStringList qlv;
-//    std::string v;
-//    if (CHKsettingsmolecs->isChecked()){
-//        int nummolecs = QString::fromStdString(CIniFile::GetValue("nummolecs","V3DMOLECULES",file)).toInt();
-//        for (int i = 0 ; i < nummolecs ; i++){
-//            std::string section = QString("V3DMOLECULE_%1").arg(i).toStdString();
-//            QString filename = QString::fromStdString(CIniFile::GetValue("name",section,file));
-//            if (QFileInfo(filename).suffix() == "xyz"){
-//                if (readxyz(filename))
-//                    retrievemolecule();
-//                else
-//                    return;
-//            }
-//            else if(QFileInfo(filename).suffix() == "ggbs"){
-//                if (readggbs(filename))
-//                    retrievemolecule();
-//                else
-//                    return;
-//            }
-//            QFont font;
-//            font.fromString(QString::fromStdString(CIniFile::GetValue("font",section,file)));
-//            molecules->last()->setfont(font);
-//            bool showsymbols = QString::fromStdString(CIniFile::GetValue("showsymbols",section,file)).toInt();
-//            molecules->last()->setdrawatomsymbols(showsymbols);
-//            bool showindices = QString::fromStdString(CIniFile::GetValue("showindices",section,file)).toInt();
-//            molecules->last()->setdrawatomindices(showindices);
-//            bool showselect = QString::fromStdString(CIniFile::GetValue("showselect",section,file)).toInt();
-//            molecules->last()->setonlyatomactive(showselect);
-//            if (showselect){
-//#if QT_VERSION < 0x050E00
-//                qlv = QString::fromStdString(CIniFile::GetValue("atomactive",section,file))
-//                        .split(",",QString::SkipEmptyParts);
-//#else
-//                qlv = QString::fromStdString(CIniFile::GetValue("atomactive",section,file))
-//                        .split(",",Qt::SkipEmptyParts);
-//#endif
-//                for (int i = 0 ; i < qlv.length() ; i++){
-//                    molecules->last()->setatomactive(i,qlv.at(i).toInt());
-//                }
-//            }
-//            int vshift = QString::fromStdString(CIniFile::GetValue("vshift",section,file)).toInt();
-//            molecules->last()->setlabelsvshift(vshift);
-//            if (CHKsettingspos->isChecked()){
-//#if QT_VERSION < 0x050E00
-//                qlv = QString::fromStdString(CIniFile::GetValue("position",section,file))
-//                        .split(",",QString::SkipEmptyParts);
-//#else
-//                qlv = QString::fromStdString(CIniFile::GetValue("position",section,file))
-//                        .split(",",Qt::SkipEmptyParts);
-//#endif
-//                if (qlv.length() == 3){
-//                    molecules->last()->settranslation(QVector3D(qlv[0].toFloat(),qlv[1].toFloat(),qlv[2].toFloat()));
-//                    molecules->last()->settranslationButtons();
-//                }
-//            }
-//            if (CHKsettingsrot->isChecked()){
-//#if QT_VERSION < 0x050E00
-//                qlv = QString::fromStdString(CIniFile::GetValue("rotation",section,file))
-//                        .split(",",QString::SkipEmptyParts);
-//#else
-//                qlv = QString::fromStdString(CIniFile::GetValue("rotation",section,file))
-//                        .split(",",Qt::SkipEmptyParts);
-//#endif
-//                if (qlv.length() == 4){
-//                    QQuaternion rotation = QQuaternion(qlv[0].toFloat(),qlv[1].toFloat(),qlv[2].toFloat(),qlv[3].toFloat());
-//                    molecules->last()->setrotation(rotation.normalized());
-//                    molecules->last()->setrotationButtons();
-//                }
-//            }
-//#if QT_VERSION < 0x050E00
-//            qlv = QString::fromStdString(CIniFile::GetValue("fontcolor",section,file))
-//                    .split(",",QString::SkipEmptyParts);
-//#else
-//            qlv = QString::fromStdString(CIniFile::GetValue("fontcolor",section,file))
-//                    .split(",",Qt::SkipEmptyParts);
-//#endif
-//            if (qlv.length() == 3){
-//                molecules->last()->setfontcolor(QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt()));
-//            }
-//            if (CHKsettingssurf->isChecked()){
-//                int nsurf = QString::fromStdString(CIniFile::GetValue("nsurf",section,file)).toInt();
-//                for (int j = 0 ; j < nsurf ; j++){
-//                    std::string surfname = QString("surfname_%1").arg(j).toStdString();
-//                    QString surfilename = QString::fromStdString(CIniFile::GetValue(surfname,section,file));
-//                    if (molecules->last()->retrievesurf(surfilename)){
-////                        connect (molecules->last()->surfaces->last(), SIGNAL(updatedisplay()), molecules->last(), SIGNAL(updatedisplay()));
-//                        if (molecules->last()->QDLeditMolecule_isVisible())
-//                            molecules->last()->updateeditMoleculeDialog();
-//                        std::string solid = QString("solid_%1").arg(j).toStdString();
-//                        bool surfsolid = QString::fromStdString(CIniFile::GetValue(solid,section,file)).toInt();
-//                        molecules->last()->surfaces->last()->setsolidsurf(surfsolid);
-//                        std::string trasluc = QString("trasluc_%1").arg(j).toStdString();
-//                        bool surftrasluc = QString::fromStdString(CIniFile::GetValue(trasluc,section,file)).toInt();
-//                        molecules->last()->surfaces->last()->settranslucence(surftrasluc);
-//                        std::string opacity = QString("opacity_%1").arg(j).toStdString();
-//                        float surfopacity =  QString::fromStdString(CIniFile::GetValue(opacity,section,file)).toFloat();
-//                        molecules->last()->surfaces->last()->setopacity(surfopacity);
-//                        std::string topcolor = QString("topcolor_%1").arg(j).toStdString();
-//                        float surftopcolor =  QString::fromStdString(CIniFile::GetValue(topcolor,section,file)).toFloat();
-//                        molecules->last()->surfaces->last()->settopcolor(surftopcolor);
-//                        molecules->last()->surfaces->last()->resetsurface();
-//                    }
-//                }
-//                molecules->last()->emitupdatedisplay();
-//            }
-//            if (CHKsettingsgrids->isChecked()){
-//                int ngrids = QString::fromStdString(CIniFile::GetValue("ngrids",section,file)).toInt();
-//                for (int j = 0 ; j < ngrids ; j++){
-//                    std::string grid = QString("gridname_%1").arg(j).toStdString();
-//                    QString gridname = QString::fromStdString(CIniFile::GetValue(grid,section,file));
-//                    if (molecules->last()->retrievegrid(gridname)){
-//                        std::string nisosurf = QString("nisosurf_%1").arg(j).toStdString();
-//                        int numisosurf = QString::fromStdString(CIniFile::GetValue(nisosurf,section,file)).toInt();
-//                        std::string maxcontour = QString("maxcontourval_%1").arg(j).toStdString();
-//                        float maxcontourval =  QString::fromStdString(CIniFile::GetValue(maxcontour,section,file)).toFloat();
-//                        std::string mincontour = QString("mincontourval_%1").arg(j).toStdString();
-//                        float mincontourval =  QString::fromStdString(CIniFile::GetValue(mincontour,section,file)).toFloat();
-//                        molecules->last()->grids->at(j)->setmaxcontourvalue(maxcontourval);
-//                        molecules->last()->grids->at(j)->setmincontourvalue(mincontourval);
-//                        molecules->last()->grids->at(j)->set_ProjectFolder(QFileInfo(gridname).absolutePath());
-//                        molecules->last()->grids->at(j)->set_ProjectName(QFileInfo(gridname).fileName().remove("-deform").remove("-d.plt").remove("v-plt"));
-//                        for (int k = 0 ; k < numisosurf ; k++){
-//                            std::string contour = QString("contourval_%1_%2").arg(j).arg(k).toStdString();
-//                            float contourval =  QString::fromStdString(CIniFile::GetValue(contour,section,file)).toFloat();
-//                            std::string solid = QString("isosurfsolid_%1_%2").arg(j).arg(k).toStdString();
-//                            bool solidsurf = QString::fromStdString(CIniFile::GetValue(solid,section,file)).toInt();
-//                            std::string trasluc = QString("isosurftrasluc_%1_%2").arg(j).arg(k).toStdString();
-//                            bool surftrasluc = QString::fromStdString(CIniFile::GetValue(trasluc,section,file)).toInt();
-//                            std::string opacity = QString("isosurfopacity_%1_%2").arg(j).arg(k).toStdString();
-//                            float surfopacity =  QString::fromStdString(CIniFile::GetValue(opacity,section,file)).toFloat();
-//                            std::string color = QString("isosurfcolor_%1_%2").arg(j).arg(k).toStdString();
-//                            QStringList colorlist = QString::fromStdString(CIniFile::GetValue(color,section,file)).split(",");
-//                            molecules->last()->grids->at(j)->addisosurf();
-//                            molecules->last()->grids->at(j)->surfaces->last()->setcontourvalue(contourval);
-//                            molecules->last()->grids->at(j)->surfaces->last()->setsolidsurf(solidsurf);
-//                            molecules->last()->grids->at(j)->surfaces->last()->settranslucence(surftrasluc);
-//                            molecules->last()->grids->at(j)->surfaces->last()->setopacity(surfopacity);
-//                            if (colorlist.length() == 3)
-//                                molecules->last()->grids->at(j)->surfaces->last()->setsurfcolor(QColor(colorlist[0].toInt(),
-//                                                colorlist[1].toInt(),colorlist[2].toInt()));
-//                            molecules->last()->grids->at(j)->generatesurf(k);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    if (CHKsettingslights->isChecked()){
-//#if QT_VERSION < 0x050E00
-//        qlv = QString::fromStdString(CIniFile::GetValue("ambientcolor","V3DLIGHTS",file))
-//                .split(",",QString::SkipEmptyParts);
-//#else
-//        qlv = QString::fromStdString(CIniFile::GetValue("ambientcolor","V3DLIGHTS",file))
-//                .split(",",Qt::SkipEmptyParts);
-//#endif
-//        if (qlv.length() == 3){
-//            ambientcolor = QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt());
-//            QDLwindow->lightsdialog->setambientcolor(ambientcolor);
-//            if (window)
-//                window->setAmbientColor(ambientcolor);
-//        }
-//#if QT_VERSION < 0x050E00
-//        qlv = QString::fromStdString(CIniFile::GetValue("lightcolor","V3DLIGHTS",file))
-//                .split(",",QString::SkipEmptyParts);
-//#else
-//        qlv = QString::fromStdString(CIniFile::GetValue("lightcolor","V3DLIGHTS",file))
-//                .split(",",Qt::SkipEmptyParts);
-//#endif
-//        if (qlv.length() == 3){
-//            lightcolor = QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt());
-//            QDLwindow->lightsdialog->setlightcolor(lightcolor);
-//            if (window)
-//                window->setLightColor(lightcolor);
-//        }
-//#if QT_VERSION < 0x050E00
-//        qlv = QString::fromStdString(CIniFile::GetValue("specularcolor","V3DLIGHTS",file))
-//                .split(",",QString::SkipEmptyParts);
-//#else
-//        qlv = QString::fromStdString(CIniFile::GetValue("specularcolor","V3DLIGHTS",file))
-//                .split(",",Qt::SkipEmptyParts);
-//#endif
-//        if (qlv.length() == 3){
-//            specularcolor = QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt());
-//            QDLwindow->lightsdialog->setspecularcolor(specularcolor);
-//            if (window)
-//                window->setSpecularColor(specularcolor);
-//        }
-//    }
-//    if (CHKsettingsbkg->isChecked()){
-//#if QT_VERSION < 0x050E00
-//        qlv = QString::fromStdString(CIniFile::GetValue("bkgcolor","V3DBKG",file))
-//                .split(",",QString::SkipEmptyParts);
-//#else
-//        qlv = QString::fromStdString(CIniFile::GetValue("bkgcolor","V3DBKG",file))
-//                .split(",",Qt::SkipEmptyParts);
-//#endif
-//        if (qlv.length() == 3){
-//            bkgcolor = QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt());
-//            QDLwindow->lightsdialog->setbkgcolor(bkgcolor);
-//            if (window)
-//                window->setBkgColor(bkgcolor);
-//        }
-//    }
-//    if (CHKsettingsballs->isChecked()){
-//        ballradius =  QString::fromStdString(CIniFile::GetValue("ballradius","V3DBALLS",file)).toFloat();
-//        cylradius =  QString::fromStdString(CIniFile::GetValue("cylradius","V3DBALLS",file)).toFloat();
-//        if (ballradius > 0)
-//            QDLwindow->ballsandcylsdialog->setballrad(ballradius);
-//        if (cylradius > 0)
-//            QDLwindow->ballsandcylsdialog->setcylrad(cylradius);
-//        ballcyl_changed();
-//    }
-//    if (CHKsettingsviewport->isChecked()){
-//        float aux;
-//        aux = QString::fromStdString(CIniFile::GetValue("fov","V3DVIEWPORT",file)).toFloat();
-//        if (aux > 0)
-//            fov =  aux;
-//        aux =  QString::fromStdString(CIniFile::GetValue("zNear","V3DVIEWPORT",file)).toFloat();
-//        if (aux > 0)
-//            zNear =  aux;
-//        aux =  QString::fromStdString(CIniFile::GetValue("zFar","V3DVIEWPORT",file)).toFloat();
-//        if (aux > zNear)
-//            zFar =  aux;
-//        updateviewport();
-//    }
-//    updatedisplay();
-//    emit moveToTop(windownumber);
-//}
-
-
-//void glWidget::BTNretrieveSettings_clicked(){
-//    QFileDialog filedialog(this);
-//    filedialog.setWindowFlags(Qt::WindowStaysOnTopHint);
-//    filedialog.setDirectory(ProjectFolder);
-//    QString fileName = filedialog.getOpenFileName(this,tr("Open file ..."),molpath, tr("Settings saving files")
-//                + " *.3Dsettings" + " (*.3Dsettings);;"+tr("All files")+" (*)");
-//    QFile filein(fileName);
-//    if (!filein.open(QFile::ReadOnly | QFile::Text)) {
-//            QMessageBox::warning(this, tr("DAMQT"),tr("File %1 cannot be read")
-//                    .arg(fileName)+QString(":\n%1.").arg(filein.errorString()));
-//            emit moveToTop(windownumber);
-//            return;
-//    };
-//    CaptureFolder = QFileInfo(fileName).path();
-//    std::string file = QString(fileName).toStdString();
-//    QString qv;
-//    QStringList qlv;
-//    std::string v;
-//    if (CHKsettingsmolecs->isChecked()){
-//        int nummolecs = QString::fromStdString(CIniFile::GetValue("nummolecs","V3DMOLECULES",file)).toInt();
-//        for (int i = 0 ; i < nummolecs ; i++){
-//            std::string section = QString("V3DMOLECULE_%1").arg(i).toStdString();
-//            QString filename = QString::fromStdString(CIniFile::GetValue("name",section,file));
-//            if (QFileInfo(filename).suffix() == "xyz"){
-//                if (readxyz(filename))
-//                    retrievemolecule();
-//                else
-//                    return;
-//            }
-//            else if(QFileInfo(filename).suffix() == "ggbs"){
-//                if (readggbs(filename))
-//                    retrievemolecule();
-//                else
-//                    return;
-//            }
-//            QFont font;
-//            font.fromString(QString::fromStdString(CIniFile::GetValue("font",section,file)));
-//            molecules->last()->setfont(font);
-//            bool showsymbols = QString::fromStdString(CIniFile::GetValue("showsymbols",section,file)).toInt();
-//            molecules->last()->setdrawatomsymbols(showsymbols);
-//            bool showindices = QString::fromStdString(CIniFile::GetValue("showindices",section,file)).toInt();
-//            molecules->last()->setdrawatomindices(showindices);
-//            bool showselect = QString::fromStdString(CIniFile::GetValue("showselect",section,file)).toInt();
-//            molecules->last()->setonlyatomactive(showselect);
-//            if (showselect){
-//#if QT_VERSION < 0x050E00
-//                qlv = QString::fromStdString(CIniFile::GetValue("atomactive",section,file))
-//                        .split(",",QString::SkipEmptyParts);
-//#else
-//                qlv = QString::fromStdString(CIniFile::GetValue("atomactive",section,file))
-//                        .split(",",Qt::SkipEmptyParts);
-//#endif
-//                for (int i = 0 ; i < qlv.length() ; i++){
-//                    molecules->last()->setatomactive(i,qlv.at(i).toInt());
-//                }
-//            }
-//            int vshift = QString::fromStdString(CIniFile::GetValue("vshift",section,file)).toInt();
-//            molecules->last()->setlabelsvshift(vshift);
-//            if (CHKsettingspos->isChecked()){
-//#if QT_VERSION < 0x050E00
-//                qlv = QString::fromStdString(CIniFile::GetValue("position",section,file))
-//                        .split(",",QString::SkipEmptyParts);
-//#else
-//                qlv = QString::fromStdString(CIniFile::GetValue("position",section,file))
-//                        .split(",",Qt::SkipEmptyParts);
-//#endif
-//                if (qlv.length() == 3){
-//                    molecules->last()->settranslation(QVector3D(qlv[0].toFloat(),qlv[1].toFloat(),qlv[2].toFloat()));
-//                    molecules->last()->settranslationButtons();
-//                }
-//            }
-//            if (CHKsettingsrot->isChecked()){
-//#if QT_VERSION < 0x050E00
-//                qlv = QString::fromStdString(CIniFile::GetValue("rotation",section,file))
-//                        .split(",",QString::SkipEmptyParts);
-//#else
-//                qlv = QString::fromStdString(CIniFile::GetValue("rotation",section,file))
-//                        .split(",",Qt::SkipEmptyParts);
-//#endif
-//                if (qlv.length() == 4){
-//                    QQuaternion rotation = QQuaternion(qlv[0].toFloat(),qlv[1].toFloat(),qlv[2].toFloat(),qlv[3].toFloat());
-//                    molecules->last()->setrotation(rotation.normalized());
-//                    molecules->last()->setrotationButtons();
-//                }
-//            }
-//#if QT_VERSION < 0x050E00
-//            qlv = QString::fromStdString(CIniFile::GetValue("fontcolor",section,file))
-//                    .split(",",QString::SkipEmptyParts);
-//#else
-//            qlv = QString::fromStdString(CIniFile::GetValue("fontcolor",section,file))
-//                    .split(",",Qt::SkipEmptyParts);
-//#endif
-//            if (qlv.length() == 3){
-//                molecules->last()->setfontcolor(QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt()));
-//            }
-//            if (CHKsettingssurf->isChecked()){
-//                int nsurf = QString::fromStdString(CIniFile::GetValue("nsurf",section,file)).toInt();
-//                for (int j = 0 ; j < nsurf ; j++){
-//                    std::string surfname = QString("surfname_%1").arg(j).toStdString();
-//                    QString surfilename = QString::fromStdString(CIniFile::GetValue(surfname,section,file));
-//                    if (molecules->last()->retrievesurf(surfilename)){
-////                        connect (molecules->last()->surfaces->last(), SIGNAL(updatedisplay()), molecules->last(), SIGNAL(updatedisplay()));
-//                        if (molecules->last()->QDLeditMolecule_isVisible())
-//                            molecules->last()->updateeditMoleculeDialog();
-//                        std::string solid = QString("solid_%1").arg(j).toStdString();
-//                        bool surfsolid = QString::fromStdString(CIniFile::GetValue(solid,section,file)).toInt();
-//                        molecules->last()->surfaces->last()->setsolidsurf(surfsolid);
-//                        std::string trasluc = QString("trasluc_%1").arg(j).toStdString();
-//                        bool surftrasluc = QString::fromStdString(CIniFile::GetValue(trasluc,section,file)).toInt();
-//                        molecules->last()->surfaces->last()->settranslucence(surftrasluc);
-//                        std::string opacity = QString("opacity_%1").arg(j).toStdString();
-//                        float surfopacity =  QString::fromStdString(CIniFile::GetValue(opacity,section,file)).toFloat();
-//                        molecules->last()->surfaces->last()->setopacity(surfopacity);
-//                        std::string topcolor = QString("topcolor_%1").arg(j).toStdString();
-//                        float surftopcolor =  QString::fromStdString(CIniFile::GetValue(topcolor,section,file)).toFloat();
-//                        molecules->last()->surfaces->last()->settopcolor(surftopcolor);
-//                        molecules->last()->surfaces->last()->resetsurface();
-//                    }
-//                }
-//                molecules->last()->emitupdatedisplay();
-//            }
-//            if (CHKsettingsgrids->isChecked()){
-//                int ngrids = QString::fromStdString(CIniFile::GetValue("ngrids",section,file)).toInt();
-//                for (int j = 0 ; j < ngrids ; j++){
-//                    std::string grid = QString("gridname_%1").arg(j).toStdString();
-//                    QString gridname = QString::fromStdString(CIniFile::GetValue(grid,section,file));
-//                    if (molecules->last()->retrievegrid(gridname)){
-//                        std::string nisosurf = QString("nisosurf_%1").arg(j).toStdString();
-//                        int numisosurf = QString::fromStdString(CIniFile::GetValue(nisosurf,section,file)).toInt();
-//                        std::string maxcontour = QString("maxcontourval_%1").arg(j).toStdString();
-//                        float maxcontourval =  QString::fromStdString(CIniFile::GetValue(maxcontour,section,file)).toFloat();
-//                        std::string mincontour = QString("mincontourval_%1").arg(j).toStdString();
-//                        float mincontourval =  QString::fromStdString(CIniFile::GetValue(mincontour,section,file)).toFloat();
-//                        molecules->last()->grids->at(j)->setmaxcontourvalue(maxcontourval);
-//                        molecules->last()->grids->at(j)->setmincontourvalue(mincontourval);
-//                        molecules->last()->grids->at(j)->set_ProjectFolder(QFileInfo(gridname).absolutePath());
-//                        molecules->last()->grids->at(j)->set_ProjectName(QFileInfo(gridname).fileName().remove("-deform").remove("-d.plt").remove("v-plt"));
-//                        for (int k = 0 ; k < numisosurf ; k++){
-//                            std::string contour = QString("contourval_%1_%2").arg(j).arg(k).toStdString();
-//                            float contourval =  QString::fromStdString(CIniFile::GetValue(contour,section,file)).toFloat();
-//                            std::string solid = QString("isosurfsolid_%1_%2").arg(j).arg(k).toStdString();
-//                            bool solidsurf = QString::fromStdString(CIniFile::GetValue(solid,section,file)).toInt();
-//                            std::string trasluc = QString("isosurftrasluc_%1_%2").arg(j).arg(k).toStdString();
-//                            bool surftrasluc = QString::fromStdString(CIniFile::GetValue(trasluc,section,file)).toInt();
-//                            std::string opacity = QString("isosurfopacity_%1_%2").arg(j).arg(k).toStdString();
-//                            float surfopacity =  QString::fromStdString(CIniFile::GetValue(opacity,section,file)).toFloat();
-//                            std::string color = QString("isosurfcolor_%1_%2").arg(j).arg(k).toStdString();
-//                            QStringList colorlist = QString::fromStdString(CIniFile::GetValue(color,section,file)).split(",");
-//                            molecules->last()->grids->at(j)->addisosurf();
-//                            molecules->last()->grids->at(j)->surfaces->last()->setcontourvalue(contourval);
-//                            molecules->last()->grids->at(j)->surfaces->last()->setsolidsurf(solidsurf);
-//                            molecules->last()->grids->at(j)->surfaces->last()->settranslucence(surftrasluc);
-//                            molecules->last()->grids->at(j)->surfaces->last()->setopacity(surfopacity);
-//                            if (colorlist.length() == 3)
-//                                molecules->last()->grids->at(j)->surfaces->last()->setsurfcolor(QColor(colorlist[0].toInt(),
-//                                                colorlist[1].toInt(),colorlist[2].toInt()));
-//                            molecules->last()->grids->at(j)->generatesurf(k);
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//    }
-//    if (CHKsettingslights->isChecked()){
-//#if QT_VERSION < 0x050E00
-//        qlv = QString::fromStdString(CIniFile::GetValue("ambientcolor","V3DLIGHTS",file))
-//                .split(",",QString::SkipEmptyParts);
-//#else
-//        qlv = QString::fromStdString(CIniFile::GetValue("ambientcolor","V3DLIGHTS",file))
-//                .split(",",Qt::SkipEmptyParts);
-//#endif
-//        if (qlv.length() == 3){
-//            ambientcolor = QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt());
-//            QDLwindow->lightsdialog->setambientcolor(ambientcolor);
-//            if (window)
-//                window->setAmbientColor(ambientcolor);
-//        }
-//#if QT_VERSION < 0x050E00
-//        qlv = QString::fromStdString(CIniFile::GetValue("lightcolor","V3DLIGHTS",file))
-//                .split(",",QString::SkipEmptyParts);
-//#else
-//        qlv = QString::fromStdString(CIniFile::GetValue("lightcolor","V3DLIGHTS",file))
-//                .split(",",Qt::SkipEmptyParts);
-//#endif
-//        if (qlv.length() == 3){
-//            lightcolor = QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt());
-//            QDLwindow->lightsdialog->setlightcolor(lightcolor);
-//            if (window)
-//                window->setLightColor(lightcolor);
-//        }
-//#if QT_VERSION < 0x050E00
-//        qlv = QString::fromStdString(CIniFile::GetValue("specularcolor","V3DLIGHTS",file))
-//                .split(",",QString::SkipEmptyParts);
-//#else
-//        qlv = QString::fromStdString(CIniFile::GetValue("specularcolor","V3DLIGHTS",file))
-//                .split(",",Qt::SkipEmptyParts);
-//#endif
-//        if (qlv.length() == 3){
-//            specularcolor = QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt());
-//            QDLwindow->lightsdialog->setspecularcolor(specularcolor);
-//            if (window)
-//                window->setSpecularColor(specularcolor);
-//        }
-//    }
-//    if (CHKsettingsbkg->isChecked()){
-//#if QT_VERSION < 0x050E00
-//        qlv = QString::fromStdString(CIniFile::GetValue("bkgcolor","V3DBKG",file))
-//                .split(",",QString::SkipEmptyParts);
-//#else
-//        qlv = QString::fromStdString(CIniFile::GetValue("bkgcolor","V3DBKG",file))
-//                .split(",",Qt::SkipEmptyParts);
-//#endif
-//        if (qlv.length() == 3){
-//            bkgcolor = QColor(qlv.at(0).toInt(),qlv.at(1).toInt(),qlv.at(2).toInt());
-//            QDLwindow->lightsdialog->setbkgcolor(bkgcolor);
-//            if (window)
-//                window->setBkgColor(bkgcolor);
-//        }
-//    }
-//    if (CHKsettingsballs->isChecked()){
-//        ballradius =  QString::fromStdString(CIniFile::GetValue("ballradius","V3DBALLS",file)).toFloat();
-//        cylradius =  QString::fromStdString(CIniFile::GetValue("cylradius","V3DBALLS",file)).toFloat();
-//        if (ballradius > 0)
-//            QDLwindow->ballsandcylsdialog->setballrad(ballradius);
-//        if (cylradius > 0)
-//            QDLwindow->ballsandcylsdialog->setcylrad(cylradius);
-//        ballcyl_changed();
-//    }
-//    if (CHKsettingsviewport->isChecked()){
-//        float aux;
-//        aux = QString::fromStdString(CIniFile::GetValue("fov","V3DVIEWPORT",file)).toFloat();
-//        if (aux > 0)
-//            fov =  aux;
-//        aux =  QString::fromStdString(CIniFile::GetValue("zNear","V3DVIEWPORT",file)).toFloat();
-//        if (aux > 0)
-//            zNear =  aux;
-//        aux =  QString::fromStdString(CIniFile::GetValue("zFar","V3DVIEWPORT",file)).toFloat();
-//        if (aux > zNear)
-//            zFar =  aux;
-//        updateviewport();
-//    }
-//    updatedisplay();
-//    emit moveToTop(windownumber);
-//}
-
-//void glWidget::BTNretrieveSettings_clicked()
-//{
-//    const QString fileName = selectSettingsFile();
-
-//    if (fileName.isEmpty()) {
-//        emit moveToTop(windownumber);
-//        return;
-//    }
-
-//    QFile fileIn(fileName);
-
-//    if (!fileIn.open(QFile::ReadOnly | QFile::Text)) {
-//        QMessageBox::warning(
-//            this,
-//            tr("DAMQT"),
-//            tr("File %1 cannot be read:\n%2.")
-//                .arg(fileName, fileIn.errorString())
-//        );
-
-//        emit moveToTop(windownumber);
-//        return;
-//    }
-
-//    fileIn.close();
-
-//    CaptureFolder = QFileInfo(fileName).absolutePath();
-//    const std::string iniFile = fileName.toStdString();
-
-//    if (CHKsettingsmolecs->isChecked()
-//            && !retrieveMoleculesSettings(iniFile)) {
-//        emit moveToTop(windownumber);
-//        return;
-//    }
-
-//    if (CHKsettingslights->isChecked())
-//        retrieveLightsSettings(iniFile);
-
-//    if (CHKsettingsbkg->isChecked())
-//        retrieveBackgroundSettings(iniFile);
-
-//    if (CHKsettingsballs->isChecked())
-//        retrieveBallsAndCylindersSettings(iniFile);
-
-//    if (CHKsettingsviewport->isChecked())
-//        retrieveViewportSettings(iniFile);
-
-//    updatedisplay();
-//    emit moveToTop(windownumber);
-//}
 
 void glWidget::BTNretrieveSettings_clicked()
 {
@@ -6851,39 +6241,6 @@ bool glWidget::addmolecule()
 //  Function addmoleculeTowindow: adds a molecule to the window
 //
 
-//void glWidget::addmoleculeTowindow(){
-//    if (!molecules->isEmpty() && molecules->last()->getiscluster()){
-//        QMessageBox msgBox;
-//        msgBox.setText(tr("addmoleculeTowindow"));
-//        msgBox.setInformativeText(tr("last system is a cluster.\n"
-//            "You must delete it before adding a new molecule."));
-//        msgBox.setIcon(QMessageBox::Warning);
-//        msgBox.exec();
-//        return;
-//    }
-//    if (addmolecule()){
-//        molecules->last()->setname(molname);
-//        molecules->last()->setfullname(fullmolname);
-//        molecules->last()->setballradius(ballradius);
-//        molecules->last()->setcylradius(cylradius);
-//        molecules->last()->setdisthressq(disthressq);
-//        molecules->last()->setscaleradii(scaleradii);
-//        molecules->last()->makeStructureBondsandSticks();
-//        molecules->last()->setvisible(true);
-//        molecules->last()->set_ProjectFolder(ProjectFolder);
-//        molecules->last()->set_ProjectName(ProjectName);
-//        molecule_names.append(molname);
-//        if (msrs){
-//            msrs->set_molecules(molecule_names);
-//        }
-//        updatedisplay();
-//        if (QDLwindow){
-//            updateWindowDialog(gdock);
-//        }
-//        this->moveToTop(windownumber);
-//    }
-//}
-
 void glWidget::addmoleculeTowindow()
 {
     if (!molecules->isEmpty() && molecules->last()->getiscluster()) {
@@ -6979,8 +6336,6 @@ void glWidget::initializeMolecule(molecule *mol, bool restoreRotation)
 //  Function loadmoleculargeometry: loads geometry and charges of centers
 //
 bool glWidget::loadmoleculargeometry(){
-//    qDebug() << "windowFilePath:" << windowFilePath();
-//    qDebug() << "ProjectFolder:" << ProjectFolder;
 
         QString initialDirectory = ProjectFolder;
 
@@ -8205,6 +7560,38 @@ void glWidget::updateSurfacesProperties()
         + 2 * surfacesList->frameWidth();
 
     surfacesList->setFixedHeight(listHeight);
+}
+
+surface *glWidget::selectedSurface()
+{
+    if (!sceneTree || !surfacesList)
+        return nullptr;
+
+    QListWidgetItem *item = surfacesList->currentItem();
+
+    if (!item)
+        return nullptr;
+
+    const QList<QTreeWidgetItem*> selectedItems =
+        sceneTree->selectedItems();
+
+    if (selectedItems.isEmpty())
+        return nullptr;
+
+    const int i =
+        selectedItems.first()->data(0, Qt::UserRole).toInt();
+
+    if (i < 0 || i >= molecules->count())
+        return nullptr;
+
+    molecule *mol = molecules->at(i);
+
+    const int j = item->data(Qt::UserRole).toInt();
+
+    if (j < 0 || j >= mol->surfaces.count())
+        return nullptr;
+
+    return mol->surfaces.at(j);
 }
 
 

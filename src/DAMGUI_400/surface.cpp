@@ -1798,7 +1798,12 @@ void surface::settopcolor(float a){
 }
 
 void surface::settranslucence(bool a){
+    if (translucence == a)
+        return;
+
     translucence = a;
+
+    emit translucenceChanged(translucence);
     emit updatedisplay();
 }
 

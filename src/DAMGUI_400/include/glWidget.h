@@ -440,6 +440,7 @@ private:
     QCheckBox *labelsShowCoordinates = nullptr;
     QCheckBox *labelsShowIndices = nullptr;
     QCheckBox *labelsShowSymbols = nullptr;
+    QCheckBox *surfacesTranslucenceCheckBox = nullptr;
 
     QColor ambientcolor;
     QColor bkgcolor;
@@ -518,6 +519,7 @@ private:
     QMetaObject::Connection labelsUnitsConnection;
     QMetaObject::Connection labelsVerticalShiftConnection;
     QMetaObject::Connection labelsVisibilityConnection;
+    QMetaObject::Connection surfacesTranslucenceConnection;
     QMetaObject::Connection surfacesTypeConnection;
 
     QPoint position;
@@ -619,6 +621,8 @@ private:
     qreal fov;                              // Field of view (angle in degrees)
     qreal zFar;                             // Farthest distance for objects to be displayed
     qreal zNear;                            // Nearest distance for objects to be displayed
+
+    surface *selectedSurface();
 
 };
 
