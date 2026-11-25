@@ -39,6 +39,7 @@
 #include <QDialog>
 #include <QDockWidget>
 #include <QDoubleSpinBox>
+#include <QDoubleValidator>
 #include <QGroupBox>
 #include <QFileSystemWatcher>
 #include <QLabel>
@@ -402,6 +403,8 @@ private:
 
     labelSlider *surfacesOpacitySlider = nullptr;
 
+    lineEditSlider *surfacesRangeSlider = nullptr;
+
     MainWindow3DViewer *mainWin;
 
     MyDockWidget *gdock;
@@ -453,12 +456,7 @@ private:
     QColor lightcolor;
     QColor specularcolor;
 
-
-
-    // QGridLayout *layoutmolecules;
-    QTreeWidget *sceneTree;
-    QSplitter *sceneSplitter;
-    QStackedWidget *propertiesStack;
+    QDoubleValidator *surfacesRangeValidator = nullptr;
 
     QFileSystemWatcher *watcher = nullptr;
 
@@ -477,6 +475,7 @@ private:
     QGroupBox *FRMtranslation;
     QGroupBox *FRMviewport;
     QGroupBox *criticalPointsEigenvectorsGroup = nullptr;
+    QGroupBox *surfacesRangeGroup = nullptr;
     QGroupBox *surfacesTypeGroup = nullptr;
 
     QLabel *criticalPointsCoordinatesPrecisionLabel = nullptr;
@@ -525,6 +524,7 @@ private:
     QMetaObject::Connection labelsVisibilityConnection;
     QMetaObject::Connection surfacesColorConnection;
     QMetaObject::Connection surfacesOpacityConnection;
+    QMetaObject::Connection surfacesRangeConnection;
     QMetaObject::Connection surfacesTranslucenceConnection;
     QMetaObject::Connection surfacesTypeConnection;
 
@@ -581,6 +581,11 @@ private:
     QSpinBox *forcesArrowWidth = nullptr;
     QSpinBox *labelsCoordinatePrecision = nullptr;
 
+
+    QSplitter *sceneSplitter;
+
+    QStackedWidget *propertiesStack;
+
     QString CaptureFolder;
     QString clustername;
     QString framesfile;
@@ -603,6 +608,8 @@ private:
 
     QToolButton *criticalPointsBrowse = nullptr;
     QToolButton *fieldLinesBrowse = nullptr;
+
+    QTreeWidget *sceneTree;
 
     QVector < QVector <double> *> *chargescanvas;  // charges for EPIC optimization (mespimizer)
     QVector<QVector3D > xyz;                // Cartesian coordinates of centers

@@ -1760,6 +1760,9 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesColorConnection);
         surfacesColorConnection = QMetaObject::Connection();
 
+        disconnect(surfacesRangeConnection);
+        surfacesRangeConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -1768,6 +1771,8 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         surfacesOpacitySlider->setEnabled(false);
         surfacesColorButton->setEnabled(false);
         surfacesColorButton->setVisible(false);
+        surfacesRangeGroup->setEnabled(false);
+        surfacesRangeGroup->setVisible(false);
 
         surface *surf = selectedSurface();
 
@@ -1869,6 +1874,34 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
             QColor color = surf->getsurfacecolor();
             surfacesColorButton->setColor(&color);
             surfacesColorButton->setEnabled(true);
+        }
+
+        // Initialize and synchronize surface color boundaries
+
+        if (surf->getshowcolorrule()) {
+
+            surfacesRangeValidator->setRange(
+                0., surf->getfabstop(), 6
+            );
+
+            surfacesRangeSlider->setCurrentValue(
+                surf->gettopcolor(),
+                surf->getfabstop()
+            );
+
+            surfacesRangeConnection =
+                connect(surf, &surface::topcolorChanged,
+                        this, [this, surf](float value) {
+
+                    surfacesRangeSlider->setCurrentValue(
+                        value,
+                        surf->getfabstop()
+                    );
+
+                });
+
+            surfacesRangeGroup->setEnabled(true);
+            surfacesRangeGroup->setVisible(true);
         }
 
     });
@@ -2014,6 +2047,57 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     });
 
+
+    // Surface color boundaries
+
+    surfacesRangeGroup = new QGroupBox(
+        tr("Color boundaries"), surfacesPropertiesPage
+    );
+
+    surfacesRangeSlider = new lineEditSlider();
+    surfacesRangeSlider->setRange(0, 100);
+    surfacesRangeSlider->setSingleStep(1);
+    surfacesRangeSlider->setPageStep(10);
+    surfacesRangeSlider->setlabeltext(
+        tr("Range: ") + QChar(0x00B1)
+    );
+
+    surfacesRangeValidator =
+        new QDoubleValidator(surfacesRangeSlider);
+
+    surfacesRangeValidator->setLocale(QLocale::English);
+    surfacesRangeValidator->setRange(0., 1., 6);
+
+    surfacesRangeSlider->setValidator(surfacesRangeValidator);
+
+    connect(surfacesRangeSlider, &lineEditSlider::valueChanged,
+            this, [this](float value) {
+
+        if (surface *surf = selectedSurface()) {
+            surf->settopcolor(value);
+            surf->settrianglecolors();
+        }
+
+    });
+
+    connect(surfacesRangeSlider, &lineEditSlider::sliderReleased,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->updatedisplay();
+
+    });
+
+    QVBoxLayout *surfacesRangeLayout =
+        new QVBoxLayout(surfacesRangeGroup);
+
+    surfacesRangeLayout->addWidget(surfacesRangeSlider);
+
+    surfacesRangeGroup->setEnabled(false);
+    surfacesRangeGroup->setVisible(false);
+
+    // Surfaces properties layout
+
     surfacesLayout->addWidget(surfacesTitle);
     surfacesLayout->addWidget(surfacesList);
     surfacesLayout->addLayout(surfacesButtonsLayout);
@@ -2021,6 +2105,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesLayout->addWidget(surfacesTranslucenceCheckBox);
     surfacesLayout->addWidget(surfacesOpacitySlider, 0, Qt::AlignTop);
     surfacesLayout->addWidget(surfacesColorButton, 0, Qt::AlignHCenter);
+    surfacesLayout->addWidget(surfacesRangeGroup, 0, Qt::AlignTop);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);

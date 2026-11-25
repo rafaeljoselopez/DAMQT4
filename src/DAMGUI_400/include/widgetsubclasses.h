@@ -137,12 +137,13 @@ public:
     ~lineEditSlider();
     float getscalevalueFloat(int ix,int i0,int i1,float f0,float f1);
     int  getscalevalueInt(float fx,int i0,int i1,float f0,float f1);
-    void setValidator(QValidator *);
+    void setCurrentValue(float value, float maximum);
     void setlabeltext(QString);
+    void setPageStep(int);
     void setRange(int,int);
     void setSingleStep(int);
-    void setPageStep(int);
     void setTXTtext(QString);
+    void setValidator(QValidator *);
     void setValue(float);
 
     QSlider *SLDslider;

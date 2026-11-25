@@ -1955,11 +1955,7 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
             BTNsurfacecolor, QOverload<QColor *>::of(&ColorButton::setColor));
 
 
-//        Color boundaries
-
-    QDoubleValidator *myDoubleValidator = new QDoubleValidator();
-    myDoubleValidator->setLocale(QLocale::English);
-    myDoubleValidator->setRange(0,surf->getfabstop(),6);
+    // Color boundaries
 
     QGroupBox *FRMcolorbounds = new QGroupBox(tr("Color boundaries"));
     FRMcolorbounds->setVisible(surf->getshowcolorrule());
@@ -1968,11 +1964,22 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     SLDcolorbounds->setRange(0,100);
     SLDcolorbounds->setSingleStep(1);
     SLDcolorbounds->setPageStep(10);
-    SLDcolorbounds->setlabeltext(tr((QString("Range: ")+QChar(0x00B1)).toUtf8()));
-    SLDcolorbounds->setValidator(myDoubleValidator);
-    SLDcolorbounds->setTXTtext(QString("%1").arg(surf->gettopcolor()));
+    SLDcolorbounds->setlabeltext(
+        tr("Range: ") + QChar(0x00B1)
+        );
 
-    SLDcolorbounds->setValue(surf->getfabstop());
+    QDoubleValidator *myDoubleValidator =
+        new QDoubleValidator(SLDcolorbounds);
+
+    myDoubleValidator->setLocale(QLocale::English);
+    myDoubleValidator->setRange(0., surf->getfabstop(), 6);
+
+    SLDcolorbounds->setValidator(myDoubleValidator);
+
+    SLDcolorbounds->setCurrentValue(
+        surf->gettopcolor(),
+        surf->getfabstop()
+        );
 
     connect(SLDcolorbounds, &lineEditSlider::valueChanged,
             surf, &surface::settopcolor);
@@ -1981,10 +1988,17 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
             surf, &surface::settrianglecolors);
 
     connect(SLDcolorbounds, &lineEditSlider::sliderReleased,
-            surf, &surface::settrianglecolors);
-
-    connect(SLDcolorbounds, &lineEditSlider::sliderReleased,
             this, &molecule::emitupdatedisplay);
+
+    connect(surf, &surface::topcolorChanged,
+            SLDcolorbounds, [SLDcolorbounds, surf](float value) {
+
+                SLDcolorbounds->setCurrentValue(
+                    value,
+                    surf->getfabstop()
+                    );
+
+            });
 
 
 //        Show local maxima and minima

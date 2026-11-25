@@ -1798,7 +1798,12 @@ void surface::setsolidsurf(bool a){
 }
 
 void surface::settopcolor(float a){
+    if (topcolor == a)
+        return;
+
     topcolor = a;
+
+    emit topcolorChanged(topcolor);
 }
 
 void surface::settranslucence(bool a){

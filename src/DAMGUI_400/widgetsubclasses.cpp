@@ -246,6 +246,30 @@ int lineEditSlider::getscalevalueInt(float fx,int i0,int i1,float f0,float f1)
     return (int)(((fx-f0)*(i1-i0)/(f1-f0))+i0);
 }
 
+void lineEditSlider::setCurrentValue(float value, float maximum)
+{
+    const QSignalBlocker blockerWidget(this);
+    const QSignalBlocker blockerSlider(SLDslider);
+    const QSignalBlocker blockerText(TXTedit);
+
+    vmax = maximum;
+    topcolor = value;
+
+    int ix = SLDslider->minimum();
+
+    if (vmax > 0.f) {
+        ix = getscalevalueInt(
+            topcolor,
+            SLDslider->minimum(),
+            SLDslider->maximum(),
+            0.f, vmax
+            );
+    }
+
+    SLDslider->setValue(ix);
+    TXTedit->setText(QString::number(topcolor, 'g', 9));
+}
+
 void lineEditSlider::setlabeltext(QString str){
     LBLtext->setText(str);
 }
@@ -289,13 +313,20 @@ void lineEditSlider::SLDslider_released(){
     emit sliderReleased();
 }
 
-void lineEditSlider::TXTedit_changed(){
-    topcolor = TXTedit->text().toFloat();
-    int ix = getscalevalueInt(TXTedit->text().toFloat(), SLDslider->minimum(), SLDslider->maximum(), 0., vmax);
-//    topcolor = qMin(TXTedit->text().toFloat(),vmax);
-    SLDslider->setTracking(false);
-    SLDslider->setSliderPosition(ix);
-    SLDslider->setTracking(true);
+void lineEditSlider::TXTedit_changed()
+{
+    bool ok = false;
+    float value = TXTedit->text().toFloat(&ok);
+
+    if (!ok) {
+        setCurrentValue(topcolor, vmax);
+        return;
+    }
+
+    value = qBound(0.f, value, vmax);
+
+    setCurrentValue(value, vmax);
+
     emit valueChanged(topcolor);
     emit sliderReleased();
 }

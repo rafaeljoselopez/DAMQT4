@@ -153,6 +153,7 @@ signals:
     void opendialog();
     void solidsurfChanged(bool);
     void toggleshowbutton();
+    void topcolorChanged(float);
     void translucenceChanged(bool);
     void updatedisplay();
     void updatelabelcolor(QString);
