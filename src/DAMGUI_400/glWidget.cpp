@@ -1757,12 +1757,17 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesOpacityConnection);
         surfacesOpacityConnection = QMetaObject::Connection();
 
+        disconnect(surfacesColorConnection);
+        surfacesColorConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
         surfacesTypeGroup->setEnabled(false);
         surfacesTranslucenceCheckBox->setEnabled(false);
         surfacesOpacitySlider->setEnabled(false);
+        surfacesColorButton->setEnabled(false);
+        surfacesColorButton->setVisible(false);
 
         surface *surf = selectedSurface();
 
@@ -1777,6 +1782,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
             surfacesTranslucenceCheckBox
         );
         const QSignalBlocker blockerOpacity(surfacesOpacitySlider);
+        const QSignalBlocker blockerColor(surfacesColorButton);
 
         // Synchronize surface type
 
@@ -1820,7 +1826,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
             });
 
-        // Initialize controls from the selected surface
+        // Initialize common controls from the selected surface
 
         surfacesSolidRadio->setChecked(surf->getsolidsurf());
         surfacesWireRadio->setChecked(!surf->getsolidsurf());
@@ -1836,6 +1842,34 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         surfacesTypeGroup->setEnabled(true);
         surfacesTranslucenceCheckBox->setEnabled(true);
         surfacesOpacitySlider->setEnabled(true);
+
+        // Surface-specific controls
+
+        const QString suffix = QFileInfo(surf->getname()).suffix();
+
+        const bool hasLocalExtrema =
+            (suffix == "sgh" || suffix == "srf");
+
+        surfacesColorButton->setVisible(!hasLocalExtrema);
+
+        if (!hasLocalExtrema) {
+
+            // Synchronize surface color
+
+            surfacesColorConnection =
+                connect(surf, &surface::surfaceColor,
+                        this, [this](QColor *color) {
+
+                    const QSignalBlocker blocker(surfacesColorButton);
+
+                    surfacesColorButton->setColor(color);
+
+                });
+
+            QColor color = surf->getsurfacecolor();
+            surfacesColorButton->setColor(&color);
+            surfacesColorButton->setEnabled(true);
+        }
 
     });
 
@@ -1964,12 +1998,29 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     });
 
+    // Surface color
+
+    surfacesColorButton = new ColorButton(surfacesPropertiesPage);
+    surfacesColorButton->setIcon(QIcon(":/images/colores48.png"));
+    surfacesColorButton->setText(tr("Color"));
+    surfacesColorButton->setEnabled(false);
+    surfacesColorButton->setVisible(false);
+
+    connect(surfacesColorButton, &QPushButton::clicked,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->selectsurfacecolor();
+
+    });
+
     surfacesLayout->addWidget(surfacesTitle);
     surfacesLayout->addWidget(surfacesList);
     surfacesLayout->addLayout(surfacesButtonsLayout);
     surfacesLayout->addWidget(surfacesTypeGroup);
     surfacesLayout->addWidget(surfacesTranslucenceCheckBox);
-    surfacesLayout->addWidget(surfacesOpacitySlider);
+    surfacesLayout->addWidget(surfacesOpacitySlider, 0, Qt::AlignTop);
+    surfacesLayout->addWidget(surfacesColorButton, 0, Qt::AlignHCenter);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);

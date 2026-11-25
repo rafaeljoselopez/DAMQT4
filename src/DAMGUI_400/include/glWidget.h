@@ -396,6 +396,7 @@ private:
     ColorButton *labelsFontColor = nullptr;
     ColorButton *labelsSelectAll = nullptr;
     ColorButton *labelsSelectNone = nullptr;
+    ColorButton *surfacesColorButton = nullptr;
 
     DoubleSpinBox *SPBbondthres;
 
@@ -522,6 +523,7 @@ private:
     QMetaObject::Connection labelsUnitsConnection;
     QMetaObject::Connection labelsVerticalShiftConnection;
     QMetaObject::Connection labelsVisibilityConnection;
+    QMetaObject::Connection surfacesColorConnection;
     QMetaObject::Connection surfacesOpacityConnection;
     QMetaObject::Connection surfacesTranslucenceConnection;
     QMetaObject::Connection surfacesTypeConnection;
