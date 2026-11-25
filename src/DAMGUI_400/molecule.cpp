@@ -1908,13 +1908,21 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     SLDopacity->setRange(0,100);
     SLDopacity->setSingleStep(1);
     SLDopacity->setPageStep(10);
-    SLDopacity->setValue(100.f * surf->getopacity());
+    SLDopacity->setValue(qRound(100.f * surf->getopacity()));
 
     connect(SLDopacity, &labelSlider::valueChanged,
             surf, &surface::opacity_changed);
 
     connect(SLDopacity, &labelSlider::sliderReleased,
             surf, &surface::opacity_released);
+
+    connect(surf, &surface::opacityChanged,
+            SLDopacity, [SLDopacity](float opacity) {
+
+                const QSignalBlocker blocker(SLDopacity);
+                SLDopacity->setValue(qRound(100.f * opacity));
+
+            });
 
 //        Translucency correction
     QCheckBox *CHKtranslucence = new QCheckBox(tr("Translucence correction"));

@@ -1754,11 +1754,15 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesTranslucenceConnection);
         surfacesTranslucenceConnection = QMetaObject::Connection();
 
+        disconnect(surfacesOpacityConnection);
+        surfacesOpacityConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
         surfacesTypeGroup->setEnabled(false);
         surfacesTranslucenceCheckBox->setEnabled(false);
+        surfacesOpacitySlider->setEnabled(false);
 
         surface *surf = selectedSurface();
 
@@ -1772,6 +1776,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         const QSignalBlocker blockerTranslucence(
             surfacesTranslucenceCheckBox
         );
+        const QSignalBlocker blockerOpacity(surfacesOpacitySlider);
 
         // Synchronize surface type
 
@@ -1801,16 +1806,36 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
             });
 
+        // Synchronize opacity
+
+        surfacesOpacityConnection =
+            connect(surf, &surface::opacityChanged,
+                    this, [this](float opacity) {
+
+                const QSignalBlocker blocker(surfacesOpacitySlider);
+
+                surfacesOpacitySlider->setValue(
+                    qRound(100.f * opacity)
+                );
+
+            });
+
         // Initialize controls from the selected surface
 
         surfacesSolidRadio->setChecked(surf->getsolidsurf());
         surfacesWireRadio->setChecked(!surf->getsolidsurf());
+
         surfacesTranslucenceCheckBox->setChecked(
             surf->gettranslucence()
         );
 
+        surfacesOpacitySlider->setValue(
+            qRound(100.f * surf->getopacity())
+        );
+
         surfacesTypeGroup->setEnabled(true);
         surfacesTranslucenceCheckBox->setEnabled(true);
+        surfacesOpacitySlider->setEnabled(true);
 
     });
 
@@ -1913,11 +1938,38 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     });
 
+    // Opacity
+
+    surfacesOpacitySlider = new labelSlider();
+    surfacesOpacitySlider->setlabeltext(tr("Opacity:"));
+    surfacesOpacitySlider->setRange(0,100);
+    surfacesOpacitySlider->setSingleStep(1);
+    surfacesOpacitySlider->setPageStep(10);
+    surfacesOpacitySlider->setValue(100);
+    surfacesOpacitySlider->setEnabled(false);
+
+    connect(surfacesOpacitySlider, &labelSlider::valueChanged,
+            this, [this](int value) {
+
+        if (surface *surf = selectedSurface())
+            surf->opacity_changed(value);
+
+    });
+
+    connect(surfacesOpacitySlider, &labelSlider::sliderReleased,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->opacity_released();
+
+    });
+
     surfacesLayout->addWidget(surfacesTitle);
     surfacesLayout->addWidget(surfacesList);
     surfacesLayout->addLayout(surfacesButtonsLayout);
     surfacesLayout->addWidget(surfacesTypeGroup);
     surfacesLayout->addWidget(surfacesTranslucenceCheckBox);
+    surfacesLayout->addWidget(surfacesOpacitySlider);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);

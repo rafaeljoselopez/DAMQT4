@@ -149,6 +149,7 @@ signals:
     void fontColor(QColor *);
     void maximaColor(QColor *);
     void minimaColor(QColor *);
+    void opacityChanged(float);
     void opendialog();
     void solidsurfChanged(bool);
     void toggleshowbutton();

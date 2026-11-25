@@ -118,6 +118,7 @@
     #define nullpointer nullptr
 #endif
 
+class labelSlider;
 class SettingsReader;
 class SettingsWriter;
 
@@ -398,6 +399,8 @@ private:
 
     DoubleSpinBox *SPBbondthres;
 
+    labelSlider *surfacesOpacitySlider = nullptr;
+
     MainWindow3DViewer *mainWin;
 
     MyDockWidget *gdock;
@@ -519,6 +522,7 @@ private:
     QMetaObject::Connection labelsUnitsConnection;
     QMetaObject::Connection labelsVerticalShiftConnection;
     QMetaObject::Connection labelsVisibilityConnection;
+    QMetaObject::Connection surfacesOpacityConnection;
     QMetaObject::Connection surfacesTranslucenceConnection;
     QMetaObject::Connection surfacesTypeConnection;
 

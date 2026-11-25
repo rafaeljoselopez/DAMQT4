@@ -1745,7 +1745,11 @@ void surface::setonlyextremactive(bool a){
 }
 
 void surface::setopacity(float a){
+    if (opacity == a)
+        return;
+
     opacity = a;
+    emit opacityChanged(opacity);
 }
 
 void surface::setshowextremacoords(bool a){
