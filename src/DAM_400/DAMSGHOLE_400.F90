@@ -785,7 +785,7 @@ END MODULE
         if (lsghole) write(iuni+1) nminregions
     else
         if (lcolor) write(iuni,"(i7)") nminregions
-        if (lsghole) write(iuni,"(i7)") nminregions
+        if (lsghole) write(iuni+1,"(i7)") nminregions
     endif
 
     write(6,"(/'Number of regions with local minima (lower than mesp = ', e9.2, ') found = ', i3)") thresmin, nminregions

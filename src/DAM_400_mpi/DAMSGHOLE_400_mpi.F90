@@ -1166,7 +1166,7 @@ END MODULE
                 if (lsghole) write(iuni+2*nprocs+1) nmaxregions
             else
                 if (lcolor) write(iuni+2*nprocs,"(i7)") nmaxregions
-                if (lsghole) write(iuni+2*nprocs,"(i7)") nmaxregions
+                if (lsghole) write(iuni+2*nprocs+1,"(i7)") nmaxregions
             endif
             if (kntgroupmax .gt. 0) then
                 write(6,"(/,'Positions and mesp values of the local maxima in the mesh, and area for local surface with mesp > '&
@@ -1203,7 +1203,7 @@ END MODULE
                 if (lsghole) write(iuni+2*nprocs+1) nminregions
             else
                 if (lcolor) write(iuni+2*nprocs,"(i7)") nminregions
-                if (lsghole) write(iuni+2*nprocs,"(i7)") nminregions
+                if (lsghole) write(iuni+2*nprocs+1,"(i7)") nminregions
             endif
             if (kntgroupmin .gt. 0) then
                 write(6,"(/,'Positions and mesp values of the local minima in the mesh, and area for local surface with mesp < '&
