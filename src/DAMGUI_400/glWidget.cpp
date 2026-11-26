@@ -1763,6 +1763,12 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesRangeConnection);
         surfacesRangeConnection = QMetaObject::Connection();
 
+        disconnect(surfacesLocalMaxConnection);
+        surfacesLocalMaxConnection = QMetaObject::Connection();
+
+        disconnect(surfacesLocalMinConnection);
+        surfacesLocalMinConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -1773,6 +1779,8 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         surfacesColorButton->setVisible(false);
         surfacesRangeGroup->setEnabled(false);
         surfacesRangeGroup->setVisible(false);
+        surfacesLocalExtremaGroup->setEnabled(false);
+        surfacesLocalExtremaGroup->setVisible(false);
 
         surface *surf = selectedSurface();
 
@@ -1874,6 +1882,54 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
             QColor color = surf->getsurfacecolor();
             surfacesColorButton->setColor(&color);
             surfacesColorButton->setEnabled(true);
+        }
+
+        // Initialize and synchronize local extrema controls
+
+        if (hasLocalExtrema) {
+
+            const QSignalBlocker blockerMax(
+                surfacesLocalMaxCheckBox
+            );
+
+            const QSignalBlocker blockerMin(
+                surfacesLocalMinCheckBox
+            );
+
+            surfacesLocalMaxCheckBox->setChecked(
+                surf->getshowlocalmax()
+            );
+
+            surfacesLocalMinCheckBox->setChecked(
+                surf->getshowlocalmin()
+            );
+
+            surfacesLocalMaxConnection =
+                connect(surf, &surface::showlocalmaxChanged,
+                        this, [this](bool checked) {
+
+                    const QSignalBlocker blocker(
+                        surfacesLocalMaxCheckBox
+                    );
+
+                    surfacesLocalMaxCheckBox->setChecked(checked);
+
+                });
+
+            surfacesLocalMinConnection =
+                connect(surf, &surface::showlocalminChanged,
+                        this, [this](bool checked) {
+
+                    const QSignalBlocker blocker(
+                        surfacesLocalMinCheckBox
+                    );
+
+                    surfacesLocalMinCheckBox->setChecked(checked);
+
+                });
+
+            surfacesLocalExtremaGroup->setEnabled(true);
+            surfacesLocalExtremaGroup->setVisible(true);
         }
 
         // Initialize and synchronize surface color boundaries
@@ -2096,6 +2152,50 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesRangeGroup->setEnabled(false);
     surfacesRangeGroup->setVisible(false);
 
+    // Surface local extrema
+
+    surfacesLocalExtremaGroup = new QGroupBox(
+        tr("Local extrema"), surfacesPropertiesPage
+    );
+
+    surfacesLocalMaxCheckBox = new QCheckBox(
+        tr("Local maxima"), surfacesLocalExtremaGroup
+    );
+
+    surfacesLocalMinCheckBox = new QCheckBox(
+        tr("Local minima"), surfacesLocalExtremaGroup
+    );
+
+    connect(surfacesLocalMaxCheckBox, &QCheckBox::toggled,
+                this, [this](bool checked) {
+
+            if (surface *surf = selectedSurface())
+                surf->setshowlocalmax(checked);
+
+        });
+
+    connect(surfacesLocalMinCheckBox, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (surface *surf = selectedSurface())
+            surf->setshowlocalmin(checked);
+
+    });
+
+    QGridLayout *surfacesLocalExtremaLayout =
+        new QGridLayout(surfacesLocalExtremaGroup);
+
+    surfacesLocalExtremaLayout->addWidget(
+        surfacesLocalMaxCheckBox, 0, 0
+    );
+
+    surfacesLocalExtremaLayout->addWidget(
+        surfacesLocalMinCheckBox, 1, 0
+    );
+
+    surfacesLocalExtremaGroup->setEnabled(false);
+    surfacesLocalExtremaGroup->setVisible(false);
+
     // Surfaces properties layout
 
     surfacesLayout->addWidget(surfacesTitle);
@@ -2106,6 +2206,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesLayout->addWidget(surfacesOpacitySlider, 0, Qt::AlignTop);
     surfacesLayout->addWidget(surfacesColorButton, 0, Qt::AlignHCenter);
     surfacesLayout->addWidget(surfacesRangeGroup, 0, Qt::AlignTop);
+    surfacesLayout->addWidget(surfacesLocalExtremaGroup, 0, Qt::AlignTop);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);

@@ -447,6 +447,8 @@ private:
     QCheckBox *labelsShowCoordinates = nullptr;
     QCheckBox *labelsShowIndices = nullptr;
     QCheckBox *labelsShowSymbols = nullptr;
+    QCheckBox *surfacesLocalMaxCheckBox = nullptr;
+    QCheckBox *surfacesLocalMinCheckBox = nullptr;
     QCheckBox *surfacesTranslucenceCheckBox = nullptr;
 
     QColor ambientcolor;
@@ -475,6 +477,7 @@ private:
     QGroupBox *FRMtranslation;
     QGroupBox *FRMviewport;
     QGroupBox *criticalPointsEigenvectorsGroup = nullptr;
+    QGroupBox *surfacesLocalExtremaGroup = nullptr;
     QGroupBox *surfacesRangeGroup = nullptr;
     QGroupBox *surfacesTypeGroup = nullptr;
 
@@ -523,6 +526,8 @@ private:
     QMetaObject::Connection labelsVerticalShiftConnection;
     QMetaObject::Connection labelsVisibilityConnection;
     QMetaObject::Connection surfacesColorConnection;
+    QMetaObject::Connection surfacesLocalMaxConnection;
+    QMetaObject::Connection surfacesLocalMinConnection;
     QMetaObject::Connection surfacesOpacityConnection;
     QMetaObject::Connection surfacesRangeConnection;
     QMetaObject::Connection surfacesTranslucenceConnection;

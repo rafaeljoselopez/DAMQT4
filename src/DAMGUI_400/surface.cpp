@@ -1778,12 +1778,22 @@ void surface::setshowgridbounds(bool a){
 }
 
 void surface::setshowlocalmax(bool a){
+    if (showlocalmax == a)
+        return;
+
     showlocalmax = a;
+
+    emit showlocalmaxChanged(showlocalmax);
     emit updatedisplay();
 }
 
 void surface::setshowlocalmin(bool a){
+    if (showlocalmin == a)
+        return;
+
     showlocalmin = a;
+
+    emit showlocalminChanged(showlocalmin);
     emit updatedisplay();
 }
 

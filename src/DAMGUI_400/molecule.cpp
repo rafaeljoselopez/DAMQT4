@@ -2001,7 +2001,8 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
             });
 
 
-//        Show local maxima and minima
+    //      Show local maxima and minima
+
     QLabel *LBLshowlocalmax = new QLabel(tr("Local maxima"));
     QCheckBox *CHKshowlocalmax = new QCheckBox();
     CHKshowlocalmax->setChecked(surf->getshowlocalmax());
@@ -2011,8 +2012,16 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     CHKshowlocalmin->setChecked(surf->getshowlocalmin());
 
     combineSignalsOr *signalshowlocal = new combineSignalsOr();
+
+    signalshowlocal->setSignal1(CHKshowlocalmax->isChecked());
+    signalshowlocal->setSignal2(CHKshowlocalmin->isChecked());
+
     QGroupBox *FRMlocalextremaoptions = new QGroupBox();
-    FRMlocalextremaoptions->setVisible(CHKshowlocalmax->isChecked()||CHKshowlocalmin->isChecked());
+
+    FRMlocalextremaoptions->setVisible(
+        CHKshowlocalmax->isChecked() ||
+        CHKshowlocalmin->isChecked()
+        );
 
     connect(CHKshowlocalmax, &QCheckBox::toggled,
             signalshowlocal, &combineSignalsOr::setSignal1);
@@ -2032,7 +2041,13 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(signalshowlocal, &combineSignalsOr::signalsCombined,
             this, &molecule::resizeQDLeditMolecule);
 
-//        Show symbols of local extrema
+    connect(surf, &surface::showlocalmaxChanged,
+            CHKshowlocalmax, &QCheckBox::setChecked);
+
+    connect(surf, &surface::showlocalminChanged,
+            CHKshowlocalmin, &QCheckBox::setChecked);
+
+    //      Show symbols of local extrema
 
     QCheckBox *CHKshowextremasymbols = new QCheckBox(tr("Show symbols"));
     CHKshowextremasymbols->setChecked(surf->getshowextremasymbols());

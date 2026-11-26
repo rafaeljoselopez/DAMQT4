@@ -151,6 +151,8 @@ signals:
     void minimaColor(QColor *);
     void opacityChanged(float);
     void opendialog();
+    void showlocalmaxChanged(bool);
+    void showlocalminChanged(bool);
     void solidsurfChanged(bool);
     void toggleshowbutton();
     void topcolorChanged(float);
