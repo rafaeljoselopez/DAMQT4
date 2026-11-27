@@ -1764,7 +1764,12 @@ void surface::setshowextremacoords(bool a){
 }
 
 void surface::setshowextremaindices(bool a){
+    if (showextremaindices == a)
+        return;
+
     showextremaindices = a;
+
+    emit showextremaindicesChanged(showextremaindices);
     emit updatedisplay();
 }
 

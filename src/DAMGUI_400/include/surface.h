@@ -151,6 +151,7 @@ signals:
     void minimaColor(QColor *);
     void opacityChanged(float);
     void opendialog();
+    void showextremaindicesChanged(bool);
     void showextremasymbolsChanged(bool);
     void showgridboundsChanged(bool);
     void showlocalmaxChanged(bool);

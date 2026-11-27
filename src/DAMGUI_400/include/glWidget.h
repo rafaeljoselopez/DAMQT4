@@ -452,6 +452,7 @@ private:
     QCheckBox *surfacesLocalMaxCheckBox = nullptr;
     QCheckBox *surfacesLocalMinCheckBox = nullptr;
     QCheckBox *surfacesShowGridCheckBox = nullptr;
+    QCheckBox *surfacesShowIndicesCheckBox = nullptr;
     QCheckBox *surfacesShowSymbolsCheckBox = nullptr;
     QCheckBox *surfacesTranslucenceCheckBox = nullptr;
 
@@ -539,6 +540,7 @@ private:
     QMetaObject::Connection surfacesOpacityConnection;
     QMetaObject::Connection surfacesRangeConnection;
     QMetaObject::Connection surfacesShowGridConnection;
+    QMetaObject::Connection surfacesShowIndicesConnection;
     QMetaObject::Connection surfacesShowSymbolsConnection;
     QMetaObject::Connection surfacesTranslucenceConnection;
     QMetaObject::Connection surfacesTypeConnection;

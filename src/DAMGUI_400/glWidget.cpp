@@ -1784,6 +1784,9 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesShowSymbolsConnection);
         surfacesShowSymbolsConnection = QMetaObject::Connection();
 
+        disconnect(surfacesShowIndicesConnection);
+        surfacesShowIndicesConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -2055,12 +2058,20 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
         if (hasLocalExtrema) {
 
-            const QSignalBlocker blocker(
+            const QSignalBlocker blockerSymbols(
                 surfacesShowSymbolsCheckBox
+            );
+
+            const QSignalBlocker blockerIndices(
+                surfacesShowIndicesCheckBox
             );
 
             surfacesShowSymbolsCheckBox->setChecked(
                 surf->getshowextremasymbols()
+            );
+
+            surfacesShowIndicesCheckBox->setChecked(
+                surf->getshowextremaindices()
             );
 
             surfacesShowSymbolsConnection =
@@ -2072,6 +2083,18 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                     );
 
                     surfacesShowSymbolsCheckBox->setChecked(checked);
+
+                });
+
+            surfacesShowIndicesConnection =
+                connect(surf, &surface::showextremaindicesChanged,
+                        this, [this](bool checked) {
+
+                    const QSignalBlocker blocker(
+                        surfacesShowIndicesCheckBox
+                    );
+
+                    surfacesShowIndicesCheckBox->setChecked(checked);
 
                 });
 
@@ -2446,19 +2469,35 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         tr("Show symbols"), surfacesLocalExtremaLabelsGroup
     );
 
+    surfacesShowIndicesCheckBox = new QCheckBox(
+        tr("Show indices"), surfacesLocalExtremaLabelsGroup
+    );
+
     connect(surfacesShowSymbolsCheckBox, &QCheckBox::toggled,
-                this, [this](bool checked) {
+            this, [this](bool checked) {
 
-            if (surface *surf = selectedSurface())
-                surf->setshowextremasymbols(checked);
+        if (surface *surf = selectedSurface())
+            surf->setshowextremasymbols(checked);
 
-        });
+    });
+
+    connect(surfacesShowIndicesCheckBox, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (surface *surf = selectedSurface())
+            surf->setshowextremaindices(checked);
+
+    });
 
     QGridLayout *surfacesLocalExtremaLabelsLayout =
         new QGridLayout(surfacesLocalExtremaLabelsGroup);
 
     surfacesLocalExtremaLabelsLayout->addWidget(
         surfacesShowSymbolsCheckBox, 0, 0
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesShowIndicesCheckBox, 1, 0
     );
 
     surfacesLocalExtremaLabelsGroup->setEnabled(false);

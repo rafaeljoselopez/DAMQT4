@@ -2073,6 +2073,15 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(CHKshowextremaindices, &QCheckBox::toggled,
             surf, &surface::setshowextremaindices);
 
+    connect(surf, &surface::showextremaindicesChanged,
+            CHKshowextremaindices, [CHKshowextremaindices](bool checked) {
+
+                const QSignalBlocker blocker(CHKshowextremaindices);
+
+                CHKshowextremaindices->setChecked(checked);
+
+            });
+
 //        Show values of local extrema
 
     QCheckBox *CHKshowextremavalues = new QCheckBox(tr("Show MESP values"));
