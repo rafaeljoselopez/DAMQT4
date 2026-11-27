@@ -398,6 +398,8 @@ private:
     ColorButton *labelsSelectAll = nullptr;
     ColorButton *labelsSelectNone = nullptr;
     ColorButton *surfacesColorButton = nullptr;
+    ColorButton *surfacesMaximaColorButton = nullptr;
+    ColorButton *surfacesMinimaColorButton = nullptr;
 
     DoubleSpinBox *SPBbondthres;
 
@@ -528,6 +530,8 @@ private:
     QMetaObject::Connection surfacesColorConnection;
     QMetaObject::Connection surfacesLocalMaxConnection;
     QMetaObject::Connection surfacesLocalMinConnection;
+    QMetaObject::Connection surfacesMaximaColorConnection;
+    QMetaObject::Connection surfacesMinimaColorConnection;
     QMetaObject::Connection surfacesOpacityConnection;
     QMetaObject::Connection surfacesRangeConnection;
     QMetaObject::Connection surfacesTranslucenceConnection;

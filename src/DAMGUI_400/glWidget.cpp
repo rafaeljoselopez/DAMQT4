@@ -1769,6 +1769,12 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesLocalMinConnection);
         surfacesLocalMinConnection = QMetaObject::Connection();
 
+        disconnect(surfacesMaximaColorConnection);
+        surfacesMaximaColorConnection = QMetaObject::Connection();
+
+        disconnect(surfacesMinimaColorConnection);
+        surfacesMinimaColorConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -1925,6 +1931,46 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                     );
 
                     surfacesLocalMinCheckBox->setChecked(checked);
+
+                });
+
+            // Initialize and synchronize local extrema colors
+
+            const QSignalBlocker blockerMaxColor(
+                surfacesMaximaColorButton
+            );
+
+            const QSignalBlocker blockerMinColor(
+                surfacesMinimaColorButton
+            );
+
+            QColor maximaColor = surf->getextremacolor(0);
+            QColor minimaColor = surf->getextremacolor(1);
+
+            surfacesMaximaColorButton->setColor(&maximaColor);
+            surfacesMinimaColorButton->setColor(&minimaColor);
+
+            surfacesMaximaColorConnection =
+                connect(surf, &surface::maximaColor,
+                        this, [this](QColor *color) {
+
+                    const QSignalBlocker blocker(
+                        surfacesMaximaColorButton
+                    );
+
+                    surfacesMaximaColorButton->setColor(color);
+
+                });
+
+            surfacesMinimaColorConnection =
+                connect(surf, &surface::minimaColor,
+                        this, [this](QColor *color) {
+
+                    const QSignalBlocker blocker(
+                        surfacesMinimaColorButton
+                    );
+
+                    surfacesMinimaColorButton->setColor(color);
 
                 });
 
@@ -2182,6 +2228,42 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     });
 
+    // Local extrema colors
+
+    surfacesMaximaColorButton =
+        new ColorButton(surfacesLocalExtremaGroup);
+
+    surfacesMaximaColorButton->setIcon(
+        QIcon(":/images/colores48.png")
+    );
+
+    surfacesMaximaColorButton->setText(tr("Color"));
+
+    surfacesMinimaColorButton =
+        new ColorButton(surfacesLocalExtremaGroup);
+
+    surfacesMinimaColorButton->setIcon(
+        QIcon(":/images/colores48.png")
+    );
+
+    surfacesMinimaColorButton->setText(tr("Color"));
+
+    connect(surfacesMaximaColorButton, &QPushButton::clicked,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->selectmaximacolor();
+
+    });
+
+    connect(surfacesMinimaColorButton, &QPushButton::clicked,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->selectminimacolor();
+
+    });
+
     QGridLayout *surfacesLocalExtremaLayout =
         new QGridLayout(surfacesLocalExtremaGroup);
 
@@ -2190,7 +2272,15 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     );
 
     surfacesLocalExtremaLayout->addWidget(
+        surfacesMaximaColorButton, 0, 1
+    );
+
+    surfacesLocalExtremaLayout->addWidget(
         surfacesLocalMinCheckBox, 1, 0
+    );
+
+    surfacesLocalExtremaLayout->addWidget(
+        surfacesMinimaColorButton, 1, 1
     );
 
     surfacesLocalExtremaGroup->setEnabled(false);
