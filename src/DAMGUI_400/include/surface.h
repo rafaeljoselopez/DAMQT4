@@ -153,6 +153,7 @@ signals:
     void opendialog();
     void showextremaindicesChanged(bool);
     void showextremasymbolsChanged(bool);
+    void showextremavaluesChanged(bool);
     void showgridboundsChanged(bool);
     void showlocalmaxChanged(bool);
     void showlocalminChanged(bool);
@@ -165,6 +166,7 @@ signals:
     void updatelabelcolor(QString);
     void updateRightMenu();
     void updatetext(QString);
+    void valueprecisionChanged(int);
 
 public slots:
     int getballradius();

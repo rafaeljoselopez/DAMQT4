@@ -1787,6 +1787,12 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesShowIndicesConnection);
         surfacesShowIndicesConnection = QMetaObject::Connection();
 
+        disconnect(surfacesShowValuesConnection);
+        surfacesShowValuesConnection = QMetaObject::Connection();
+
+        disconnect(surfacesValuePrecisionConnection);
+        surfacesValuePrecisionConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -2066,12 +2072,36 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                 surfacesShowIndicesCheckBox
             );
 
+            const QSignalBlocker blockerValues(
+                surfacesShowValuesCheckBox
+            );
+
+            const QSignalBlocker blockerValuePrecision(
+                surfacesValuePrecisionSpinBox
+            );
+
             surfacesShowSymbolsCheckBox->setChecked(
                 surf->getshowextremasymbols()
             );
 
             surfacesShowIndicesCheckBox->setChecked(
                 surf->getshowextremaindices()
+            );
+
+            surfacesShowValuesCheckBox->setChecked(
+                surf->getshowextremavalues()
+            );
+
+            surfacesValuePrecisionSpinBox->setValue(
+                surf->getvalueprecision()
+            );
+
+            surfacesValuePrecisionLabel->setVisible(
+                surf->getshowextremavalues()
+            );
+
+            surfacesValuePrecisionSpinBox->setVisible(
+                surf->getshowextremavalues()
             );
 
             surfacesShowSymbolsConnection =
@@ -2095,6 +2125,33 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                     );
 
                     surfacesShowIndicesCheckBox->setChecked(checked);
+
+                });
+
+            surfacesShowValuesConnection =
+                connect(surf, &surface::showextremavaluesChanged,
+                        this, [this](bool checked) {
+
+                    const QSignalBlocker blocker(
+                        surfacesShowValuesCheckBox
+                    );
+
+                    surfacesShowValuesCheckBox->setChecked(checked);
+
+                    surfacesValuePrecisionLabel->setVisible(checked);
+                    surfacesValuePrecisionSpinBox->setVisible(checked);
+
+                });
+
+            surfacesValuePrecisionConnection =
+                connect(surf, &surface::valueprecisionChanged,
+                        this, [this](int value) {
+
+                    const QSignalBlocker blocker(
+                        surfacesValuePrecisionSpinBox
+                    );
+
+                    surfacesValuePrecisionSpinBox->setValue(value);
 
                 });
 
@@ -2473,6 +2530,24 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         tr("Show indices"), surfacesLocalExtremaLabelsGroup
     );
 
+    surfacesShowValuesCheckBox = new QCheckBox(
+        tr("Show MESP values"), surfacesLocalExtremaLabelsGroup
+    );
+
+    surfacesValuePrecisionLabel = new QLabel(
+        tr("Precision"), surfacesLocalExtremaLabelsGroup
+    );
+
+    surfacesValuePrecisionSpinBox = new QSpinBox(
+        surfacesLocalExtremaLabelsGroup
+    );
+
+    surfacesValuePrecisionSpinBox->setRange(0, 7);
+    surfacesValuePrecisionSpinBox->setMaximumWidth(50);
+
+    surfacesValuePrecisionLabel->setVisible(false);
+    surfacesValuePrecisionSpinBox->setVisible(false);
+
     connect(surfacesShowSymbolsCheckBox, &QCheckBox::toggled,
             this, [this](bool checked) {
 
@@ -2489,6 +2564,23 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     });
 
+    connect(surfacesShowValuesCheckBox, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (surface *surf = selectedSurface())
+            surf->setshowextremavalues(checked);
+
+    });
+
+    connect(surfacesValuePrecisionSpinBox,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (surface *surf = selectedSurface())
+            surf->setvalueprecision(value);
+
+    });
+
     QGridLayout *surfacesLocalExtremaLabelsLayout =
         new QGridLayout(surfacesLocalExtremaLabelsGroup);
 
@@ -2498,6 +2590,18 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     surfacesLocalExtremaLabelsLayout->addWidget(
         surfacesShowIndicesCheckBox, 1, 0
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesShowValuesCheckBox, 2, 0
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesValuePrecisionLabel, 2, 1, Qt::AlignRight
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesValuePrecisionSpinBox, 2, 2, Qt::AlignRight
     );
 
     surfacesLocalExtremaLabelsGroup->setEnabled(false);

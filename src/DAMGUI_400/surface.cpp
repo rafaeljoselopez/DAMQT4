@@ -1784,7 +1784,12 @@ void surface::setshowextremasymbols(bool a){
 }
 
 void surface::setshowextremavalues(bool a){
+    if (showextremavalues == a)
+        return;
+
     showextremavalues = a;
+
+    emit showextremavaluesChanged(showextremavalues);
     emit updatedisplay();
 }
 
@@ -1898,9 +1903,14 @@ void surface::setvshift(int i){
 }
 
 
-// Changes precision for extrema coordinates values
+// Changes precision for extrema MESP values
 void surface::setvalueprecision(int i){
+    if (valueprecision == i)
+        return;
+
     valueprecision = i;
+
+    emit valueprecisionChanged(valueprecision);
     emit updatedisplay();
 }
 

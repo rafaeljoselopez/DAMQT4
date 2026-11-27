@@ -2082,13 +2082,16 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
             });
 
-//        Show values of local extrema
+    //        Show values of local extrema
 
     QCheckBox *CHKshowextremavalues = new QCheckBox(tr("Show MESP values"));
     CHKshowextremavalues->setChecked(surf->getshowextremavalues());
 
     connect(CHKshowextremavalues, &QCheckBox::toggled,
             surf, &surface::setshowextremavalues);
+
+    connect(surf, &surface::showextremavaluesChanged,
+            CHKshowextremavalues, &QCheckBox::setChecked);
 
     QLabel *LBLvalueprecision = new QLabel(tr("Precision"));
     LBLvalueprecision->setVisible(CHKshowextremavalues->isChecked());
@@ -2101,6 +2104,15 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
     connect(SPBvalueprecision, QOverload<int>::of(&QSpinBox::valueChanged),
             surf, &surface::setvalueprecision);
+
+    connect(surf, &surface::valueprecisionChanged,
+            SPBvalueprecision, [SPBvalueprecision](int value) {
+
+                const QSignalBlocker blocker(SPBvalueprecision);
+
+                SPBvalueprecision->setValue(value);
+
+            });
 
     connect(CHKshowextremavalues, &QCheckBox::toggled,
             LBLvalueprecision, &QWidget::setVisible);
