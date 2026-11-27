@@ -451,6 +451,7 @@ private:
     QCheckBox *labelsShowSymbols = nullptr;
     QCheckBox *surfacesLocalMaxCheckBox = nullptr;
     QCheckBox *surfacesLocalMinCheckBox = nullptr;
+    QCheckBox *surfacesShowCoordsCheckBox = nullptr;
     QCheckBox *surfacesShowGridCheckBox = nullptr;
     QCheckBox *surfacesShowIndicesCheckBox = nullptr;
     QCheckBox *surfacesShowSymbolsCheckBox = nullptr;
@@ -493,6 +494,7 @@ private:
     QLabel *criticalPointsValuesPrecisionLabel = nullptr;
     QLabel *labelsCoordinatePrecisionLabel = nullptr;
     QLabel *labelsVerticalShiftLabel = nullptr;
+    QLabel *surfacesCoordPrecisionLabel = nullptr;
     QLabel *surfacesValuePrecisionLabel = nullptr;
 
     QLineEdit *criticalPointsFile = nullptr;
@@ -535,12 +537,14 @@ private:
     QMetaObject::Connection labelsVisibilityConnection;
     QMetaObject::Connection surfacesBallRadiusConnection;
     QMetaObject::Connection surfacesColorConnection;
+    QMetaObject::Connection surfacesCoordPrecisionConnection;
     QMetaObject::Connection surfacesLocalMaxConnection;
     QMetaObject::Connection surfacesLocalMinConnection;
     QMetaObject::Connection surfacesMaximaColorConnection;
     QMetaObject::Connection surfacesMinimaColorConnection;
     QMetaObject::Connection surfacesOpacityConnection;
     QMetaObject::Connection surfacesRangeConnection;
+    QMetaObject::Connection surfacesShowCoordsConnection;
     QMetaObject::Connection surfacesShowGridConnection;
     QMetaObject::Connection surfacesShowIndicesConnection;
     QMetaObject::Connection surfacesShowSymbolsConnection;
@@ -602,6 +606,7 @@ private:
     QSpinBox *forcesArrowWidth = nullptr;
     QSpinBox *labelsCoordinatePrecision = nullptr;
     QSpinBox *surfacesBallRadiusSpinBox = nullptr;
+    QSpinBox *surfacesCoordPrecisionSpinBox = nullptr;
     QSpinBox *surfacesValuePrecisionSpinBox = nullptr;
 
     QSplitter *sceneSplitter;

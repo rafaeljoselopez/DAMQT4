@@ -1879,7 +1879,7 @@ void molecule::create_surfaces_widgets_and_layouts()
 togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
     togglingGroupBox *FRMsurfaceeditor = new togglingGroupBox();
-//        Surface type
+    //        Surface type
 
     QGroupBox *FRMsurftype = new QGroupBox(tr("Surface type"));
     QRadioButton *RBTsolidsurf = new QRadioButton(tr("Solid surface"),FRMsurftype);
@@ -1902,7 +1902,7 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
             });
 
-//        Opacity
+    //        Opacity
     labelSlider *SLDopacity = new labelSlider();
     SLDopacity->setlabeltext(QString(tr("Opacity:")));
     SLDopacity->setRange(0,100);
@@ -1924,7 +1924,7 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
             });
 
-//        Translucency correction
+    //        Translucency correction
     QCheckBox *CHKtranslucence = new QCheckBox(tr("Translucence correction"));
     CHKtranslucence->setChecked(surf->gettranslucence());
 
@@ -1940,7 +1940,7 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
             });
 
-//        Basins color
+    //        Basins color
     ColorButton *BTNsurfacecolor = new ColorButton();
     BTNsurfacecolor->setIcon(QIcon(":/images/colores48.png"));
     BTNsurfacecolor->setText(tr("Color"));
@@ -2125,7 +2125,7 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
 
 
-//        Show coordinates of local extrema
+    //        Show coordinates of local extrema
 
     QCheckBox *CHKshowextremacoords = new QCheckBox(tr("Show coordinates"));
     CHKshowextremacoords->setChecked(surf->getshowextremacoords());
@@ -2133,12 +2133,13 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(CHKshowextremacoords, &QCheckBox::toggled,
             surf, &surface::setshowextremacoords);
 
+    connect(surf, &surface::showextremacoordsChanged,
+            CHKshowextremacoords, &QCheckBox::setChecked);
 
     QLabel *LBLcoordprecision = new QLabel(tr("Precision"));
     LBLcoordprecision->setVisible(CHKshowextremacoords->isChecked());
 
     QSpinBox *SPBcoordprecision = new QSpinBox();
-
     SPBcoordprecision->setMinimum(0);
     SPBcoordprecision->setMaximum(7);
     SPBcoordprecision->setMaximumWidth(50);
@@ -2148,17 +2149,23 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(SPBcoordprecision, QOverload<int>::of(&QSpinBox::valueChanged),
             surf, &surface::setcoordprecision);
 
+    connect(surf, &surface::coordprecisionChanged,
+            SPBcoordprecision, [SPBcoordprecision](int value) {
+
+                const QSignalBlocker blocker(SPBcoordprecision);
+
+                SPBcoordprecision->setValue(value);
+
+            });
+
     connect(CHKshowextremacoords, &QCheckBox::toggled,
             LBLcoordprecision, &QWidget::setVisible);
-
     connect(CHKshowextremacoords, &QCheckBox::toggled,
             SPBcoordprecision, &QWidget::setVisible);
-
     connect(CHKshowextremacoords, &QCheckBox::toggled,
             this, &molecule::resizeQDLeditMolecule);
 
-
-//            Only selected local extrema
+    //            Only selected local extrema
 
     QCheckBox *CHKextremactiveonly = new QCheckBox(tr("Only selected extrema"));
     CHKextremactiveonly->setChecked(surf->getonlyextremactive());

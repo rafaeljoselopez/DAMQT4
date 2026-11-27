@@ -1674,7 +1674,12 @@ void surface::makeSphere(int slices, int stacks){
 
 // Changes precision for extrema coordinates values
 void surface::setcoordprecision(int i){
+    if (coordprecision == i)
+        return;
+
     coordprecision = i;
+
+    emit coordprecisionChanged(coordprecision);
     emit updatedisplay();
 }
 
@@ -1759,7 +1764,12 @@ void surface::setopacity(float a){
 }
 
 void surface::setshowextremacoords(bool a){
+    if (showextremacoords == a)
+        return;
+
     showextremacoords = a;
+
+    emit showextremacoordsChanged(showextremacoords);
     emit updatedisplay();
 }
 

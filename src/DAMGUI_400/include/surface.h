@@ -146,11 +146,13 @@ public:
 
 signals:
     void ballradiusChanged(int);
+    void coordprecisionChanged(int);
     void fontColor(QColor *);
     void maximaColor(QColor *);
     void minimaColor(QColor *);
     void opacityChanged(float);
     void opendialog();
+    void showextremacoordsChanged(bool);
     void showextremaindicesChanged(bool);
     void showextremasymbolsChanged(bool);
     void showextremavaluesChanged(bool);
