@@ -145,7 +145,7 @@ public:
     void setvisible(bool);
 
 signals:
-    void surfaceColor(QColor *);
+    void ballradiusChanged(int);
     void fontColor(QColor *);
     void maximaColor(QColor *);
     void minimaColor(QColor *);
@@ -154,6 +154,7 @@ signals:
     void showlocalmaxChanged(bool);
     void showlocalminChanged(bool);
     void solidsurfChanged(bool);
+    void surfaceColor(QColor *);
     void toggleshowbutton();
     void topcolorChanged(float);
     void translucenceChanged(bool);

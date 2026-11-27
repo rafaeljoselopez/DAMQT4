@@ -1775,6 +1775,9 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesMinimaColorConnection);
         surfacesMinimaColorConnection = QMetaObject::Connection();
 
+        disconnect(surfacesBallRadiusConnection);
+        surfacesBallRadiusConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -1971,6 +1974,28 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                     );
 
                     surfacesMinimaColorButton->setColor(color);
+
+                });
+
+            // Initialize and synchronize local extrema ball radius
+
+            const QSignalBlocker blockerRadius(
+                surfacesBallRadiusSpinBox
+            );
+
+            surfacesBallRadiusSpinBox->setValue(
+                surf->getballradius()
+            );
+
+            surfacesBallRadiusConnection =
+                connect(surf, &surface::ballradiusChanged,
+                        this, [this](int value) {
+
+                    const QSignalBlocker blocker(
+                        surfacesBallRadiusSpinBox
+                    );
+
+                    surfacesBallRadiusSpinBox->setValue(value);
 
                 });
 
@@ -2281,6 +2306,34 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     surfacesLocalExtremaLayout->addWidget(
         surfacesMinimaColorButton, 1, 1
+    );
+
+    // Local extrema ball radius
+
+    QLabel *surfacesBallRadiusLabel =
+        new QLabel(tr("Ball radius"), surfacesLocalExtremaGroup);
+
+    surfacesBallRadiusSpinBox =
+        new QSpinBox(surfacesLocalExtremaGroup);
+
+    surfacesBallRadiusSpinBox->setRange(1, 100);
+    surfacesBallRadiusSpinBox->setMaximumWidth(50);
+
+    connect(surfacesBallRadiusSpinBox,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (surface *surf = selectedSurface())
+            surf->setballradius(value);
+
+    });
+
+    surfacesLocalExtremaLayout->addWidget(
+        surfacesBallRadiusLabel, 2, 0, Qt::AlignLeft
+    );
+
+    surfacesLocalExtremaLayout->addWidget(
+        surfacesBallRadiusSpinBox, 2, 1, Qt::AlignHCenter
     );
 
     surfacesLocalExtremaGroup->setEnabled(false);

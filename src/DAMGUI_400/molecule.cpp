@@ -2176,6 +2176,15 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(SPBballradius, QOverload<int>::of(&QSpinBox::valueChanged),
             surf, &surface::setballradius);
 
+    connect(surf, &surface::ballradiusChanged,
+            SPBballradius, [SPBballradius](int value) {
+
+                const QSignalBlocker blocker(SPBballradius);
+
+                SPBballradius->setValue(value);
+
+            });
+
 //         Extrema colors
 
     ColorButton *BTNmaximacolor = new ColorButton();

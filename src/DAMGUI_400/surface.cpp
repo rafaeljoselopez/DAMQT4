@@ -177,9 +177,15 @@ int surface::getballradius(){
 }
 
 // Changes ball radius
+
 void surface::setballradius(int i){
+    if (ballradius == i)
+        return;
+
     ballradius = i;
     createballs();
+
+    emit ballradiusChanged(ballradius);
     emit updatedisplay();
 }
 

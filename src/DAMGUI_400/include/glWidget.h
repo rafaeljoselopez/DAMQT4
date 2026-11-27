@@ -527,6 +527,7 @@ private:
     QMetaObject::Connection labelsUnitsConnection;
     QMetaObject::Connection labelsVerticalShiftConnection;
     QMetaObject::Connection labelsVisibilityConnection;
+    QMetaObject::Connection surfacesBallRadiusConnection;
     QMetaObject::Connection surfacesColorConnection;
     QMetaObject::Connection surfacesLocalMaxConnection;
     QMetaObject::Connection surfacesLocalMinConnection;
@@ -589,6 +590,7 @@ private:
     QSpinBox *forcesArrowLength = nullptr;
     QSpinBox *forcesArrowWidth = nullptr;
     QSpinBox *labelsCoordinatePrecision = nullptr;
+    QSpinBox *surfacesBallRadiusSpinBox = nullptr;
 
 
     QSplitter *sceneSplitter;
