@@ -400,6 +400,8 @@ private:
     ColorButton *surfacesColorButton = nullptr;
     ColorButton *surfacesMaximaColorButton = nullptr;
     ColorButton *surfacesMinimaColorButton = nullptr;
+    ColorButton *surfacesSelectAll = nullptr;
+    ColorButton *surfacesSelectNone = nullptr;
 
     DoubleSpinBox *SPBbondthres;
 
@@ -451,6 +453,7 @@ private:
     QCheckBox *labelsShowSymbols = nullptr;
     QCheckBox *surfacesLocalMaxCheckBox = nullptr;
     QCheckBox *surfacesLocalMinCheckBox = nullptr;
+    QCheckBox *surfacesOnlySelectedCheckBox = nullptr;
     QCheckBox *surfacesShowCoordsCheckBox = nullptr;
     QCheckBox *surfacesShowGridCheckBox = nullptr;
     QCheckBox *surfacesShowIndicesCheckBox = nullptr;
@@ -542,6 +545,7 @@ private:
     QMetaObject::Connection surfacesLocalMinConnection;
     QMetaObject::Connection surfacesMaximaColorConnection;
     QMetaObject::Connection surfacesMinimaColorConnection;
+    QMetaObject::Connection surfacesOnlySelectedConnection;
     QMetaObject::Connection surfacesOpacityConnection;
     QMetaObject::Connection surfacesRangeConnection;
     QMetaObject::Connection surfacesShowCoordsConnection;

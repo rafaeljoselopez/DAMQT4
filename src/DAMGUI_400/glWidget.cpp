@@ -1799,6 +1799,9 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesCoordPrecisionConnection);
         surfacesCoordPrecisionConnection = QMetaObject::Connection();
 
+        disconnect(surfacesOnlySelectedConnection);
+                surfacesOnlySelectedConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -2094,6 +2097,10 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                 surfacesCoordPrecisionSpinBox
             );
 
+            const QSignalBlocker blockerOnlySelected(
+                surfacesOnlySelectedCheckBox
+            );
+
             surfacesShowSymbolsCheckBox->setChecked(
                 surf->getshowextremasymbols()
             );
@@ -2132,6 +2139,18 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
             surfacesCoordPrecisionSpinBox->setVisible(
                 surf->getshowextremacoords()
+            );
+
+            surfacesOnlySelectedCheckBox->setChecked(
+                surf->getonlyextremactive()
+            );
+
+            surfacesSelectAll->setVisible(
+                surf->getonlyextremactive()
+            );
+
+            surfacesSelectNone->setVisible(
+                surf->getonlyextremactive()
             );
 
             surfacesShowSymbolsConnection =
@@ -2209,6 +2228,21 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                     );
 
                     surfacesCoordPrecisionSpinBox->setValue(value);
+
+                });
+
+            surfacesOnlySelectedConnection =
+                connect(surf, &surface::onlyextremactiveChanged,
+                        this, [this](bool checked) {
+
+                    const QSignalBlocker blocker(
+                        surfacesOnlySelectedCheckBox
+                    );
+
+                    surfacesOnlySelectedCheckBox->setChecked(checked);
+
+                    surfacesSelectAll->setVisible(checked);
+                    surfacesSelectNone->setVisible(checked);
 
                 });
 
@@ -2623,6 +2657,26 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesCoordPrecisionLabel->setVisible(false);
     surfacesCoordPrecisionSpinBox->setVisible(false);
 
+    surfacesOnlySelectedCheckBox = new QCheckBox(
+        tr("Only selected extrema"), surfacesLocalExtremaLabelsGroup
+    );
+
+    surfacesSelectAll = new ColorButton(
+        tr("All"), surfacesLocalExtremaLabelsGroup
+    );
+
+    QColor surfacesAllColor(29,124,31);
+    surfacesSelectAll->setColor(&surfacesAllColor);
+    surfacesSelectAll->setVisible(false);
+
+    surfacesSelectNone = new ColorButton(
+        tr("None"), surfacesLocalExtremaLabelsGroup
+    );
+
+    QColor surfacesNoneColor(255,0,0);
+    surfacesSelectNone->setColor(&surfacesNoneColor);
+    surfacesSelectNone->setVisible(false);
+
     connect(surfacesShowSymbolsCheckBox, &QCheckBox::toggled,
             this, [this](bool checked) {
 
@@ -2673,6 +2727,30 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     });
 
+    connect(surfacesOnlySelectedCheckBox, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (surface *surf = selectedSurface())
+            surf->setonlyextremactive(checked);
+
+    });
+
+    connect(surfacesSelectAll, &QPushButton::clicked,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->extremaselectall();
+
+    });
+
+    connect(surfacesSelectNone, &QPushButton::clicked,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->extremaselectnone();
+
+    });
+
     QGridLayout *surfacesLocalExtremaLabelsLayout =
         new QGridLayout(surfacesLocalExtremaLabelsGroup);
 
@@ -2706,6 +2784,18 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     surfacesLocalExtremaLabelsLayout->addWidget(
         surfacesCoordPrecisionSpinBox, 3, 2, Qt::AlignRight
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesOnlySelectedCheckBox, 4, 0
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesSelectAll, 4, 1
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesSelectNone, 4, 2
     );
 
     surfacesLocalExtremaLabelsGroup->setEnabled(false);

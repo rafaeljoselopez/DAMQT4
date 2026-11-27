@@ -150,6 +150,7 @@ signals:
     void fontColor(QColor *);
     void maximaColor(QColor *);
     void minimaColor(QColor *);
+    void onlyextremactiveChanged(bool);
     void opacityChanged(float);
     void opendialog();
     void showextremacoordsChanged(bool);

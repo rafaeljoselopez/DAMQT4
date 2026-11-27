@@ -2173,30 +2173,37 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(CHKextremactiveonly, &QCheckBox::toggled,
             surf, &surface::setonlyextremactive);
 
-    QColor *cpbtnbkgcolor = new QColor(29,124,31);
+    connect(surf, &surface::onlyextremactiveChanged,
+            CHKextremactiveonly, &QCheckBox::setChecked);
+
+    QColor allColor(29,124,31);
+
     ColorButton *BTNextremaselectall = new ColorButton();
     BTNextremaselectall->setText(tr("All"));
-    BTNextremaselectall->setColor(cpbtnbkgcolor);
-    BTNextremaselectall->setHidden(true);
+    BTNextremaselectall->setColor(&allColor);
+    BTNextremaselectall->setVisible(
+        CHKextremactiveonly->isChecked()
+    );
 
     connect(BTNextremaselectall, &QPushButton::clicked,
             surf, &surface::extremaselectall);
 
-    cpbtnbkgcolor = new QColor(255,0,0);
+    QColor noneColor(255,0,0);
+
     ColorButton *BTNextremaselectnone = new ColorButton();
     BTNextremaselectnone->setText(tr("None"));
-    BTNextremaselectnone->setColor(cpbtnbkgcolor);
-    BTNextremaselectnone->setHidden(true);
+    BTNextremaselectnone->setColor(&noneColor);
+    BTNextremaselectnone->setVisible(
+        CHKextremactiveonly->isChecked()
+    );
 
     connect(BTNextremaselectnone, &QPushButton::clicked,
             surf, &surface::extremaselectnone);
 
     connect(CHKextremactiveonly, &QCheckBox::toggled,
             BTNextremaselectall, &QWidget::setVisible);
-
     connect(CHKextremactiveonly, &QCheckBox::toggled,
             BTNextremaselectnone, &QWidget::setVisible);
-
     connect(CHKextremactiveonly, &QCheckBox::toggled,
             this, &molecule::resizeQDLeditMolecule);
 

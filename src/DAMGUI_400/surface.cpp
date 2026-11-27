@@ -1751,7 +1751,12 @@ void surface::setname(QString a){
 }
 
 void surface::setonlyextremactive(bool a){
+    if (onlyextremactive == a)
+        return;
+
     onlyextremactive = a;
+
+    emit onlyextremactiveChanged(onlyextremactive);
     emit updatedisplay();
 }
 
