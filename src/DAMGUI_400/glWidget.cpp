@@ -1778,6 +1778,9 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesBallRadiusConnection);
         surfacesBallRadiusConnection = QMetaObject::Connection();
 
+        disconnect(surfacesShowGridConnection);
+        surfacesShowGridConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -1788,6 +1791,8 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         surfacesColorButton->setVisible(false);
         surfacesRangeGroup->setEnabled(false);
         surfacesRangeGroup->setVisible(false);
+        surfacesShowGridCheckBox->setEnabled(false);
+        surfacesShowGridCheckBox->setVisible(false);
         surfacesLocalExtremaGroup->setEnabled(false);
         surfacesLocalExtremaGroup->setVisible(false);
 
@@ -1891,6 +1896,34 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
             QColor color = surf->getsurfacecolor();
             surfacesColorButton->setColor(&color);
             surfacesColorButton->setEnabled(true);
+        }
+
+        // Initialize and synchronize surface grid boundaries
+
+        if (hasLocalExtrema) {
+
+            const QSignalBlocker blocker(
+                surfacesShowGridCheckBox
+            );
+
+            surfacesShowGridCheckBox->setChecked(
+                surf->getshowgridbounds()
+            );
+
+            surfacesShowGridConnection =
+                connect(surf, &surface::showgridboundsChanged,
+                        this, [this](bool checked) {
+
+                    const QSignalBlocker blocker(
+                        surfacesShowGridCheckBox
+                    );
+
+                    surfacesShowGridCheckBox->setChecked(checked);
+
+                });
+
+            surfacesShowGridCheckBox->setEnabled(true);
+            surfacesShowGridCheckBox->setVisible(true);
         }
 
         // Initialize and synchronize local extrema controls
@@ -2223,6 +2256,23 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesRangeGroup->setEnabled(false);
     surfacesRangeGroup->setVisible(false);
 
+    // Surface grid boundaries
+
+    surfacesShowGridCheckBox = new QCheckBox(
+        tr("Show grid boundaries"), surfacesPropertiesPage
+    );
+
+    surfacesShowGridCheckBox->setEnabled(false);
+    surfacesShowGridCheckBox->setVisible(false);
+
+    connect(surfacesShowGridCheckBox, &QCheckBox::toggled,
+            this, [this](bool checked) {
+
+        if (surface *surf = selectedSurface())
+            surf->setshowgridbounds(checked);
+
+    });
+
     // Surface local extrema
 
     surfacesLocalExtremaGroup = new QGroupBox(
@@ -2349,6 +2399,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesLayout->addWidget(surfacesOpacitySlider, 0, Qt::AlignTop);
     surfacesLayout->addWidget(surfacesColorButton, 0, Qt::AlignHCenter);
     surfacesLayout->addWidget(surfacesRangeGroup, 0, Qt::AlignTop);
+    surfacesLayout->addWidget(surfacesShowGridCheckBox);
     surfacesLayout->addWidget(surfacesLocalExtremaGroup, 0, Qt::AlignTop);
     surfacesLayout->addStretch();
 

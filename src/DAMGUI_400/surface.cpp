@@ -1779,7 +1779,12 @@ void surface::setshowextremavalues(bool a){
 }
 
 void surface::setshowgridbounds(bool a){
+    if (showgridbounds == a)
+        return;
+
     showgridbounds = a;
+
+    emit showgridboundsChanged(showgridbounds);
     emit updatedisplay();
 }
 

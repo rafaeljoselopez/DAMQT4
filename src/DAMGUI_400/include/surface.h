@@ -151,6 +151,7 @@ signals:
     void minimaColor(QColor *);
     void opacityChanged(float);
     void opendialog();
+    void showgridboundsChanged(bool);
     void showlocalmaxChanged(bool);
     void showlocalminChanged(bool);
     void solidsurfChanged(bool);

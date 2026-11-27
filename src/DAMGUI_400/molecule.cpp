@@ -2245,11 +2245,21 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
             BTNextremacolorfont, QOverload<QColor *>::of(&ColorButton::setColor));
 
 //        Show grid
+
     QCheckBox *CHKshowgrid = new QCheckBox(tr("Show grid boundaries"));
     CHKshowgrid->setChecked(surf->getshowgridbounds());
 
     connect(CHKshowgrid, &QCheckBox::toggled,
             surf, &surface::setshowgridbounds);
+
+    connect(surf, &surface::showgridboundsChanged,
+            CHKshowgrid, [CHKshowgrid](bool checked) {
+
+                const QSignalBlocker blocker(CHKshowgrid);
+
+                CHKshowgrid->setChecked(checked);
+
+            });
 
     QGroupBox *FRMlocalextrema = new QGroupBox();
     if (QFileInfo(surf->getname()).suffix() == "sgh" || QFileInfo(surf->getname()).suffix() == "srf"){
