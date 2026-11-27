@@ -558,6 +558,7 @@ private:
     QMetaObject::Connection surfacesTranslucenceConnection;
     QMetaObject::Connection surfacesTypeConnection;
     QMetaObject::Connection surfacesValuePrecisionConnection;
+    QMetaObject::Connection surfacesVerticalShiftConnection;
 
     QPoint position;
 
@@ -614,6 +615,7 @@ private:
     QSpinBox *surfacesBallRadiusSpinBox = nullptr;
     QSpinBox *surfacesCoordPrecisionSpinBox = nullptr;
     QSpinBox *surfacesValuePrecisionSpinBox = nullptr;
+    QSpinBox *surfacesVerticalShiftSpinBox = nullptr;
 
     QSplitter *sceneSplitter;
 

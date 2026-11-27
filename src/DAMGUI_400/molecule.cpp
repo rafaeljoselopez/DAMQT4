@@ -2255,9 +2255,10 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(surf, &surface::minimaColor, BTNminimacolor,
             QOverload<QColor *>::of(&ColorButton::setColor));
 
-//        Vertical shift
+    //        Vertical shift
 
     QLabel *LBLvshift = new QLabel(tr("Vertical shift"));
+
     QSpinBox *SPBvshift = new QSpinBox();
     SPBvshift->setRange(-150,150);
     SPBvshift->setMaximumWidth(70);
@@ -2265,6 +2266,15 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
 
     connect(SPBvshift, QOverload<int>::of(&QSpinBox::valueChanged),
             surf, &surface::setvshift);
+
+    connect(surf, &surface::vshiftChanged,
+            SPBvshift, [SPBvshift](int value) {
+
+                const QSignalBlocker blocker(SPBvshift);
+
+                SPBvshift->setValue(value);
+
+            });
 
     //        Extrema labels format
 

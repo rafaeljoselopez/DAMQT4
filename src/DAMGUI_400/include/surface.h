@@ -170,6 +170,7 @@ signals:
     void updateRightMenu();
     void updatetext(QString);
     void valueprecisionChanged(int);
+    void vshiftChanged(int);
 
 public slots:
     int getballradius();

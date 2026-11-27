@@ -1805,6 +1805,9 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesLabelsColorConnection);
         surfacesLabelsColorConnection = QMetaObject::Connection();
 
+        disconnect(surfacesVerticalShiftConnection);
+        surfacesVerticalShiftConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -2270,6 +2273,28 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                     );
 
                     surfacesLabelsColorButton->setColor(color);
+
+                });
+
+            {
+                const QSignalBlocker blocker(
+                    surfacesVerticalShiftSpinBox
+                );
+
+                surfacesVerticalShiftSpinBox->setValue(
+                    surf->getvshift()
+                );
+            }
+
+            surfacesVerticalShiftConnection =
+                connect(surf, &surface::vshiftChanged,
+                        this, [this](int value) {
+
+                    const QSignalBlocker blocker(
+                        surfacesVerticalShiftSpinBox
+                    );
+
+                    surfacesVerticalShiftSpinBox->setValue(value);
 
                 });
 
@@ -2810,6 +2835,26 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     });
 
+    QLabel *surfacesVerticalShiftLabel = new QLabel(
+        tr("Vertical shift"), surfacesLocalExtremaLabelsGroup
+    );
+
+    surfacesVerticalShiftSpinBox = new QSpinBox(
+        surfacesLocalExtremaLabelsGroup
+    );
+
+    surfacesVerticalShiftSpinBox->setRange(-150, 150);
+    surfacesVerticalShiftSpinBox->setMaximumWidth(70);
+
+    connect(surfacesVerticalShiftSpinBox,
+            QOverload<int>::of(&QSpinBox::valueChanged),
+            this, [this](int value) {
+
+        if (surface *surf = selectedSurface())
+            surf->setvshift(value);
+
+    });
+
     QGridLayout *surfacesLocalExtremaLabelsLayout =
         new QGridLayout(surfacesLocalExtremaLabelsGroup);
 
@@ -2867,6 +2912,14 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     surfacesLocalExtremaLabelsLayout->addWidget(
         surfacesLabelsColorButton, 5, 2
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesVerticalShiftLabel, 6, 0
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesVerticalShiftSpinBox, 6, 1, Qt::AlignLeft
     );
 
     surfacesLocalExtremaLabelsGroup->setEnabled(false);

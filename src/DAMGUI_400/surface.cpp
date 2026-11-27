@@ -1913,7 +1913,12 @@ void surface::setvisible(bool a){
 
 // Changes vertical shift for cps labels in drawing
 void surface::setvshift(int i){
+    if (vshift == i)
+        return;
+
     vshift = i;
+
+    emit vshiftChanged(vshift);
     emit updatedisplay();
 }
 
