@@ -2266,12 +2266,13 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(SPBvshift, QOverload<int>::of(&QSpinBox::valueChanged),
             surf, &surface::setvshift);
 
-//         Extrema labels format
+    //        Extrema labels format
 
     QLabel *LBLformat = new QLabel(tr("Labels format")+":");
 
-    QPushButton *BTNextremafont = new QPushButton();
-    BTNextremafont = new QPushButton(QIcon(":/images/fonts48.png"),tr("Font"));
+    QPushButton *BTNextremafont = new QPushButton(
+        QIcon(":/images/fonts48.png"), tr("Font")
+    );
 
     connect(BTNextremafont, &QPushButton::clicked,
             surf, &surface::changeextremafont);
@@ -2279,16 +2280,19 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     ColorButton *BTNextremacolorfont = new ColorButton();
     BTNextremacolorfont->setIcon(QIcon(":/images/fonts48.png"));
     BTNextremacolorfont->setText(tr("Color"));
-    BTNextremacolorfont->setColor(&fontcolor);
+
+    QColor extremaFontColor = surf->getfontcolor();
+    BTNextremacolorfont->setColor(&extremaFontColor);
     BTNextremacolorfont->setEnabled(true);
 
     connect(BTNextremacolorfont, &QPushButton::clicked,
             surf, &surface::selectfontcolor);
-;
-    connect(surf, &surface::fontColor,
-            BTNextremacolorfont, QOverload<QColor *>::of(&ColorButton::setColor));
 
-//        Show grid
+    connect(surf, &surface::fontColor,
+            BTNextremacolorfont,
+            QOverload<QColor *>::of(&ColorButton::setColor));
+
+    //        Show grid
 
     QCheckBox *CHKshowgrid = new QCheckBox(tr("Show grid boundaries"));
     CHKshowgrid->setChecked(surf->getshowgridbounds());

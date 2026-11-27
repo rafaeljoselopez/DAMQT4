@@ -398,6 +398,7 @@ private:
     ColorButton *labelsSelectAll = nullptr;
     ColorButton *labelsSelectNone = nullptr;
     ColorButton *surfacesColorButton = nullptr;
+    ColorButton *surfacesLabelsColorButton = nullptr;
     ColorButton *surfacesMaximaColorButton = nullptr;
     ColorButton *surfacesMinimaColorButton = nullptr;
     ColorButton *surfacesSelectAll = nullptr;
@@ -541,6 +542,7 @@ private:
     QMetaObject::Connection surfacesBallRadiusConnection;
     QMetaObject::Connection surfacesColorConnection;
     QMetaObject::Connection surfacesCoordPrecisionConnection;
+    QMetaObject::Connection surfacesLabelsColorConnection;
     QMetaObject::Connection surfacesLocalMaxConnection;
     QMetaObject::Connection surfacesLocalMinConnection;
     QMetaObject::Connection surfacesMaximaColorConnection;

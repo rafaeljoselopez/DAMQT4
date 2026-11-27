@@ -1800,7 +1800,10 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         surfacesCoordPrecisionConnection = QMetaObject::Connection();
 
         disconnect(surfacesOnlySelectedConnection);
-                surfacesOnlySelectedConnection = QMetaObject::Connection();
+        surfacesOnlySelectedConnection = QMetaObject::Connection();
+
+        disconnect(surfacesLabelsColorConnection);
+        surfacesLabelsColorConnection = QMetaObject::Connection();
 
         QListWidgetItem *item = surfacesList->currentItem();
 
@@ -2243,6 +2246,30 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
                     surfacesSelectAll->setVisible(checked);
                     surfacesSelectNone->setVisible(checked);
+
+                });
+
+            QColor surfacesLabelsColor = surf->getfontcolor();
+
+            {
+                const QSignalBlocker blocker(
+                    surfacesLabelsColorButton
+                );
+
+                surfacesLabelsColorButton->setColor(
+                    &surfacesLabelsColor
+                );
+            }
+
+            surfacesLabelsColorConnection =
+                connect(surf, &surface::fontColor,
+                        this, [this](QColor *color) {
+
+                    const QSignalBlocker blocker(
+                        surfacesLabelsColorButton
+                    );
+
+                    surfacesLabelsColorButton->setColor(color);
 
                 });
 
@@ -2751,6 +2778,38 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     });
 
+    QLabel *surfacesLabelsFormatLabel = new QLabel(
+        tr("Labels format") + ":", surfacesLocalExtremaLabelsGroup
+    );
+
+    QPushButton *surfacesLabelsFontButton = new QPushButton(
+        QIcon(":/images/fonts48.png"),
+        tr("Font"),
+        surfacesLocalExtremaLabelsGroup
+    );
+
+    surfacesLabelsColorButton = new ColorButton(
+        QIcon(":/images/fonts48.png"),
+        tr("Color"),
+        surfacesLocalExtremaLabelsGroup
+    );
+
+    connect(surfacesLabelsFontButton, &QPushButton::clicked,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->changeextremafont();
+
+    });
+
+    connect(surfacesLabelsColorButton, &QPushButton::clicked,
+            this, [this]() {
+
+        if (surface *surf = selectedSurface())
+            surf->selectfontcolor();
+
+    });
+
     QGridLayout *surfacesLocalExtremaLabelsLayout =
         new QGridLayout(surfacesLocalExtremaLabelsGroup);
 
@@ -2796,6 +2855,18 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
     surfacesLocalExtremaLabelsLayout->addWidget(
         surfacesSelectNone, 4, 2
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesLabelsFormatLabel, 5, 0
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesLabelsFontButton, 5, 1
+    );
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesLabelsColorButton, 5, 2
     );
 
     surfacesLocalExtremaLabelsGroup->setEnabled(false);
