@@ -2055,6 +2055,15 @@ togglingGroupBox *molecule::surfaces_editor(surface *surf){
     connect(CHKshowextremasymbols, &QCheckBox::toggled,
             surf, &surface::setshowextremasymbols);
 
+    connect(surf, &surface::showextremasymbolsChanged,
+            CHKshowextremasymbols, [CHKshowextremasymbols](bool checked) {
+
+                const QSignalBlocker blocker(CHKshowextremasymbols);
+
+                CHKshowextremasymbols->setChecked(checked);
+
+            });
+
 
 //        Show indices of local extrema
 

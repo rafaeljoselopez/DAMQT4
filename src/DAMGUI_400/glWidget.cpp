@@ -1781,6 +1781,9 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         disconnect(surfacesShowGridConnection);
         surfacesShowGridConnection = QMetaObject::Connection();
 
+        disconnect(surfacesShowSymbolsConnection);
+        surfacesShowSymbolsConnection = QMetaObject::Connection();
+
         QListWidgetItem *item = surfacesList->currentItem();
 
         surfacesRemoveButton->setEnabled(item != nullptr);
@@ -1795,6 +1798,8 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
         surfacesShowGridCheckBox->setVisible(false);
         surfacesLocalExtremaGroup->setEnabled(false);
         surfacesLocalExtremaGroup->setVisible(false);
+        surfacesLocalExtremaLabelsGroup->setEnabled(false);
+        surfacesLocalExtremaLabelsGroup->setVisible(false);
 
         surface *surf = selectedSurface();
 
@@ -1956,6 +1961,11 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
                     surfacesLocalMaxCheckBox->setChecked(checked);
 
+                    surfacesLocalExtremaLabelsGroup->setVisible(
+                        surfacesLocalMaxCheckBox->isChecked() ||
+                        surfacesLocalMinCheckBox->isChecked()
+                    );
+
                 });
 
             surfacesLocalMinConnection =
@@ -1967,6 +1977,11 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
                     );
 
                     surfacesLocalMinCheckBox->setChecked(checked);
+
+                    surfacesLocalExtremaLabelsGroup->setVisible(
+                        surfacesLocalMaxCheckBox->isChecked() ||
+                        surfacesLocalMinCheckBox->isChecked()
+                    );
 
                 });
 
@@ -2034,6 +2049,38 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
 
             surfacesLocalExtremaGroup->setEnabled(true);
             surfacesLocalExtremaGroup->setVisible(true);
+        }
+
+        // Initialize and synchronize local extrema labels
+
+        if (hasLocalExtrema) {
+
+            const QSignalBlocker blocker(
+                surfacesShowSymbolsCheckBox
+            );
+
+            surfacesShowSymbolsCheckBox->setChecked(
+                surf->getshowextremasymbols()
+            );
+
+            surfacesShowSymbolsConnection =
+                connect(surf, &surface::showextremasymbolsChanged,
+                        this, [this](bool checked) {
+
+                    const QSignalBlocker blocker(
+                        surfacesShowSymbolsCheckBox
+                    );
+
+                    surfacesShowSymbolsCheckBox->setChecked(checked);
+
+                });
+
+            surfacesLocalExtremaLabelsGroup->setEnabled(true);
+
+            surfacesLocalExtremaLabelsGroup->setVisible(
+                surf->getshowlocalmax() ||
+                surf->getshowlocalmin()
+            );
         }
 
         // Initialize and synchronize surface color boundaries
@@ -2389,6 +2436,34 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesLocalExtremaGroup->setEnabled(false);
     surfacesLocalExtremaGroup->setVisible(false);
 
+    // Surface local extrema labels
+
+    surfacesLocalExtremaLabelsGroup = new QGroupBox(
+        tr("Local extrema labels"), surfacesPropertiesPage
+    );
+
+    surfacesShowSymbolsCheckBox = new QCheckBox(
+        tr("Show symbols"), surfacesLocalExtremaLabelsGroup
+    );
+
+    connect(surfacesShowSymbolsCheckBox, &QCheckBox::toggled,
+                this, [this](bool checked) {
+
+            if (surface *surf = selectedSurface())
+                surf->setshowextremasymbols(checked);
+
+        });
+
+    QGridLayout *surfacesLocalExtremaLabelsLayout =
+        new QGridLayout(surfacesLocalExtremaLabelsGroup);
+
+    surfacesLocalExtremaLabelsLayout->addWidget(
+        surfacesShowSymbolsCheckBox, 0, 0
+    );
+
+    surfacesLocalExtremaLabelsGroup->setEnabled(false);
+    surfacesLocalExtremaLabelsGroup->setVisible(false);
+
     // Surfaces properties layout
 
     surfacesLayout->addWidget(surfacesTitle);
@@ -2401,6 +2476,7 @@ void glWidget::createWindowDialog(MyDockWidget *gdock){
     surfacesLayout->addWidget(surfacesRangeGroup, 0, Qt::AlignTop);
     surfacesLayout->addWidget(surfacesShowGridCheckBox);
     surfacesLayout->addWidget(surfacesLocalExtremaGroup, 0, Qt::AlignTop);
+    surfacesLayout->addWidget(surfacesLocalExtremaLabelsGroup, 0, Qt::AlignTop);
     surfacesLayout->addStretch();
 
     propertiesStack->addWidget(surfacesPropertiesPage);

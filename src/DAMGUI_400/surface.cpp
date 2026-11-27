@@ -1769,7 +1769,12 @@ void surface::setshowextremaindices(bool a){
 }
 
 void surface::setshowextremasymbols(bool a){
+    if (showextremasymbols == a)
+        return;
+
     showextremasymbols = a;
+
+    emit showextremasymbolsChanged(showextremasymbols);
     emit updatedisplay();
 }
 
